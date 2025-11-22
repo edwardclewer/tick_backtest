@@ -1,0 +1,81 @@
+# Copyright 2025 Edward Clewer
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+site_name: Tick Backtest Docs
+site_url: ""
+repo_url: https://github.com/caffeinebean/tick_backtest
+repo_name: caffeinebean/tick_backtest
+edit_uri: edit/main/docs/
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.instant
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - content.action.edit
+  palette:
+    - scheme: slate
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+    - scheme: default
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+nav:
+  - Overview: index.md
+  - Quickstart: quickstart.md
+  - Architecture: architecture.md
+  - Configuration:
+      - Overview: configs.md
+      - Metrics Reference: configs/metrics.md
+      - Strategy Reference: configs/strategy.md
+  - Concepts: concepts.md
+  - Analysis & Reporting: analysis.md
+  - Developer Notes:
+      - Internals: dev/internals.md
+      - Style Guide: dev/style_guide.md
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+docs_dir: docs
+extra:
+  social:
+    - icon: material/github
+      link: https://github.com/caffeinebean/tick_backtest
+extra_javascript:
+  - https://unpkg.com/mermaid@10/dist/mermaid.min.js
+  - js/mermaid-init.js

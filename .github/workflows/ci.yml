@@ -1,0 +1,225 @@
+# Copyright 2025 Edward Clewer
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_test:
+    name: Build wheel + tests (py312)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: System build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Upgrade pip & install build deps (no isolation build)
+        run: |
+          python -m pip install -U pip
+          pip install "setuptools>=68" wheel build "cython>=3.0" "numpy>=2.0" "pybind11>=2.12"
+          python - <<'PY'
+          import pybind11, numpy
+          print("pybind11:", pybind11.__version__)
+          print("numpy   :", numpy.__version__)
+          PY
+
+      - name: Build wheel/sdist (no isolation)
+        run: |
+          python -m build --wheel --sdist --no-isolation
+          ls -lh dist/
+
+      - name: Verify wheel contains ALL compiled extensions
+        run: |
+          python - <<'PY'
+          import sys, zipfile, pathlib
+          wheel = next(pathlib.Path("dist").glob("*.whl"), None)
+          assert wheel, "No wheel produced in dist/"
+          print("Inspecting:", wheel)
+          with zipfile.ZipFile(wheel) as z:
+              names = set(z.namelist())
+              for n in sorted(n for n in names if n.endswith((".so",".pyd"))):
+                  print("WHEEL_SO:", n)
+
+          # Expect every indicators/_*.pyx, primitives/_*.pyx, and data_feed/_data_feed to be compiled
+          expected = []
+          ind_dir = pathlib.Path("src/tick_backtest/metrics/indicators")
+          if ind_dir.is_dir():
+              expected += [f"tick_backtest/metrics/indicators/{p.stem}" for p in ind_dir.glob("_*.pyx")]
+          prim_dir = pathlib.Path("src/tick_backtest/metrics/primitives")
+          if prim_dir.is_dir():
+              expected += [f"tick_backtest/metrics/primitives/{p.stem}" for p in prim_dir.glob("_*.pyx")]
+          mgr_mod = pathlib.Path("src/tick_backtest/metrics/manager/_metrics_manager.pyx")
+          if mgr_mod.is_file():
+              expected.append("tick_backtest/metrics/manager/_metrics_manager")
+          expected.append("tick_backtest/data_feed/_data_feed")
+
+          missing = [m for m in expected if not any(n.startswith(m) and n.endswith((".so",".pyd")) for n in names)]
+          if missing:
+              print("ERROR: Missing compiled modules in wheel:", missing)
+              sys.exit(1)
+          print("All required compiled extensions present.")
+          PY
+
+      - name: Create clean venv, install wheel, install test deps
+        run: |
+          python -m venv .venv_ci
+          . .venv_ci/bin/activate
+          python -m pip install -U pip
+          python -m pip install dist/*.whl
+          python -m pip install pytest
+
+      - name: Sanity import of compiled modules
+        env:
+          TB_REQUIRE_COMPILED: "1"
+        run: |
+          . .venv_ci/bin/activate
+          python - <<'PY'
+          import importlib
+          mods = [
+            "tick_backtest",
+            "tick_backtest.data_feed._data_feed",
+            "tick_backtest.metrics.indicators._ewma_metric",
+            "tick_backtest.metrics.indicators._ewma_slope_metric",
+            "tick_backtest.metrics.indicators._ewma_vol_metric",
+            "tick_backtest.metrics.indicators._zscore_metric",
+            "tick_backtest.metrics.indicators._session_metric",
+            "tick_backtest.metrics.indicators._spread_metric",
+            "tick_backtest.metrics.indicators._threshold_reversion_metric",
+            "tick_backtest.metrics.indicators._tick_rate_metric",
+            "tick_backtest.metrics.indicators._drift_sign_metric"]
+          for m in mods:
+              importlib.import_module(m)
+          print("All compiled imports OK")
+          PY
+
+      - name: Run tests against installed wheel
+        env:
+          TB_REQUIRE_COMPILED: "1"
+        run: |
+          . .venv_ci/bin/activate
+          # Remove source tree so only installed package is importable
+          rm -rf "$GITHUB_WORKSPACE/src"
+          # Run repository test suite against installed package
+          pytest -q --import-mode=importlib tests
+
+      - name: Smoke test script
+        env:
+          TB_REQUIRE_COMPILED: "1"
+        run: |
+          . .venv_ci/bin/activate
+          SMOKE_VENV=.venv_ci SKIP_SMOKE_INSTALL=1 ./scripts/smoke_test.sh
+
+      - name: Golden deterministic run
+        env:
+          TB_REQUIRE_COMPILED: "1"
+        run: |
+          . .venv_ci/bin/activate
+          ./scripts/golden_run.sh config/backtest/test_backtest.yaml
+
+
+      - name: Upload build artefacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artefacts
+          path: |
+            dist/**
+            **/*.log
+          if-no-files-found: warn
+
+  golden:
+    name: Golden run (optional)
+    runs-on: ubuntu-latest
+    needs: build_test
+    if: ${{ needs.build_test.result == 'success' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Build & install wheel (no isolation)
+        run: |
+          python -m pip install -U pip
+          pip install "setuptools>=68" wheel build "cython>=3.0" "numpy>=2.0" "pybind11>=2.12"
+          python -m build --wheel --sdist --no-isolation
+          python -m venv .venv_ci
+          . .venv_ci/bin/activate
+          python -m pip install dist/*.whl
+
+      - name: Locate CI backtest config
+        id: cfg
+        shell: bash
+        run: |
+          if [ -f "config/backtest/ci_backtest.yaml" ]; then
+            echo "config_path=config/backtest/ci_backtest.yaml" >> "$GITHUB_OUTPUT"
+          elif [ -f "ci_backtest.yaml" ]; then
+            echo "config_path=ci_backtest.yaml" >> "$GITHUB_OUTPUT"
+          else
+            echo "config_path=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Golden run
+        if: steps.cfg.outputs.config_path != ''
+        env:
+          TB_REQUIRE_COMPILED: "1"
+        run: |
+          . .venv_ci/bin/activate
+          python - <<'PY'
+          from pathlib import Path
+          from tick_backtest.backtest.workflow import run_backtest
+          cfg = Path("${{ steps.cfg.outputs.config_path }}")
+          out = Path("output_ci")
+          out.mkdir(exist_ok=True)
+          print("Running golden backtest with", cfg)
+          meta = run_backtest(config_path=cfg, output_root=out)
+          print("Run completed. Manifest:", meta.get("manifest_path", "<unknown>"))
+          PY
+
+      - name: Upload golden outputs
+        if: steps.cfg.outputs.config_path != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-output
+          path: output_ci/**
+          if-no-files-found: warn

@@ -1,0 +1,67 @@
+# Copyright 2025 Edward Clewer
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Misc and Notes
+xmisc_notes/
+test_data_generation/
+
+# Logs and output
+logs/
+output/
+profile_stats.prof
+test_output/
+
+# Config Sweeps
+src/tick_backtest/config/metrics/sweeps/
+src/tick_backtest/config/backtest/sweeps/
+
+# Build artifacts
+build/
+dist/
+.eggs/
+*.egg-info/
+*.egg
+*.whl
+
+# Cython build products
+**/*.c
+**/*.cpp
+**/*.so
+**/*.pyd
+**/*.dll
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Test/coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+.venv_smoke/
+
+# VSCode
+.vscode/
+
+# Docs
+site/
+
+# Local config overrides (create without .example suffix)
+config/**/local_default*.yaml

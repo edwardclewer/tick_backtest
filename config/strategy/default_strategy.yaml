@@ -1,0 +1,61 @@
+# Copyright 2025 Edward Clewer
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+schema_version: "1.0"
+strategy:
+  name: threshold_reversion_strategy
+  entry:
+    name: threshold_reversion_entry
+    engine: threshold_reversion
+    params:
+      lookback_seconds: 1800
+      threshold_pips: 10
+      tp_pips: 10
+      sl_pips: 20
+      min_recency_seconds: 60
+      trade_timeout_seconds: 7200
+    predicates:
+      - metric: tick_rate_30s.tick_rate_per_min
+        operator: "<"
+        value: 200.0
+      - metric: ewma_mid_5m_slope.slope
+        operator: ">"
+        value: 5e-07
+        use_abs: true
+      - metric: ewma_vol_30m.vol_percentile
+        operator: ">"
+        value: 0.02
+      - metric: ewma_vol_5m.vol_percentile
+        operator: "<"
+        value: 0.5
+  exit:
+    name: default_exit
+    predicates: []
+
+  # Alternative example:
+  # name: ewma_crossover
+  # entry:
+  #   name: ewma_crossover_entry
+  #   engine: ewma_crossover
+  #   params:
+  #     fast_metric: ewma_mid_5m.ewma
+  #     slow_metric: ewma_mid_30m.ewma
+  #     long_on_cross: true
+  #     short_on_cross: true
+  # exit:
+  #   name: crossover_reversal_exit
+  #   predicates:
+  #     - metric: ewma_mid_5m.ewma
+  #       operator: "<"
+  #       other_metric: ewma_mid_30m.ewma
