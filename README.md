@@ -27,7 +27,7 @@ Tick Backtest is a configuration-first Python 3.12 toolkit for running reproduci
 - **Declarative research:** Declarative research: swap YAML configs instead of editing code
 - **Report ready:** Report ready: trade tables, Markdown summaries, metric stratification CSV/PNG artefacts
 
-👉 Looking for configuration docs or developer notes? Visit the [Documentation Site](docs/index.md).
+Documentation is hosted here: [Documentation Site](docs/index.md).
 
 ---
 
@@ -146,7 +146,7 @@ Entry engines and predicates gate trade opens; exit predicates can force closure
 
 </details>
 
-🔗 Need full schemas or extension guidance? See the [Configuration Guide](docs/configs.md).
+Need full schemas or extension guidance? See the [Configuration Guide](docs/configs.md).
 
 ---
 
@@ -180,9 +180,8 @@ Helpers log warnings rather than failing runs; review `output/logs/<RUN_ID>.log`
 3. Per-pair runs are isolated; errors are captured without aborting the batch.
 4. Outputs, manifests, and environment snapshots land under `output/backtests/<RUN_ID>/`.
 
-⚙️ **Performance**: ~8 million ticks/minute/core on AMD 5950X (vectorised Parquet loading, sequential signal loop for causal correctness).  
-💡 **Design Choice**: sequential execution avoids lookahead; scale comes from multi-pair orchestration and sweep automation.  
-🔗 Dive deeper in the [Developer Notes](docs/dev/internals.md).
+**Design Choice**: sequential execution avoids lookahead; scale comes from multi-pair orchestration and sweep automation.  
+Dive deeper in the [Developer Notes](docs/dev/internals.md).
 
 ---
 
@@ -234,7 +233,7 @@ GitHub Actions builds wheels, runs tests, executes optional golden backtests, an
 - **Add a signal engine** – add a class in `signals/entries`, register it in `ENTRY_ENGINE_REGISTRY`, and expose parameters in strategy YAML.
 - **Support new data layouts** – extend `tick_backtest.data_feed` for alternative Parquet conventions; the validator enforces monotonic timestamps and finite spreads.
 
-🔗 See the [Developer Notes](docs/dev/internals.md) for dependency maps, testing expectations, and release checklists.
+See the [Developer Notes](docs/dev/internals.md) for dependency maps, testing expectations, and release checklists.
 
 ---
 
@@ -254,4 +253,4 @@ Copy the `.example` configs under `config/**/local_default_*.yaml.example` to fi
 
 **Author**: Edward Clewer  
 **License**: Apache License 2.0  
-**Docs**: [Docs](https://caffeinebean.github.io/tick_backtest/)  
+**Docs**: [Docs](https://edwardclewer.github.io/tick_backtest/)  

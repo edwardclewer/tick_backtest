@@ -14,8 +14,8 @@
 
 site_name: Tick Backtest Docs
 site_url: ""
-repo_url: https://github.com/caffeinebean/tick_backtest
-repo_name: caffeinebean/tick_backtest
+repo_url: https://github.com/edwardclewer/tick_backtest
+repo_name: edwardclewer/tick_backtest
 edit_uri: edit/main/docs/
 theme:
   name: material
@@ -75,7 +75,7 @@ docs_dir: docs
 extra:
   social:
     - icon: material/github
-      link: https://github.com/caffeinebean/tick_backtest
+      link: https://github.com/edwardclewer/tick_backtest
 extra_javascript:
   - https://unpkg.com/mermaid@10/dist/mermaid.min.js
   - js/mermaid-init.js
