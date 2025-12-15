@@ -18,7 +18,10 @@ limitations under the License.
 
 See also: [Configuration Overview](configs.md) · [Metrics Reference](configs/metrics.md) · [Strategy Reference](configs/strategy.md)
 
-This guide helps you install the Tick Backtest Research Stack, configure your environment, and run the default EURUSD backtest end-to-end. The bundled fixtures are generated from seeded Brownian-motion processes so you can experiment without access to proprietary market data.
+This guide helps you install the Tick Backtest Research Stack, configure your environment, and run the default EURUSD backtest end-to-end.
+
+!!! info "No proprietary market data required"
+    The repo ships with seeded Brownian-motion Parquet fixtures (used by the default configs), so you can complete this quickstart immediately and only later point the stack at private shards.
 
 ## Prerequisites
 

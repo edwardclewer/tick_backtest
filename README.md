@@ -18,7 +18,7 @@ limitations under the License.
 
 *Deterministic tick-level FX backtesting for reproducible research.*
 
-Tick Backtest is a configuration-first Python 3.12 toolkit for running reproducible FX strategy research. You provide Parquet ticks and YAML configs; the stack validates every setting, executes deterministic backtests, and writes manifests, logs, and analysis reports you can trust.
+Tick Backtest is a configuration-first Python 3.12 toolkit for running reproducible FX strategy research. You provide Parquet ticks and YAML configs; the stack validates every setting, executes deterministic backtests, and writes manifests, logs, and analysis reports you can trust. No proprietary data yet? The repo ships with seeded Brownian-motion fixtures so you can run the full stack immediately and swap in your own shards later.
 
 ### Highlights
 - **Performance:** ~8 million ticks/minute/core on AMD 5950X (Parquet → metrics → signals → trades)
@@ -26,12 +26,15 @@ Tick Backtest is a configuration-first Python 3.12 toolkit for running reproduci
 - **Resilient pipelines:** Resilient pipelines: per-pair failure isolation, tick validation, and structured telemetry
 - **Declarative research:** Declarative research: swap YAML configs instead of editing code
 - **Report ready:** Report ready: trade tables, Markdown summaries, metric stratification CSV/PNG artefacts
+- **Bundled fixtures:** Run end-to-end on the included synthetic Parquet ticks before wiring up private data
 
 Documentation is hosted here: [Documentation Site](docs/index.md).
 
 ---
 
 ## Quickstart (5 minutes)
+
+ℹ️ **Zero-data mode:** The `tests/test_data/` fixtures (seeded Brownian-motion ticks packaged with this repo) power the default config, so the commands below work out of the box without downloading market data.
 
 1. **Install prerequisites**
    ```bash
