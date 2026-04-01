@@ -58,6 +58,11 @@ jobs:
           print("numpy   :", numpy.__version__)
           PY
 
+      - name: Verify standard isolated build
+        run: |
+          python -m build
+          ls -lh dist/
+
       - name: Build wheel/sdist (no isolation)
         run: |
           python -m build --wheel --sdist --no-isolation
