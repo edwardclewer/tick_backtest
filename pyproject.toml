@@ -28,7 +28,7 @@ version = "0.0.1"
 description = "Local backtesting toolkit with Cython-accelerated primitives."
 readme = "README.md"
 requires-python = ">=3.12"
-authors = [{ name = "Tick Backtest Team" }]
+authors = [{ name = "Edward Clewer" }]
 license = { text = "Apache-2.0" }
 dependencies = [
   "numpy>=1.26,<3.0",
@@ -52,10 +52,11 @@ exclude = ["tick_backtest.__pycache__*"]
 [tool.setuptools.package-data]
 "tick_backtest" = [
   "config/**/*.yaml",
-  "metrics/**/*.pyx",
-  "metrics/**/*.pxd",
-  "metrics/**/*.c",
-  "data_feed/**/*.pyx",
-  "data_feed/**/*.pxd",
-  "data_feed/**/*.c",
+  "py.typed"
+  # "metrics/**/*.pyx",
+  # "metrics/**/*.pxd",
+  # "metrics/**/*.c",
+  # "data_feed/**/*.pyx",
+  # "data_feed/**/*.pxd",
+  # "data_feed/**/*.c",
 ]

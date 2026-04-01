@@ -13,7 +13,10 @@
 # limitations under the License.
 
 include LICENSE
+include README.md
 recursive-include src/tick_backtest *.pyx *.pxd *.c
+recursive-include src/tick_backtest/config *.yaml
 recursive-include config *.yaml
 include src/tick_backtest/py.typed
 global-exclude *.so *.pyd
+global-exclude __pycache__ *.py[cod]

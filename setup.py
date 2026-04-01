@@ -13,82 +13,22 @@
 # limitations under the License.
 
 from __future__ import annotations
-import os
-from setuptools import setup, Extension, find_packages
-from Cython.Build import cythonize
-import numpy as np
 
-def ext(name: str, rel_src: str) -> Extension:
-    # rel_src is relative to the "src" directory, POSIX style
-    return Extension(
-        name=name,
-        sources=[os.path.join("src", rel_src)],  # RELATIVE paths
-        include_dirs=[np.get_include()],
-        extra_compile_args=["-O3"],
-        extra_link_args=[],
-        language="c",  # use "c++" if any .pyx uses c++
-    )
+import sys
+from pathlib import Path
 
-# ---- REQUIRED: data feed + ALL indicator exts ----
-ext_modules = [
-    # data feed
-    ext("tick_backtest.data_feed._data_feed",
-        "tick_backtest/data_feed/_data_feed.pyx"),
+from setuptools import setup
 
-    # indicators (include all you ship)
-    ext("tick_backtest.metrics.indicators._ewma_metric",
-        "tick_backtest/metrics/indicators/_ewma_metric.pyx"),
-    ext("tick_backtest.metrics.indicators._ewma_slope_metric",
-        "tick_backtest/metrics/indicators/_ewma_slope_metric.pyx"),
-    ext("tick_backtest.metrics.indicators._ewma_vol_metric",
-        "tick_backtest/metrics/indicators/_ewma_vol_metric.pyx"),
-    ext("tick_backtest.metrics.indicators._zscore_metric",
-        "tick_backtest/metrics/indicators/_zscore_metric.pyx"),
-    ext("tick_backtest.metrics.indicators._session_metric",
-        "tick_backtest/metrics/indicators/_session_metric.pyx"),
-    ext("tick_backtest.metrics.indicators._spread_metric",
-        "tick_backtest/metrics/indicators/_spread_metric.pyx"),
-    ext("tick_backtest.metrics.indicators._threshold_reversion_metric",
-        "tick_backtest/metrics/indicators/_threshold_reversion_metric.pyx"),
-    ext("tick_backtest.metrics.indicators._tick_rate_metric",
-        "tick_backtest/metrics/indicators/_tick_rate_metric.pyx"),
-    ext("tick_backtest.metrics.indicators._drift_sign_metric",
-        "tick_backtest/metrics/indicators/_drift_sign_metric.pyx"),
-]
+PROJECT_ROOT = Path(__file__).resolve().parent
+SRC_ROOT = PROJECT_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
 
-# ---- OPTIONAL (nice-to-have): core primitives/manager exts ----
-# Enable these if your runtime imports them as compiled modules.
-ext_modules += [
-    ext("tick_backtest.metrics.primitives._base_metric",
-        "tick_backtest/metrics/primitives/_base_metric.pyx"),
-    ext("tick_backtest.metrics.primitives._ewma",
-        "tick_backtest/metrics/primitives/_ewma.pyx"),
-    ext("tick_backtest.metrics.primitives._tick_conversion",
-        "tick_backtest/metrics/primitives/_tick_conversion.pyx"),
-    ext("tick_backtest.metrics.primitives._time_rolling_window",
-        "tick_backtest/metrics/primitives/_time_rolling_window.pyx"),
-    ext("tick_backtest.metrics.primitives._time_weighted_histogram",
-        "tick_backtest/metrics/primitives/_time_weighted_histogram.pyx"),
-    ext("tick_backtest.metrics.manager._metrics_manager",
-        "tick_backtest/metrics/manager/_metrics_manager.pyx"),
-]
-
-packages = find_packages(
-    where="src",
-    include=["tick_backtest", "tick_backtest.*"],
-    exclude=[
-        "tick_backtest.__pycache__", "tick_backtest.__pycache__.*",
-    ],
-)
+from tick_backtest._build import BuildExt, get_extensions
 
 setup(
-    package_dir={"": "src"},
-    packages=packages,
-    include_package_data=True,
+    # include_package_data=True,  # DISABLING FOR CLEANER PACKAGING, TODO: See if it breaks CI or not
     zip_safe=False,
-    ext_modules=cythonize(
-        ext_modules,
-        language_level=3,
-        compiler_directives={"boundscheck": False, "wraparound": False, "cdivision": True},
-    ),
+    ext_modules=get_extensions(),
+    cmdclass={"build_ext": BuildExt},
 )

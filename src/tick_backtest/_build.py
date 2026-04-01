@@ -15,6 +15,7 @@
 # src/tick_backtest/_build.py
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import List
 
@@ -29,6 +30,8 @@ try:
 except Exception:  # pragma: no cover
     cythonize = None  # type: ignore
     HAVE_CYTHON = False
+
+FORCE_CYTHON = os.environ.get("TB_BUILD_FROM_CYTHON", "").strip() == "1"
 
 CYTHON_DIRECTIVES = {
     "language_level": 3,
@@ -72,10 +75,15 @@ MODULES: List[str] = [
 def _choose_source(modname: str) -> tuple[Path, str | None]:
     """
     Return (relative_source_path, language) for the module.
-    Prefers .pyx when Cython is present, otherwise .cpp/.c.
+    By default prefers generated .c/.cpp files when present so standard builds
+    do not attempt to cythonize over existing generated outputs. Clean checkouts
+    naturally fall back to .pyx and still exercise Cython compilation.
     """
     base_abs = SRC_DIR / modname.replace(".", "/")
-    order = (".pyx", ".cpp", ".c") if HAVE_CYTHON else (".cpp", ".c", ".pyx")
+    if HAVE_CYTHON and FORCE_CYTHON:
+        order = (".pyx", ".cpp", ".c")
+    else:
+        order = (".cpp", ".c", ".pyx")
 
     for ext in order:
         p = base_abs.with_suffix(ext)
