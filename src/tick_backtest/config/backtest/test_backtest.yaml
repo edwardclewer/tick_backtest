@@ -12,55 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Misc and Notes
-/xmisc_notes/
-/test_data_generation/
-
-# Logs and output
-/logs/
-/output/
-/profile_stats.prof
-/test_output/
-
-# Config files
-/config/
-
-# Build artifacts
-/build/
-/dist/
-.eggs/
-*.egg-info/
-*.egg
-*.whl
-
-# Cython build products
-**/*.c
-**/*.cpp
-**/*.so
-**/*.pyd
-**/*.dll
-
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-
-# Test/coverage
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Virtual environments
-.venv/
-venv/
-env/
-.venv_smoke/
-
-# VSCode
-.vscode/
-
-# Docs
-/site/
-
-# Local config overrides (create without .example suffix)
-/config/**/local_default*.yaml
+schema_version: "1.0"
+pairs: [EURUSD, GBPUSD]
+start: 2000-01
+end: 2000-02
+pip_size: 0.0001
+warmup_seconds: 1800
+data_base_path: "tests/test_data/"
+output_base_path: "test_output/"
+metrics_config_path: "config/metrics/test_metrics.yaml"
+strategy_config_path: "config/strategy/test_strategy.yaml"

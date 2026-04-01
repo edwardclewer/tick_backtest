@@ -12,55 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Misc and Notes
-/xmisc_notes/
-/test_data_generation/
-
-# Logs and output
-/logs/
-/output/
-/profile_stats.prof
-/test_output/
-
-# Config files
-/config/
-
-# Build artifacts
-/build/
-/dist/
-.eggs/
-*.egg-info/
-*.egg
-*.whl
-
-# Cython build products
-**/*.c
-**/*.cpp
-**/*.so
-**/*.pyd
-**/*.dll
-
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-
-# Test/coverage
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Virtual environments
-.venv/
-venv/
-env/
-.venv_smoke/
-
-# VSCode
-.vscode/
-
-# Docs
-/site/
-
-# Local config overrides (create without .example suffix)
-/config/**/local_default*.yaml
+schema_version: "1.0"
+strategy:
+  name: ewma_crossover
+  entry:
+    name: ewma_crossover_entry
+    engine: ewma_crossover
+    params:
+      fast_metric: ewma_mid_5m.ewma
+      slow_metric: ewma_mid_30m.ewma
+      long_on_cross: true
+      short_on_cross: true
+  exit:
+    name: crossover_reversal_exit
+    predicates:
+      - metric: ewma_mid_5m.ewma
+        operator: "<"
+        other_metric: ewma_mid_30m.ewma
