@@ -58,6 +58,11 @@ jobs:
           python -m build --sdist
           ls -lh dist/
 
+      - name: Docker preflight
+        run: |
+          docker version
+          docker info
+
       - name: Build manylinux wheels
         uses: pypa/cibuildwheel@v2.22.0
         env:

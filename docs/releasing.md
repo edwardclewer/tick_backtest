@@ -58,6 +58,7 @@ TestPyPI publishing is handled by `.github/workflows/testpypi-release.yml`.
    - an sdist via `python -m build --sdist`
    - Linux wheels via `cibuildwheel`
 4. On Linux, `cibuildwheel` runs inside the standard manylinux container flow and uses `auditwheel` repair so the published wheels carry manylinux tags instead of plain `linux_x86_64` tags.
+   The current configuration targets CPython 3.12 on `x86_64` and pins the Linux image family to `manylinux_2_28`.
 5. The workflow runs `twine check` over the sdist and repaired wheels.
 6. The workflow publishes the artifacts to TestPyPI using GitHub OIDC trusted publishing and the `testpypi` environment.
 

@@ -224,6 +224,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Docker preflight
+        run: |
+          docker version
+          docker info
+
       - name: Build manylinux wheel via cibuildwheel
         uses: pypa/cibuildwheel@v2.22.0
         env:
