@@ -136,6 +136,24 @@ jobs:
           print("All compiled imports OK")
           PY
 
+      - name: Smoke test installed CLI surface
+        env:
+          TB_REQUIRE_COMPILED: "1"
+        run: |
+          . .venv_ci/bin/activate
+          tick-backtest --help
+          tick-backtest example-config --dest /tmp/tick-backtest-example
+          test -f /tmp/tick-backtest-example/backtest.yaml
+          test -f /tmp/tick-backtest-example/metrics.yaml
+          test -f /tmp/tick-backtest-example/strategy.yaml
+
+          tick-backtest run config/backtest/test_backtest.yaml
+
+          TRADES_PATH="$(find test_output -path '*/output/*/trades.parquet' | sort | head -n 1)"
+          test -n "$TRADES_PATH"
+          tick-backtest report "$TRADES_PATH"
+          tick-backtest analyze "$TRADES_PATH"
+
       - name: Run tests against installed wheel
         env:
           TB_REQUIRE_COMPILED: "1"

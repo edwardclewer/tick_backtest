@@ -18,17 +18,32 @@ __all__ = [
     "DEFAULT_METRICS",
     "BacktestAnalysisSummary",
     "MetricStratificationSummary",
+    "analyze",
+    "example_config",
     "run_backtest",
     "run_backtest_analysis",
     "run_metric_stratification_analysis",
     "run_metric_stratification",
     "run_trade_analysis",
+    "report",
     "TradeAnalysisResult",
+    "run",
 ]
 
 
 def __getattr__(name):
     """Lazily import heavy submodules when their symbols are first accessed."""
+    if name in {"analyze", "example_config", "report", "run"}:
+        from tick_backtest.api import analyze, example_config, report, run
+
+        globals().update(
+            analyze=analyze,
+            example_config=example_config,
+            report=report,
+            run=run,
+        )
+        return globals()[name]
+
     if name in ("DEFAULT_METRICS", "run_metric_stratification"):
         from tick_backtest.analysis.metric_stratification import (
             DEFAULT_METRICS,
