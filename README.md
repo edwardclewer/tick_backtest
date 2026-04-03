@@ -116,6 +116,7 @@ After `tick-backtest report output/<PAIR>/trades.parquet`, additional artefacts 
    | `output/<PAIR>/metric_stratification/` | Stratification CSV, graph, and Markdown report bundles. |
 
 After `tick-backtest analyze output/<PAIR>/trades.parquet`, multivariate artefacts are written beside the trade file under `output/<PAIR>/multivariate_analysis/`.
+This bundle includes `summary.md`, `coefficients.csv`, `correlations.csv`, and `dropped_predictors.csv` for predictors removed during explicit collinearity pruning.
 
 ---
 

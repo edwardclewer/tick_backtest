@@ -58,6 +58,7 @@ output/backtests/<RUN_ID>/output/<PAIR>/
 └── multivariate_analysis/
     ├── coefficients.csv
     ├── correlations.csv
+    ├── dropped_predictors.csv
     └── summary.md
 ```
 
@@ -163,8 +164,10 @@ The `analyze` command writes `multivariate_analysis/` beside the selected `trade
 - `summary.md` - Top-level regression summary.
 - `coefficients.csv` - Coefficients sorted by absolute standardized magnitude.
 - `correlations.csv` - Correlation matrix for the retained predictors and target.
+- `dropped_predictors.csv` - Predictors removed because they were constant or near-perfectly collinear with an earlier retained predictor.
 
 The regression excludes timestamps, execution prices, holding-period columns, and other post-trade or identity-linked fields. It only keeps entry-time numeric predictors such as metric snapshots and `direction`.
+It also applies explicit collinearity pruning before fitting so near-duplicate predictors do not dominate the coefficient table.
 
 ## Troubleshooting
 

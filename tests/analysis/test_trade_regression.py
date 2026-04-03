@@ -37,10 +37,12 @@ def test_run_trade_regression_analysis_writes_expected_outputs(tmp_path: Path) -
     assert (output_dir / "summary.md").is_file()
     assert (output_dir / "coefficients.csv").is_file()
     assert (output_dir / "correlations.csv").is_file()
+    assert (output_dir / "dropped_predictors.csv").is_file()
 
     summary_text = (output_dir / "summary.md").read_text(encoding="utf-8")
     assert "Multivariate Trade Analysis" in summary_text
     assert "R-squared" in summary_text
+    assert "Collinearity Handling" in summary_text
 
     coefficients = pd.read_csv(output_dir / "coefficients.csv")
     assert "feature" in coefficients.columns
@@ -90,3 +92,31 @@ def test_run_trade_regression_analysis_excludes_post_trade_and_price_fields(tmp_
     summary_text = (output_dir / "summary.md").read_text(encoding="utf-8")
     assert "entry-time numeric predictors only" in summary_text
     assert "post-trade or identity-linked columns are excluded" in summary_text
+
+
+def test_run_trade_regression_analysis_drops_collinear_predictors(tmp_path: Path) -> None:
+    trades_path = tmp_path / "trades.parquet"
+    pd.DataFrame(
+        {
+            "pnl_pips": [1.0, 2.0, 3.0, 4.0],
+            "direction": [1, -1, 1, -1],
+            "ewma_mid_5m.ewma": [10.0, 20.0, 30.0, 40.0],
+            "ewma_mid_30m.ewma": [10.0, 20.0, 30.0, 40.0],
+            "spread_60s.spread_pips": [0.1, 0.4, 0.2, 0.3],
+        }
+    ).to_parquet(trades_path)
+
+    output_dir = run_trade_regression_analysis(trades_path)
+
+    coefficients = pd.read_csv(output_dir / "coefficients.csv")
+    assert "ewma_mid_5m.ewma" in set(coefficients["feature"])
+    assert "ewma_mid_30m.ewma" not in set(coefficients["feature"])
+
+    dropped = pd.read_csv(output_dir / "dropped_predictors.csv")
+    collinear = dropped[dropped["reason"] == "collinear"]
+    assert len(collinear) == 1
+    assert collinear.iloc[0]["feature"] == "ewma_mid_30m.ewma"
+    assert collinear.iloc[0]["kept_feature"] == "ewma_mid_5m.ewma"
+
+    summary_text = (output_dir / "summary.md").read_text(encoding="utf-8")
+    assert "**Dropped predictors:** 1" in summary_text

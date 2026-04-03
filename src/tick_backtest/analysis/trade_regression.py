@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -43,6 +44,8 @@ _EXCLUDED_FEATURE_COLUMNS = {
 _ENTRY_TIME_NUMERIC_FEATURE_COLUMNS = {
     "direction",
 }
+
+_COLLINEARITY_CORRELATION_THRESHOLD = 0.9999
 
 
 def _is_entry_time_predictor(column: str) -> bool:
@@ -72,6 +75,57 @@ def _standardized_coefficients(design_matrix: np.ndarray, target: np.ndarray, co
             continue
         standardized[idx] = coefficients[idx] * feature_std / target_std
     return standardized
+
+
+def _prune_collinear_features(
+    df: pd.DataFrame,
+    features: list[str],
+    *,
+    correlation_threshold: float = _COLLINEARITY_CORRELATION_THRESHOLD,
+) -> tuple[list[str], list[dict[str, Any]]]:
+    retained: list[str] = []
+    dropped: list[dict[str, Any]] = []
+
+    if not features:
+        return retained, dropped
+
+    corr_matrix = df[features].corr().abs()
+    for feature in features:
+        series = df[feature]
+        if float(series.std(ddof=0)) == 0.0:
+            dropped.append(
+                {
+                    "feature": feature,
+                    "reason": "constant",
+                    "kept_feature": "",
+                    "abs_correlation": np.nan,
+                }
+            )
+            continue
+
+        duplicate_of: str | None = None
+        duplicate_corr = np.nan
+        for kept in retained:
+            corr_value = corr_matrix.loc[feature, kept]
+            if pd.notna(corr_value) and float(corr_value) >= correlation_threshold:
+                duplicate_of = kept
+                duplicate_corr = float(corr_value)
+                break
+
+        if duplicate_of is not None:
+            dropped.append(
+                {
+                    "feature": feature,
+                    "reason": "collinear",
+                    "kept_feature": duplicate_of,
+                    "abs_correlation": duplicate_corr,
+                }
+            )
+            continue
+
+        retained.append(feature)
+
+    return retained, dropped
 
 
 def run_trade_regression_analysis(
@@ -106,10 +160,14 @@ def run_trade_regression_analysis(
     output_root = Path(output_dir).expanduser() if output_dir else resolved_trades_path.parent / "multivariate_analysis"
     output_root.mkdir(parents=True, exist_ok=True)
 
+    retained_features, dropped_features = _prune_collinear_features(working, features)
+    if not retained_features:
+        raise ValueError("No eligible entry-time numeric feature columns remain after collinearity pruning")
+
     target = working[target_column].to_numpy(dtype=float)
-    predictors = working[features].to_numpy(dtype=float)
+    predictors = working[retained_features].to_numpy(dtype=float)
     design_matrix = np.column_stack([np.ones(len(working), dtype=float), predictors])
-    feature_names = ["intercept", *features]
+    feature_names = ["intercept", *retained_features]
 
     coefficients, residuals, rank, singular_values = np.linalg.lstsq(design_matrix, target, rcond=None)
     fitted = design_matrix @ coefficients
@@ -133,9 +191,15 @@ def run_trade_regression_analysis(
     coefficients_path = output_root / "coefficients.csv"
     coefficient_frame.to_csv(coefficients_path, index=False)
 
-    correlation_frame = working[[target_column, *features]].corr(numeric_only=True)
+    correlation_frame = working[[target_column, *retained_features]].corr(numeric_only=True)
     correlation_path = output_root / "correlations.csv"
     correlation_frame.to_csv(correlation_path)
+
+    dropped_features_path = output_root / "dropped_predictors.csv"
+    pd.DataFrame(
+        dropped_features,
+        columns=["feature", "reason", "kept_feature", "abs_correlation"],
+    ).to_csv(dropped_features_path, index=False)
 
     summary_path = output_root / "summary.md"
     top_features = [
@@ -152,10 +216,17 @@ def run_trade_regression_analysis(
         f"- **Trades file:** `{resolved_trades_path}`",
         f"- **Rows analysed:** {len(working):,}",
         f"- **Target column:** `{target_column}`",
-        f"- **Predictor count:** {len(features):,}",
+        f"- **Predictor count:** {len(retained_features):,}",
+        f"- **Dropped predictors:** {len(dropped_features):,}",
         f"- **Matrix rank:** {rank}",
         f"- **R-squared:** {r_squared:.6f}" if not np.isnan(r_squared) else "- **R-squared:** NaN",
         f"- **Residual sum of squares:** {rss:.6f}",
+        "",
+        "## Collinearity Handling",
+        "",
+        f"- Pairwise absolute correlation threshold: `{_COLLINEARITY_CORRELATION_THRESHOLD:.4f}`",
+        "- Constant predictors are dropped before fitting.",
+        "- When two predictors are near-perfectly collinear, the first predictor in column order is kept and the later predictor is dropped.",
         "",
         "## Strongest Standardized Coefficients",
         "",
@@ -165,6 +236,7 @@ def run_trade_regression_analysis(
         "",
         f"- `coefficients.csv`: {coefficients_path.name}",
         f"- `correlations.csv`: {correlation_path.name}",
+        f"- `dropped_predictors.csv`: {dropped_features_path.name}",
         "",
         "This is an ordinary least squares fit over entry-time numeric predictors only.",
         "Execution-price fields, timestamps, holding-period columns, and other post-trade or identity-linked columns are excluded.",
@@ -178,7 +250,8 @@ def run_trade_regression_analysis(
             "trades_path": str(resolved_trades_path),
             "output_dir": str(output_root),
             "target_column": target_column,
-            "features": features,
+            "features": retained_features,
+            "dropped_features": dropped_features,
             "rank": int(rank),
             "r_squared": r_squared,
             "singular_values": singular_values.tolist(),
