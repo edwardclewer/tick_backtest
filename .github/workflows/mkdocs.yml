@@ -20,12 +20,14 @@ on:
       - main
     paths:
       - "docs/**"
+      - "CHANGELOG.md"
       - "mkdocs.yml"
       - "requirements-docs.txt"
       - ".github/workflows/mkdocs.yml"
   pull_request:
     paths:
       - "docs/**"
+      - "CHANGELOG.md"
       - "mkdocs.yml"
       - "requirements-docs.txt"
       - ".github/workflows/mkdocs.yml"

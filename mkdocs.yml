@@ -54,6 +54,7 @@ nav:
   - Developer Notes:
       - Internals: dev/internals.md
       - Style Guide: dev/style_guide.md
+      - Releasing: releasing.md
 markdown_extensions:
   - admonition
   - attr_list

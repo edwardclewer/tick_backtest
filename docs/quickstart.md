@@ -18,10 +18,10 @@ limitations under the License.
 
 See also: [Configuration Overview](configs.md) · [Metrics Reference](configs/metrics.md) · [Strategy Reference](configs/strategy.md)
 
-This guide helps you install the Tick Backtest Research Stack, configure your environment, and run the default EURUSD backtest end-to-end.
+This guide covers both installed-package usage and repository-checkout usage. Installed users should start with the packaged demo project. Repository-root configs under `config/` are for checkout-only development and CI.
 
 !!! info "No proprietary market data required"
-    The repo ships with seeded Brownian-motion Parquet fixtures (used by the default configs), so you can complete this quickstart immediately and only later point the stack at private shards.
+    The package ships with seeded Brownian-motion Parquet fixtures, so you can complete this quickstart immediately and only later point the stack at private shards.
 
 ## Prerequisites
 
@@ -29,39 +29,64 @@ This guide helps you install the Tick Backtest Research Stack, configure your en
 - Access to Dukascopy-style Parquet shards organised as `{data_root}/{PAIR}/{PAIR}_YYYY-MM.parquet`
 - Sufficient disk space for output manifests and trade artefacts
 
-## Installation
+## Installed Package Quickstart
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install tick-backtest
+```
+
+Generate a runnable public demo project:
+
+```bash
+tick-backtest example-config --output ./demo --include-demo-data
+tick-backtest run ./demo/backtest.yaml
+```
+
+Then inspect the trade artefacts and optional post-processing:
+
+```bash
+tick-backtest report ./demo/output/<RUN_ID>/output/EURUSD/trades.parquet
+tick-backtest analyze ./demo/output/<RUN_ID>/output/EURUSD/trades.parquet
+```
+
+For your own data, start from the generic packaged templates:
+
+```bash
+tick-backtest example-config --output ./tick-backtest-config
+```
+
+Edit `backtest.yaml` to point at your parquet archive and output location, then run `tick-backtest run ./tick-backtest-config/backtest.yaml`.
+
+## Repository Checkout Quickstart
+
+If you are working from a checkout rather than an installed package:
 
 ```bash
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-# optional: editable install with tests
 pip install -e .[tests]
 ```
 
 ??? tip "Need docs tooling?"
-    To build this documentation locally, also install the doc extras:
+    To build this documentation locally, also install the doc requirements:
     ```bash
     pip install -r requirements-docs.txt
     ```
 
-## Configure the Sample Backtest
-
-The default configuration lives at `config/backtest/default_backtest.yaml`. Update these fields for your data environment or copy the `.example` files (e.g. `config/backtest/local_default_backtest.yaml.example`) to files without the `.example` suffix (gitignored) and customise those versions for private datasets:
+Repository-root configs live under `config/` and are checkout-only development assets. The default backtest config lives at `config/backtest/default_backtest.yaml`. Update these fields for your data environment or copy the `.example` files (for example `config/backtest/local_default_backtest.yaml.example`) to files without the `.example` suffix and customise those versions for private datasets:
 
 - `data_base_path`: absolute path to your Parquet archive
 - `output_base_path`: directory for backtest artefacts
 - `start` / `end`: inclusive year-month ranges (ISO `YYYY-MM`)
-- `pairs`: list of currency pairs (default `["EURUSD"]`)
+- `pairs`: list of currency pairs
 
 Metrics and strategy definitions live in:
 
 - `config/metrics/default_metrics.yaml`
 - `config/strategy/default_strategy.yaml`
-
-You can accept the defaults for a first run.
-
-## Run the Backtest
 
 ### Python API
 
@@ -75,8 +100,7 @@ print(result["run_id"], result["output_dir"])
 ### Command Line Helper
 
 ```bash
-PYTHONPATH=src python scripts/run_backtest.py \
-  --config config/backtest/default_backtest.yaml
+tick-backtest run config/backtest/default_backtest.yaml
 ```
 
 Both entry points create a timestamped directory under `output/backtests/`.

@@ -29,6 +29,7 @@ Tick Backtest is a configuration-first Python 3.12 toolkit for reproducible FX s
 - **CLI + API parity:** Every supported command is exposed both as `tick-backtest ...` and `tick_backtest.api.*(...)`
 
 Documentation is hosted here: [Documentation Site](https://edwardclewer.github.io/tick_backtest/).
+Release process details are documented in [docs/releasing.md](docs/releasing.md).
 
 ---
 
@@ -75,6 +76,10 @@ The generated demo project includes:
 - `backtest.yaml`, `metrics.yaml`, and `strategy.yaml`
 - `demo_data/` with bundled EURUSD and GBPUSD parquet shards
 - `output/` as the run destination declared in the emitted config
+
+Config surfaces are intentionally split:
+- `src/tick_backtest/config/templates/` and `src/tick_backtest/demo_data/` are the public packaged assets used by installed users.
+- `config/` at the repository root is for checkout-only development, smoke tests, and CI golden runs.
 
 For your own data instead of the bundled demo, emit the generic starter templates:
 ```bash
@@ -211,6 +216,10 @@ pytest
 ```
 
 Legacy repo scripts under `scripts/` still exist for internal development and CI coverage, but installed usage should go through `tick-backtest` or `tick_backtest.api`.
+
+## Release Posture
+
+The project is versioned for public releases starting at `0.1.0`. Tagged releases publish via GitHub Actions using staged TestPyPI then PyPI trusted publishing. See [docs/releasing.md](docs/releasing.md) and [CHANGELOG.md](CHANGELOG.md).
 
 ---
 

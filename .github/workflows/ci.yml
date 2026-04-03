@@ -101,6 +101,26 @@ jobs:
           if missing:
               print("ERROR: Missing compiled modules in wheel:", missing)
               sys.exit(1)
+
+          expected_public_assets = {
+              "tick_backtest/config/templates/demo/backtest.yaml",
+              "tick_backtest/config/templates/minimal/backtest.yaml",
+              "tick_backtest/demo_data/EURUSD/EURUSD_2000-01.parquet",
+          }
+          for asset in expected_public_assets:
+              if asset not in names:
+                  print("ERROR: Missing expected public package asset:", asset)
+                  sys.exit(1)
+
+          unexpected_repo_assets = {
+              "tick_backtest/config/backtest/test_backtest.yaml",
+              "tick_backtest/config/metrics/test_metrics.yaml",
+              "tick_backtest/config/strategy/test_strategy.yaml",
+          }
+          leaked = sorted(asset for asset in unexpected_repo_assets if asset in names)
+          if leaked:
+              print("ERROR: Repo-only configs leaked into wheel:", leaked)
+              sys.exit(1)
           print("All required compiled extensions present.")
           PY
 
@@ -141,6 +161,8 @@ jobs:
           TB_REQUIRE_COMPILED: "1"
         run: |
           . .venv_ci/bin/activate
+          # Installed-package smoke should use only the public packaged surface:
+          # config templates under src/tick_backtest/config/templates and demo_data.
           tick-backtest --help
           tick-backtest example-config --output /tmp/tick-backtest-demo --include-demo-data
           test -f /tmp/tick-backtest-demo/backtest.yaml
