@@ -29,6 +29,8 @@ This guide covers both installed-package usage and repository-checkout usage. In
 - Access to Dukascopy-style Parquet shards organised as `{data_root}/{PAIR}/{PAIR}_YYYY-MM.parquet`
 - Sufficient disk space for output manifests and trade artefacts
 
+Each shard should contain `timestamp`, `bid`, and `ask` columns. Tick Backtest expects this archive to exist already and does not download market data itself; if you need a fetch pipeline, [`dukascopy-python`](https://github.com/fx-trader/dukascopy-python) is a suitable external option.
+
 ## Installed Package Quickstart
 
 ```bash

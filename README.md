@@ -94,6 +94,8 @@ metrics_config_path: "./metrics.yaml"
 strategy_config_path: "./strategy.yaml"
 ```
 
+`data_base_path` should contain monthly shards organised as `{data_root}/{PAIR}/{PAIR}_YYYY-MM.parquet` with `timestamp`, `bid`, and `ask` columns. Tick Backtest does not download market data itself; if you need a source-to-parquet workflow, [`dukascopy-python`](https://github.com/fx-trader/dukascopy-python) is a suitable external option.
+
 Inspect outputs under the configured `output_base_path`:
 
    | Path | Purpose |
