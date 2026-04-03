@@ -49,6 +49,24 @@ def test_cli_run_dispatches_to_api(monkeypatch) -> None:
     }
 
 
+def test_cli_run_defaults_output_root_to_none(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_run(config_path, *, output_root=None) -> None:
+        captured["config_path"] = config_path
+        captured["output_root"] = output_root
+
+    monkeypatch.setattr("tick_backtest.api.run", fake_run)
+
+    exit_code = cli.main(["run", "config/backtest.yaml"])
+
+    assert exit_code == 0
+    assert captured == {
+        "config_path": Path("config/backtest.yaml"),
+        "output_root": None,
+    }
+
+
 def test_cli_report_dispatches_to_api(monkeypatch) -> None:
     captured: dict[str, object] = {}
 
@@ -91,5 +109,23 @@ def test_cli_example_config_dispatches_to_api(monkeypatch) -> None:
     assert exit_code == 0
     assert captured == {
         "dest": Path("examples"),
+        "template": "minimal",
+    }
+
+
+def test_cli_example_config_uses_default_arguments(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_example_config(*, dest=None, template="minimal") -> None:
+        captured["dest"] = dest
+        captured["template"] = template
+
+    monkeypatch.setattr("tick_backtest.api.example_config", fake_example_config)
+
+    exit_code = cli.main(["example-config"])
+
+    assert exit_code == 0
+    assert captured == {
+        "dest": None,
         "template": "minimal",
     }

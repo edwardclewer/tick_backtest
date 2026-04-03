@@ -14,6 +14,8 @@
 
 from pathlib import Path
 
+import pytest
+
 import tick_backtest.api as api
 
 
@@ -52,6 +54,16 @@ def test_run_wraps_backtest_and_post_run_analysis(monkeypatch) -> None:
             ("/tmp/backtests/run-123/configs/metrics.yaml", "run-123"),
         ),
     ]
+
+
+def test_run_raises_when_workflow_returns_no_output_dir(monkeypatch) -> None:
+    def fake_run_backtest(*, config_path, output_root=None):
+        return {"run_id": "run-123", "manifest": {}}
+
+    monkeypatch.setattr("tick_backtest.backtest.workflow.run_backtest", fake_run_backtest)
+
+    with pytest.raises(RuntimeError, match="no output directory"):
+        api.run("config/backtest.yaml")
 
 
 def test_report_writes_beside_trades_file(monkeypatch, tmp_path: Path) -> None:
@@ -99,3 +111,18 @@ def test_analyze_flattens_metric_stratification_output(monkeypatch, tmp_path: Pa
     assert not staged_output.exists()
     assert (output_root / "reports" / "summary.md").is_file()
     assert (output_root / "csv" / "metric.csv").is_file()
+
+
+def test_analyze_raises_if_workflow_creates_no_expected_output(monkeypatch, tmp_path: Path) -> None:
+    trades_path = tmp_path / "trades.parquet"
+
+    def fake_run_metric_stratification(*, trade_file, output_root, configure_logs=False):
+        output_root.mkdir(parents=True, exist_ok=True)
+
+    monkeypatch.setattr(
+        "tick_backtest.analysis.metric_stratification.run_metric_stratification",
+        fake_run_metric_stratification,
+    )
+
+    with pytest.raises(RuntimeError, match="output was not created"):
+        api.analyze(trades_path)
