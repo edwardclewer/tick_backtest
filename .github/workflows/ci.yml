@@ -147,12 +147,39 @@ jobs:
           test -f /tmp/tick-backtest-example/metrics.yaml
           test -f /tmp/tick-backtest-example/strategy.yaml
 
-          tick-backtest run config/backtest/test_backtest.yaml
+          python - <<'PY'
+          from importlib.resources import files
+          from pathlib import Path
 
-          TRADES_PATH="$(find test_output -path '*/output/*/trades.parquet' | sort | head -n 1)"
+          package_root = files("tick_backtest").joinpath("config")
+          metrics_text = package_root.joinpath("metrics", "test_metrics.yaml").read_text(encoding="utf-8")
+          strategy_text = package_root.joinpath("strategy", "test_strategy.yaml").read_text(encoding="utf-8")
+          Path("/tmp/tick-backtest-example/metrics.yaml").write_text(metrics_text, encoding="utf-8")
+          Path("/tmp/tick-backtest-example/strategy.yaml").write_text(strategy_text, encoding="utf-8")
+
+          cfg = Path("/tmp/tick-backtest-example/backtest.yaml")
+          text = cfg.read_text(encoding="utf-8")
+          replacements = {
+              "/abs/path/to/tick_data/": "tests/test_data/",
+              "/abs/path/to/backtest_outputs/": "test_output/installed_smoke",
+              "start: 2024-01": "start: 2000-01",
+              "end: 2024-01": "end: 2000-02",
+              "pairs: [EURUSD]": "pairs: [EURUSD, GBPUSD]",
+          }
+          for old, new in replacements.items():
+              text = text.replace(old, new)
+          cfg.write_text(text, encoding="utf-8")
+          PY
+
+          tick-backtest run /tmp/tick-backtest-example/backtest.yaml
+
+          TRADES_PATH="$(find test_output/installed_smoke -path '*/output/*/trades.parquet' | sort | head -n 1)"
           test -n "$TRADES_PATH"
           tick-backtest report "$TRADES_PATH"
           tick-backtest analyze "$TRADES_PATH"
+          test -f "$(dirname "$TRADES_PATH")/trades_report.md"
+          test -f "$(dirname "$TRADES_PATH")/metric_stratification/reports/metric_report_fixed.md"
+          test -f "$(dirname "$TRADES_PATH")/multivariate_analysis/summary.md"
 
       - name: Run tests against installed wheel
         env:

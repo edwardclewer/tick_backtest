@@ -21,7 +21,14 @@ from tick_backtest.exceptions import ConfigError
 
 logger = logging.getLogger(__name__)
 
-def validate_path(path: Path, must_exist: bool, expect_dir: bool, create_if_missing: bool = False, label: str = "") -> Path:
+def validate_path(
+    path: Path,
+    must_exist: bool,
+    expect_dir: bool,
+    create_if_missing: bool = False,
+    label: str = "",
+    base_dir: Path | None = None,
+) -> Path:
     """Validate and normalize a filesystem path.
 
     Args:
@@ -34,7 +41,10 @@ def validate_path(path: Path, must_exist: bool, expect_dir: bool, create_if_miss
     Returns:
         The resolved absolute Path object.
     """
-    p = Path(path).expanduser().resolve(strict=False)
+    raw_path = Path(path).expanduser()
+    if base_dir is not None and not raw_path.is_absolute():
+        raw_path = base_dir / raw_path
+    p = raw_path.resolve(strict=False)
     label = label or str(p)
 
     if must_exist and not p.exists():

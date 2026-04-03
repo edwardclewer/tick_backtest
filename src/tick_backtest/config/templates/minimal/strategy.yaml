@@ -2,8 +2,10 @@ schema_version: "1.0"
 strategy:
   name: threshold_reversion_strategy
   entry:
+    name: threshold_reversion_entry
     engine: threshold_reversion
     params:
+      lookback_seconds: 1800
       threshold_pips: 10
       tp_pips: 10
       sl_pips: 20

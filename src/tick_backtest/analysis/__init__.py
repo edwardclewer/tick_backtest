@@ -21,6 +21,7 @@ from .backtest_analysis import (
     run_metric_stratification_analysis,
 )
 from .trade_analysis import TradeAnalysisResult, run_trade_analysis
+from .trade_regression import run_trade_regression_analysis
 
 __all__ = [
     "BacktestAnalysisSummary",
@@ -29,4 +30,5 @@ __all__ = [
     "run_metric_stratification_analysis",
     "TradeAnalysisResult",
     "run_trade_analysis",
+    "run_trade_regression_analysis",
 ]

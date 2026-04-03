@@ -25,7 +25,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="tick-backtest", description="Tick backtest command line interface.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    run_parser = subparsers.add_parser("run", help="Run a backtest from a config file.")
+    run_parser = subparsers.add_parser("run", help="Run the backtest engine from a config file.")
     run_parser.add_argument("config_path", type=Path, help="Path to the backtest YAML configuration file.")
     run_parser.add_argument(
         "--output-root",
@@ -39,7 +39,10 @@ def build_parser() -> argparse.ArgumentParser:
     report_parser.add_argument("trades_path", type=Path, help="Path to the trades parquet file.")
     report_parser.set_defaults(handler=_report_command)
 
-    analyze_parser = subparsers.add_parser("analyze", help="Run metric stratification for a trades parquet file.")
+    analyze_parser = subparsers.add_parser(
+        "analyze",
+        help="Run multivariate regression-style analysis for a trades parquet file.",
+    )
     analyze_parser.add_argument("trades_path", type=Path, help="Path to the trades parquet file.")
     analyze_parser.set_defaults(handler=_analyze_command)
 

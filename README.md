@@ -18,7 +18,7 @@ limitations under the License.
 
 *Deterministic tick-level FX backtesting for reproducible research.*
 
-Tick Backtest is a configuration-first Python 3.12 toolkit for reproducible FX strategy research. You provide Parquet ticks and YAML configs; the stack validates every setting, executes deterministic backtests, and writes manifests, logs, and analysis reports to disk.
+Tick Backtest is a configuration-first Python 3.12 toolkit for reproducible FX strategy research. You provide Parquet ticks and YAML configs; the stack validates every setting, executes deterministic backtests, and writes manifests, logs, reports, and analysis artefacts to disk.
 
 ### Highlights
 - **Performance:** ~8 million ticks/minute/core on AMD 5950X (Parquet → metrics → signals → trades)
@@ -55,17 +55,17 @@ Documentation is hosted here: [Documentation Site](https://edwardclewer.github.i
    strategy_config_path: "./strategy.yaml"
    ```
 
-4. **Run the backtest**
+4. **Run the backtest engine**
    ```bash
    tick-backtest run ./tick-backtest-config/backtest.yaml
    ```
 
-5. **Generate a report for a single trade file**
+5. **Generate report artefacts for a single trade file**
    ```bash
    tick-backtest report /abs/path/to/output/<RUN_ID>/output/EURUSD/trades.parquet
    ```
 
-6. **Run post-trade stratification**
+6. **Run multivariate trade analysis**
    ```bash
    tick-backtest analyze /abs/path/to/output/<RUN_ID>/output/EURUSD/trades.parquet
    ```
@@ -97,8 +97,8 @@ Inspect outputs under the configured `output_base_path`:
 | Command | Input | Output location |
 | --- | --- | --- |
 | `tick-backtest run <backtest.yaml>` | Backtest config | Writes a run directory under `output_base_path/<RUN_ID>/` |
-| `tick-backtest report <trades.parquet>` | Trade database | Writes report artefacts beside the parquet file |
-| `tick-backtest analyze <trades.parquet>` | Trade database | Writes `metric_stratification/` beside the parquet file |
+| `tick-backtest report <trades.parquet>` | Trade database | Writes trade report artefacts and metric stratification beside the parquet file |
+| `tick-backtest analyze <trades.parquet>` | Trade database | Writes `multivariate_analysis/` beside the parquet file |
 | `tick-backtest example-config [--dest DIR]` | Optional destination dir | Prints starter YAML or writes a template set |
 
 ## Configuration Cheat Sheet
@@ -180,9 +180,9 @@ Need full schemas or extension guidance? See the [Configuration Guide](https://e
 
 | Function | Purpose |
 | --- | --- |
-| `tick_backtest.api.run(config_path, *, output_root=None)` | Run a backtest and its post-run analysis workflow |
-| `tick_backtest.api.report(trades_path)` | Generate Markdown/plot artefacts for a single trades parquet |
-| `tick_backtest.api.analyze(trades_path)` | Generate metric stratification artefacts for a single trades parquet |
+| `tick_backtest.api.run(config_path, *, output_root=None)` | Run the backtest engine and write run artefacts only |
+| `tick_backtest.api.report(trades_path)` | Generate trade report artefacts and metric stratification outputs |
+| `tick_backtest.api.analyze(trades_path)` | Generate multivariate regression-style analysis outputs |
 | `tick_backtest.api.example_config(dest=None, *, template="minimal")` | Print or write starter YAML templates |
 
 The API is intentionally filesystem-oriented. It writes artefacts to disk and does not aim to return in-memory result objects.

@@ -38,12 +38,12 @@ class BacktestConfigParser:
         self,
         backtest_config_path: Path
         ):
-        cfg = self._validate_yaml(backtest_config_path)
+        cfg, config_path = self._validate_yaml(backtest_config_path)
         try:
             cfg = validate_backtest_config(cfg)
         except ValueError as exc:
             raise ConfigError(str(exc)) from exc
-        backtest_config = self._validate_and_build_backtest_coordinator(cfg)
+        backtest_config = self._validate_and_build_backtest_coordinator(cfg, config_path.parent)
         return backtest_config
 
     def _validate_yaml(
@@ -64,12 +64,13 @@ class BacktestConfigParser:
         if not isinstance(cfg, dict):
             raise ConfigError("config root must be a mapping (YAML dict)")
 
-        return cfg
+        return cfg, path
 
 
     def _validate_and_build_backtest_coordinator(
         self,
-        cfg
+        cfg,
+        config_dir: Path,
         ):
         required = [
             "pairs",
@@ -97,7 +98,8 @@ class BacktestConfigParser:
             cfg["data_base_path"],
             must_exist=True,
             expect_dir=True,
-            label="data_base_path"
+            label="data_base_path",
+            base_dir=config_dir,
         )
 
         output_base_path = validate_path(
@@ -105,21 +107,24 @@ class BacktestConfigParser:
             must_exist=False,
             expect_dir=True,
             create_if_missing=True,
-            label="output_base_path"
+            label="output_base_path",
+            base_dir=config_dir,
         )
 
         metrics_config_path = validate_path(
             cfg["metrics_config_path"],
             must_exist=True,
             expect_dir=False,
-            label="metrics_config_path"
+            label="metrics_config_path",
+            base_dir=config_dir,
         )
 
         strategy_config_path = validate_path(
             cfg["strategy_config_path"],
             must_exist=True,
             expect_dir=False,
-            label="strategy_config_path"
+            label="strategy_config_path",
+            base_dir=config_dir,
         )
 
         pairs = validate_pairs(cfg["pairs"])

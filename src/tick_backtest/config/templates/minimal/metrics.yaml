@@ -10,4 +10,4 @@ metrics:
     type: tick_rate
     enabled: true
     params:
-      tick_window_seconds: 30
+      window_seconds: 30

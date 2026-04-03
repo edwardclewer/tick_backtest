@@ -95,6 +95,43 @@ strategy_config_path: {strategy_path}
     assert cfg.schema_version == "1.0"
 
 
+def test_parse_config_resolves_relative_paths_from_config_directory(tmp_path: Path) -> None:
+    config_dir = tmp_path / "config_bundle"
+    config_dir.mkdir()
+    data_dir = config_dir / "data"
+    data_dir.mkdir()
+
+    metrics_path = config_dir / "metrics.yaml"
+    metrics_path.write_text(MIN_METRICS_YAML)
+
+    strategy_path = config_dir / "strategy.yaml"
+    strategy_path.write_text(MIN_STRATEGY_YAML)
+
+    config_path = _write_config(
+        config_dir,
+        """
+schema_version: "1.0"
+pairs: [EURUSD]
+start: 2015-01
+end: 2015-02
+pip_size: 0.0001
+warmup_seconds: 600
+data_base_path: ./data
+output_base_path: ./outputs
+metrics_config_path: ./metrics.yaml
+strategy_config_path: ./strategy.yaml
+        """,
+    )
+
+    parser = BacktestConfigParser()
+    cfg = parser.parse_config(config_path)
+
+    assert cfg.data_base_path == data_dir.resolve()
+    assert cfg.output_base_path == (config_dir / "outputs").resolve()
+    assert cfg.metrics_config_path == metrics_path.resolve()
+    assert cfg.strategy_config_path == strategy_path.resolve()
+
+
 def test_parse_config_requires_schema_version(tmp_path: Path):
     """Backtest configs without schema_version should fail fast."""
 

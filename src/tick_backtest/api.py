@@ -64,63 +64,38 @@ def example_config(dest: str | Path | None = None, *, template: str = "minimal")
 
 
 def run(config_path: str | Path, *, output_root: str | Path | None = None) -> None:
-    """Execute the full repo workflow for a backtest config."""
-    from tick_backtest.analysis import run_backtest_analysis, run_metric_stratification_analysis
+    """Execute the backtest engine and write run artefacts only."""
     from tick_backtest.backtest.workflow import run_backtest
 
-    result = run_backtest(config_path=config_path, output_root=output_root)
-    output_dir = result.get("output_dir") if isinstance(result, dict) else None
-    if output_dir is None:
-        raise RuntimeError("run_backtest returned no output directory")
-
-    run_id = result.get("run_id") if isinstance(result, dict) else None
-    manifest = result.get("manifest") if isinstance(result, dict) else None
-    metrics_cfg_copy = None
-    if isinstance(manifest, dict):
-        metrics_cfg_copy = manifest.get("configs", {}).get("metrics", {}).get("copied_path")
-
-    run_backtest_analysis(output_dir, run_id=run_id)
-    run_metric_stratification_analysis(output_dir, metrics_config_path=metrics_cfg_copy, run_id=run_id)
+    run_backtest(config_path=config_path, output_root=output_root)
 
 
 def report(trades_path: str | Path) -> None:
-    """Generate single-trade-file report artefacts alongside the trades parquet."""
+    """Generate report artefacts alongside the trades parquet."""
+    from tick_backtest.analysis.metric_stratification import derive_backtest_identifier, run_metric_stratification
     from tick_backtest.analysis.trade_analysis import run_trade_analysis
 
-    run_trade_analysis(trades_path, output_dir=Path(trades_path).expanduser().parent, configure_logs=False)
-
-
-def analyze(trades_path: str | Path) -> None:
-    """Generate metric stratification artefacts beside the trades parquet."""
-    from tick_backtest.analysis.metric_stratification import derive_backtest_identifier, run_metric_stratification
-
     resolved_trades_path = Path(trades_path).expanduser()
-    working_root = resolved_trades_path.parent
-    output_root = working_root / "metric_stratification"
-    identifier = derive_backtest_identifier(resolved_trades_path)
-    staged_output = output_root / identifier
+    output_root = resolved_trades_path.parent
+    run_trade_analysis(resolved_trades_path, output_dir=output_root, configure_logs=False)
+
+    stratification_root = output_root / "metric_stratification"
+    staged_output = stratification_root / derive_backtest_identifier(resolved_trades_path)
 
     if staged_output.exists():
         shutil.rmtree(staged_output)
-    if output_root.exists():
-        for child in output_root.iterdir():
-            if child.is_dir():
-                shutil.rmtree(child)
-            else:
-                child.unlink()
-    else:
-        output_root.mkdir(parents=True, exist_ok=True)
+    stratification_root.mkdir(parents=True, exist_ok=True)
 
     run_metric_stratification(
         trade_file=resolved_trades_path,
-        output_root=output_root,
+        output_root=stratification_root,
         configure_logs=False,
     )
 
     if not staged_output.exists():
         raise RuntimeError(f"metric stratification output was not created: {staged_output}")
 
-    for child in list(output_root.iterdir()):
+    for child in list(stratification_root.iterdir()):
         if child == staged_output:
             continue
         if child.is_dir():
@@ -129,7 +104,7 @@ def analyze(trades_path: str | Path) -> None:
             child.unlink()
 
     for child in staged_output.iterdir():
-        target = output_root / child.name
+        target = stratification_root / child.name
         if target.exists():
             if target.is_dir():
                 shutil.rmtree(target)
@@ -137,3 +112,11 @@ def analyze(trades_path: str | Path) -> None:
                 target.unlink()
         shutil.move(str(child), str(target))
     shutil.rmtree(staged_output, ignore_errors=True)
+
+
+def analyze(trades_path: str | Path) -> None:
+    """Generate regression-style multivariate analysis artefacts beside the trades parquet."""
+    from tick_backtest.analysis import run_trade_regression_analysis
+
+    resolved_trades_path = Path(trades_path).expanduser()
+    run_trade_regression_analysis(resolved_trades_path, output_dir=resolved_trades_path.parent / "multivariate_analysis")

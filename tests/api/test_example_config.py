@@ -32,6 +32,11 @@ def test_example_config_writes_template_set(tmp_path: Path) -> None:
     assert (tmp_path / "backtest.yaml").is_file()
     assert (tmp_path / "metrics.yaml").is_file()
     assert (tmp_path / "strategy.yaml").is_file()
+    metrics_text = (tmp_path / "metrics.yaml").read_text(encoding="utf-8")
+    assert "window_seconds: 30" in metrics_text
+    strategy_text = (tmp_path / "strategy.yaml").read_text(encoding="utf-8")
+    assert "name: threshold_reversion_entry" in strategy_text
+    assert "lookback_seconds: 1800" in strategy_text
 
 
 def test_example_config_rejects_unknown_template() -> None:
