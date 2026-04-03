@@ -29,7 +29,7 @@ description = "Local backtesting toolkit with Cython-accelerated primitives."
 readme = "README.md"
 requires-python = ">=3.12"
 authors = [{ name = "Edward Clewer" }]
-license = { text = "Apache-2.0" }
+license = "Apache-2.0"
 dependencies = [
   "numpy>=1.26,<3.0",
   "pandas>=1.5,<2.3",

@@ -1,0 +1,13 @@
+schema_version: "1.0"
+metrics:
+  - name: z30m
+    type: zscore
+    enabled: true
+    params:
+      lookback_seconds: 1800
+
+  - name: tick_rate_30s
+    type: tick_rate
+    enabled: true
+    params:
+      tick_window_seconds: 30

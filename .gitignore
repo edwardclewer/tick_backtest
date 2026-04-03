@@ -15,6 +15,7 @@
 # Misc and Notes
 /xmisc_notes/
 /test_data_generation/
+/docs/pypi_release_plan.md
 
 # Logs and output
 /logs/
