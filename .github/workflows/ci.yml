@@ -142,38 +142,16 @@ jobs:
         run: |
           . .venv_ci/bin/activate
           tick-backtest --help
-          tick-backtest example-config --dest /tmp/tick-backtest-example
-          test -f /tmp/tick-backtest-example/backtest.yaml
-          test -f /tmp/tick-backtest-example/metrics.yaml
-          test -f /tmp/tick-backtest-example/strategy.yaml
+          tick-backtest example-config --output /tmp/tick-backtest-demo --include-demo-data
+          test -f /tmp/tick-backtest-demo/backtest.yaml
+          test -f /tmp/tick-backtest-demo/metrics.yaml
+          test -f /tmp/tick-backtest-demo/strategy.yaml
+          test -f /tmp/tick-backtest-demo/demo_data/EURUSD/EURUSD_2000-01.parquet
+          test -f /tmp/tick-backtest-demo/demo_data/GBPUSD/GBPUSD_2000-02.parquet
 
-          python - <<'PY'
-          from importlib.resources import files
-          from pathlib import Path
+          tick-backtest run /tmp/tick-backtest-demo/backtest.yaml
 
-          package_root = files("tick_backtest").joinpath("config")
-          metrics_text = package_root.joinpath("metrics", "test_metrics.yaml").read_text(encoding="utf-8")
-          strategy_text = package_root.joinpath("strategy", "test_strategy.yaml").read_text(encoding="utf-8")
-          Path("/tmp/tick-backtest-example/metrics.yaml").write_text(metrics_text, encoding="utf-8")
-          Path("/tmp/tick-backtest-example/strategy.yaml").write_text(strategy_text, encoding="utf-8")
-
-          cfg = Path("/tmp/tick-backtest-example/backtest.yaml")
-          text = cfg.read_text(encoding="utf-8")
-          replacements = {
-              "/abs/path/to/tick_data/": "tests/test_data/",
-              "/abs/path/to/backtest_outputs/": "test_output/installed_smoke",
-              "start: 2024-01": "start: 2000-01",
-              "end: 2024-01": "end: 2000-02",
-              "pairs: [EURUSD]": "pairs: [EURUSD, GBPUSD]",
-          }
-          for old, new in replacements.items():
-              text = text.replace(old, new)
-          cfg.write_text(text, encoding="utf-8")
-          PY
-
-          tick-backtest run /tmp/tick-backtest-example/backtest.yaml
-
-          TRADES_PATH="$(find test_output/installed_smoke -path '*/output/*/trades.parquet' | sort | head -n 1)"
+          TRADES_PATH="$(find /tmp/tick-backtest-demo/output -path '*/output/*/trades.parquet' | sort | head -n 1)"
           test -n "$TRADES_PATH"
           tick-backtest report "$TRADES_PATH"
           tick-backtest analyze "$TRADES_PATH"

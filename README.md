@@ -43,42 +43,51 @@ Documentation is hosted here: [Documentation Site](https://edwardclewer.github.i
 
 2. **Write a starter config**
    ```bash
-   tick-backtest example-config --dest ./tick-backtest-config
+   tick-backtest example-config --output ./demo --include-demo-data
    ```
 
-3. **Edit the generated YAML files**
-   ```yaml
-   # tick-backtest-config/backtest.yaml
-   data_base_path: "/abs/path/to/your/parquet/shards"
-   output_base_path: "/abs/path/to/backtest/output"
-   metrics_config_path: "./metrics.yaml"
-   strategy_config_path: "./strategy.yaml"
-   ```
-
-4. **Run the backtest engine**
+3. **Run the bundled demo project**
    ```bash
-   tick-backtest run ./tick-backtest-config/backtest.yaml
+   tick-backtest run ./demo/backtest.yaml
    ```
 
-5. **Generate report artefacts for a single trade file**
+4. **Generate report artefacts for a single trade file**
    ```bash
-   tick-backtest report /abs/path/to/output/<RUN_ID>/output/EURUSD/trades.parquet
+   tick-backtest report ./demo/output/<RUN_ID>/output/EURUSD/trades.parquet
    ```
 
-6. **Run multivariate trade analysis**
+5. **Run multivariate trade analysis**
    ```bash
-   tick-backtest analyze /abs/path/to/output/<RUN_ID>/output/EURUSD/trades.parquet
+   tick-backtest analyze ./demo/output/<RUN_ID>/output/EURUSD/trades.parquet
    ```
 
 The same surface is available from Python:
    ```python
    from tick_backtest import api
 
-   api.example_config("./tick-backtest-config")
-   api.run("./tick-backtest-config/backtest.yaml")
-   api.report("/abs/path/to/output/<RUN_ID>/output/EURUSD/trades.parquet")
-   api.analyze("/abs/path/to/output/<RUN_ID>/output/EURUSD/trades.parquet")
+   api.example_config("./demo", include_demo_data=True)
+   api.run("./demo/backtest.yaml")
+   api.report("./demo/output/<RUN_ID>/output/EURUSD/trades.parquet")
+   api.analyze("./demo/output/<RUN_ID>/output/EURUSD/trades.parquet")
    ```
+
+The generated demo project includes:
+- `backtest.yaml`, `metrics.yaml`, and `strategy.yaml`
+- `demo_data/` with bundled EURUSD and GBPUSD parquet shards
+- `output/` as the run destination declared in the emitted config
+
+For your own data instead of the bundled demo, emit the generic starter templates:
+```bash
+tick-backtest example-config --output ./tick-backtest-config
+```
+Then edit the generated YAML files:
+```yaml
+# tick-backtest-config/backtest.yaml
+data_base_path: "/abs/path/to/your/parquet/shards"
+output_base_path: "/abs/path/to/backtest/output"
+metrics_config_path: "./metrics.yaml"
+strategy_config_path: "./strategy.yaml"
+```
 
 Inspect outputs under the configured `output_base_path`:
 
@@ -99,7 +108,7 @@ Inspect outputs under the configured `output_base_path`:
 | `tick-backtest run <backtest.yaml>` | Backtest config | Writes a run directory under `output_base_path/<RUN_ID>/` |
 | `tick-backtest report <trades.parquet>` | Trade database | Writes trade report artefacts and metric stratification beside the parquet file |
 | `tick-backtest analyze <trades.parquet>` | Trade database | Writes `multivariate_analysis/` beside the parquet file |
-| `tick-backtest example-config [--dest DIR]` | Optional destination dir | Prints starter YAML or writes a template set |
+| `tick-backtest example-config [--output DIR] [--include-demo-data]` | Optional destination dir | Prints starter YAML or writes a template set or runnable demo project |
 
 ## Configuration Cheat Sheet
 
@@ -183,7 +192,7 @@ Need full schemas or extension guidance? See the [Configuration Guide](https://e
 | `tick_backtest.api.run(config_path, *, output_root=None)` | Run the backtest engine and write run artefacts only |
 | `tick_backtest.api.report(trades_path)` | Generate trade report artefacts and metric stratification outputs |
 | `tick_backtest.api.analyze(trades_path)` | Generate multivariate regression-style analysis outputs |
-| `tick_backtest.api.example_config(dest=None, *, template="minimal")` | Print or write starter YAML templates |
+| `tick_backtest.api.example_config(dest=None, *, template="minimal", include_demo_data=False)` | Print or write starter YAML templates, optionally with bundled demo data |
 
 The API is intentionally filesystem-oriented. It writes artefacts to disk and does not aim to return in-memory result objects.
 

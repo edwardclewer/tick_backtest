@@ -1,0 +1,13 @@
+# Runnable demo backtest config for tick-backtest.
+# Generated alongside demo_data/, metrics.yaml, and strategy.yaml.
+
+schema_version: "1.0"
+pairs: [EURUSD, GBPUSD]
+start: 2000-01
+end: 2000-02
+pip_size: 0.0001
+warmup_seconds: 1800
+data_base_path: "./demo_data"
+output_base_path: "./output"
+metrics_config_path: "./metrics.yaml"
+strategy_config_path: "./strategy.yaml"

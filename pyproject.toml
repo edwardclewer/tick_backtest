@@ -56,5 +56,6 @@ exclude = ["tick_backtest.__pycache__*"]
 [tool.setuptools.package-data]
 "tick_backtest" = [
   "config/**/*.yaml",
+  "demo_data/**/*.parquet",
   "py.typed"
 ]

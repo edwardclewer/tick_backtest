@@ -39,6 +39,22 @@ def test_example_config_writes_template_set(tmp_path: Path) -> None:
     assert "lookback_seconds: 1800" in strategy_text
 
 
+def test_example_config_writes_demo_project_with_demo_data(tmp_path: Path) -> None:
+    example_config(tmp_path, include_demo_data=True)
+    backtest_text = (tmp_path / "backtest.yaml").read_text(encoding="utf-8")
+    assert 'data_base_path: "./demo_data"' in backtest_text
+    assert 'output_base_path: "./output"' in backtest_text
+    assert (tmp_path / "metrics.yaml").is_file()
+    assert (tmp_path / "strategy.yaml").is_file()
+    assert (tmp_path / "demo_data" / "EURUSD" / "EURUSD_2000-01.parquet").is_file()
+    assert (tmp_path / "demo_data" / "GBPUSD" / "GBPUSD_2000-02.parquet").is_file()
+
+
+def test_example_config_requires_dest_when_demo_data_is_requested() -> None:
+    with pytest.raises(ValueError, match="dest is required"):
+        example_config(include_demo_data=True)
+
+
 def test_example_config_rejects_unknown_template() -> None:
     with pytest.raises(ValueError, match="unknown config template"):
         example_config(template="missing")

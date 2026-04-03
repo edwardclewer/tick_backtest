@@ -36,22 +36,48 @@ def _yaml_templates(template_dir) -> Iterable:
     )
 
 
-def example_config(dest: str | Path | None = None, *, template: str = "minimal") -> None:
+def _copy_resource_tree(resource_dir, dest_dir: Path) -> None:
+    with ExitStack() as stack:
+        def walk(current_resource, current_dest: Path) -> None:
+            current_dest.mkdir(parents=True, exist_ok=True)
+            for child in current_resource.iterdir():
+                target_path = current_dest / child.name
+                if child.is_dir():
+                    walk(child, target_path)
+                    continue
+
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                resource_path = Path(stack.enter_context(as_file(child)))
+                shutil.copy2(resource_path, target_path)
+
+        walk(resource_dir, dest_dir)
+
+
+def example_config(
+    dest: str | Path | None = None,
+    *,
+    template: str = "minimal",
+    include_demo_data: bool = False,
+) -> None:
     """
     Print or write a packaged starter config template set.
 
     When dest is omitted, prints the main backtest template to stdout.
     When dest is provided, writes the full template set into that directory.
     """
-    template_dir = _template_dir(template)
+    effective_template = "demo" if include_demo_data and template == "minimal" else template
+    template_dir = _template_dir(effective_template)
     template_files = _yaml_templates(template_dir)
     if not template_files:
-        raise ValueError(f"template '{template}' contains no yaml files")
+        raise ValueError(f"template '{effective_template}' contains no yaml files")
+
+    if include_demo_data and dest is None:
+        raise ValueError("dest is required when include_demo_data=True")
 
     if dest is None:
         backtest_template = next((item for item in template_files if item.name == "backtest.yaml"), None)
         if backtest_template is None:
-            raise ValueError(f"template '{template}' is missing backtest.yaml")
+            raise ValueError(f"template '{effective_template}' is missing backtest.yaml")
         print(backtest_template.read_text(encoding="utf-8"), end="")
         return
 
@@ -61,6 +87,10 @@ def example_config(dest: str | Path | None = None, *, template: str = "minimal")
         for src in template_files:
             src_path = Path(stack.enter_context(as_file(src)))
             (dest_dir / src.name).write_text(src_path.read_text(encoding="utf-8"), encoding="utf-8")
+
+    if include_demo_data:
+        demo_data_dir = files("tick_backtest").joinpath("demo_data")
+        _copy_resource_tree(demo_data_dir, dest_dir / "demo_data")
 
 
 def run(config_path: str | Path, *, output_root: str | Path | None = None) -> None:

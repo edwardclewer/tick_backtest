@@ -98,27 +98,32 @@ def test_cli_analyze_dispatches_to_api(monkeypatch) -> None:
 def test_cli_example_config_dispatches_to_api(monkeypatch) -> None:
     captured: dict[str, object] = {}
 
-    def fake_example_config(*, dest=None, template="minimal") -> None:
+    def fake_example_config(*, dest=None, template="minimal", include_demo_data=False) -> None:
         captured["dest"] = dest
         captured["template"] = template
+        captured["include_demo_data"] = include_demo_data
 
     monkeypatch.setattr("tick_backtest.api.example_config", fake_example_config)
 
-    exit_code = cli.main(["example-config", "--dest", "examples", "--template", "minimal"])
+    exit_code = cli.main(
+        ["example-config", "--output", "examples", "--template", "minimal", "--include-demo-data"]
+    )
 
     assert exit_code == 0
     assert captured == {
         "dest": Path("examples"),
         "template": "minimal",
+        "include_demo_data": True,
     }
 
 
 def test_cli_example_config_uses_default_arguments(monkeypatch) -> None:
     captured: dict[str, object] = {}
 
-    def fake_example_config(*, dest=None, template="minimal") -> None:
+    def fake_example_config(*, dest=None, template="minimal", include_demo_data=False) -> None:
         captured["dest"] = dest
         captured["template"] = template
+        captured["include_demo_data"] = include_demo_data
 
     monkeypatch.setattr("tick_backtest.api.example_config", fake_example_config)
 
@@ -128,4 +133,5 @@ def test_cli_example_config_uses_default_arguments(monkeypatch) -> None:
     assert captured == {
         "dest": None,
         "template": "minimal",
+        "include_demo_data": False,
     }

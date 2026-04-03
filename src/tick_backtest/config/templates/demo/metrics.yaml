@@ -1,0 +1,39 @@
+schema_version: "1.0"
+metrics:
+  - name: session
+    type: session
+    enabled: true
+    params: {}
+
+  - name: drift_sign
+    type: drift_sign
+    enabled: true
+    params:
+      lookback_seconds: 1800
+
+  - name: ewma_mid_5m
+    type: ewma
+    enabled: true
+    params:
+      tau_seconds: 300
+      price_field: mid
+
+  - name: ewma_mid_30m
+    type: ewma
+    enabled: true
+    params:
+      tau_seconds: 1800
+      price_field: mid
+
+  - name: spread_60s
+    type: spread
+    enabled: true
+    params:
+      pip_size: 0.0001
+      window_seconds: 60
+
+  - name: tick_rate_30s
+    type: tick_rate
+    enabled: true
+    params:
+      window_seconds: 30

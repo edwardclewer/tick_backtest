@@ -46,9 +46,13 @@ def build_parser() -> argparse.ArgumentParser:
     analyze_parser.add_argument("trades_path", type=Path, help="Path to the trades parquet file.")
     analyze_parser.set_defaults(handler=_analyze_command)
 
-    example_parser = subparsers.add_parser("example-config", help="Print or write a starter config template.")
+    example_parser = subparsers.add_parser(
+        "example-config",
+        help="Print or write starter configs, optionally with bundled demo data.",
+    )
     example_parser.add_argument(
         "--dest",
+        "--output",
         type=Path,
         default=None,
         help="Optional directory where the template set should be written.",
@@ -57,6 +61,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--template",
         default="minimal",
         help="Template name to use (default: minimal).",
+    )
+    example_parser.add_argument(
+        "--include-demo-data",
+        action="store_true",
+        help="Write a runnable demo project with bundled parquet fixture data.",
     )
     example_parser.set_defaults(handler=_example_config_command)
 
@@ -79,7 +88,7 @@ def _analyze_command(args: argparse.Namespace) -> int:
 
 
 def _example_config_command(args: argparse.Namespace) -> int:
-    api.example_config(dest=args.dest, template=args.template)
+    api.example_config(dest=args.dest, template=args.template, include_demo_data=args.include_demo_data)
     return 0
 
 
