@@ -78,7 +78,7 @@ Create a pending Trusted Publisher with:
 - Project name: `tick-backtest`
 - Owner: `edwardclewer`
 - Repository: `tick_backtest`
-- Workflow file: `testpypi-release.yml`
+- Workflow file: `.github/workflows/testpypi-release.yml`
 - Environment name: `testpypi`
 
 This matches the workflow exactly:
@@ -93,9 +93,47 @@ No API token, username, or password is used in the workflow.
 
 You may optionally add GitHub environment protection rules to `testpypi`, but they are not required for the initial dry run.
 
-## Future production PyPI
+## PyPI publishing flow
 
-Real PyPI publishing is intentionally not implemented yet. Add that only after the TestPyPI flow has succeeded and the release posture is settled.
+Real PyPI publishing is handled by `.github/workflows/pypi-release.yml`.
+
+1. Bump `pyproject.toml` to the intended release version.
+2. Create and push a tag such as `v0.1.1`.
+3. The workflow builds:
+   - an sdist via `python -m build --sdist`
+   - Linux wheels via `cibuildwheel`
+4. The workflow runs `twine check` over the sdist and repaired wheels.
+5. The workflow publishes the artifacts to PyPI using GitHub OIDC trusted publishing and the `pypi` environment.
+
+The trigger is intentionally separate from TestPyPI tags:
+
+- TestPyPI: `testpypi-v*`
+- PyPI: `v*`
+
+Use GitHub environment protection on `pypi` if you want a manual approval gate before the publish job runs.
+
+## PyPI trusted publishing setup
+
+Because the project does not yet exist on PyPI, the first setup step is a pending Trusted Publisher on PyPI.
+
+Create a pending Trusted Publisher with:
+
+- Index: PyPI
+- Project name: `tick-backtest`
+- Owner: `edwardclewer`
+- Repository: `tick_backtest`
+- Workflow file: `.github/workflows/pypi-release.yml`
+- Environment name: `pypi`
+
+This matches the workflow exactly:
+
+- workflow filename: `.github/workflows/pypi-release.yml`
+- GitHub environment: `pypi`
+- publish job: `publish_pypi`
+
+The first successful trusted-publishing run will create the PyPI project automatically.
+
+No API token, username, or password is used in the workflow.
 
 ## After publishing
 
@@ -106,4 +144,4 @@ Real PyPI publishing is intentionally not implemented yet. Add that only after t
    tick-backtest example-config --output ./demo --include-demo-data
    tick-backtest run ./demo/backtest.yaml
    ```
-3. Record any issues found before implementing the separate production PyPI workflow.
+3. Record any issues found before cutting the real PyPI tag.
