@@ -16,7 +16,7 @@ limitations under the License.
 
 # Releasing
 
-This repository publishes Python packages via GitHub Actions using trusted publishing.
+This repository is prepared to publish Python packages via GitHub Actions using trusted publishing.
 
 ## Release posture
 
@@ -48,43 +48,53 @@ The CI workflow validates both sides:
    ```
 4. Merge to `main`.
 
-## Publishing flow
+## TestPyPI publishing flow
 
-Publishing is handled by `.github/workflows/release.yml`.
+TestPyPI publishing is handled by `.github/workflows/testpypi-release.yml`.
 
-1. Create and push a version tag such as `v0.1.0`.
-2. The release workflow builds the sdist and wheel, then runs `twine check`.
-3. The workflow publishes the artifacts to TestPyPI using the `testpypi` environment.
-4. After TestPyPI succeeds, the `pypi` environment can approve and publish the same artifacts to PyPI.
+1. Bump `pyproject.toml` to a version that has not already been uploaded to TestPyPI.
+2. Create and push a tag such as `testpypi-v0.1.0`.
+3. The workflow builds the sdist and wheel, then runs `twine check`.
+4. The workflow publishes the artifacts to TestPyPI using GitHub OIDC trusted publishing and the `testpypi` environment.
 
-This staged flow keeps TestPyPI and PyPI publication in one pipeline while still allowing a human approval gate before the production upload.
+The trigger is intentionally separate from future production tags so TestPyPI rehearsals do not imply a real PyPI release.
 
 ## Trusted publishing setup
 
-Trusted publishing must be configured once in both indexes:
+Because the TestPyPI project does not exist yet, the first setup step is a pending Trusted Publisher on TestPyPI.
 
-- PyPI project: `tick-backtest`
-- TestPyPI project: `tick-backtest`
-- Workflow file: `.github/workflows/release.yml`
+Create a pending Trusted Publisher with:
+
+- Index: TestPyPI
+- Project name: `tick-backtest`
+- Owner: `edwardclewer`
 - Repository: `edwardclewer/tick_backtest`
+- Workflow file: `.github/workflows/testpypi-release.yml`
+- Environment name: `testpypi`
 
-The GitHub environments expected by the workflow are:
+This matches the workflow exactly:
 
-- `testpypi`
-- `pypi`
+- workflow filename: `.github/workflows/testpypi-release.yml`
+- GitHub environment: `testpypi`
+- publish job: `publish_testpypi`
 
-Set environment protection rules as desired. A common setup is:
+The first successful trusted-publishing run will create the TestPyPI project automatically.
 
-- `testpypi`: no manual approval
-- `pypi`: required reviewer approval
+No API token, username, or password is used in the workflow.
+
+You may optionally add GitHub environment protection rules to `testpypi`, but they are not required for the initial dry run.
+
+## Future production PyPI
+
+Real PyPI publishing is intentionally not implemented yet. Add that only after the TestPyPI flow has succeeded and the release posture is settled.
 
 ## After publishing
 
-1. Verify installation from TestPyPI or PyPI in a clean environment.
+1. Verify installation from TestPyPI in a clean environment.
 2. Confirm the installed first-run path works:
    ```bash
-   pip install tick-backtest
+   pip install --index-url https://test.pypi.org/simple/ tick-backtest
    tick-backtest example-config --output ./demo --include-demo-data
    tick-backtest run ./demo/backtest.yaml
    ```
-3. Create a GitHub Release entry summarising the changelog highlights.
+3. Record any issues found before implementing the separate production PyPI workflow.
