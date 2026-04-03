@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and the project uses semantic versioning for public releases.
 
+## [0.1.1] - 2026-04-03
+
+### Changed
+- Hardened TestPyPI release publishing with cibuildwheel-based Linux manylinux wheels and improved release workflow resilience.
+
 ## [0.1.0] - 2026-04-03
 
 ### Added
