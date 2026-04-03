@@ -17,9 +17,10 @@ from __future__ import annotations
 from contextlib import ExitStack
 from importlib.resources import as_file, files
 from pathlib import Path
+import shutil
 from typing import Iterable
 
-__all__ = ["example_config"]
+__all__ = ["analyze", "example_config", "report", "run"]
 
 
 def _template_dir(template: str):
@@ -60,3 +61,79 @@ def example_config(dest: str | Path | None = None, *, template: str = "minimal")
         for src in template_files:
             src_path = Path(stack.enter_context(as_file(src)))
             (dest_dir / src.name).write_text(src_path.read_text(encoding="utf-8"), encoding="utf-8")
+
+
+def run(config_path: str | Path, *, output_root: str | Path | None = None) -> None:
+    """Execute the full repo workflow for a backtest config."""
+    from tick_backtest.analysis import run_backtest_analysis, run_metric_stratification_analysis
+    from tick_backtest.backtest.workflow import run_backtest
+
+    result = run_backtest(config_path=config_path, output_root=output_root)
+    output_dir = result.get("output_dir") if isinstance(result, dict) else None
+    if output_dir is None:
+        raise RuntimeError("run_backtest returned no output directory")
+
+    run_id = result.get("run_id") if isinstance(result, dict) else None
+    manifest = result.get("manifest") if isinstance(result, dict) else None
+    metrics_cfg_copy = None
+    if isinstance(manifest, dict):
+        metrics_cfg_copy = manifest.get("configs", {}).get("metrics", {}).get("copied_path")
+
+    run_backtest_analysis(output_dir, run_id=run_id)
+    run_metric_stratification_analysis(output_dir, metrics_config_path=metrics_cfg_copy, run_id=run_id)
+
+
+def report(trades_path: str | Path) -> None:
+    """Generate single-trade-file report artefacts alongside the trades parquet."""
+    from tick_backtest.analysis.trade_analysis import run_trade_analysis
+
+    run_trade_analysis(trades_path, output_dir=Path(trades_path).expanduser().parent, configure_logs=False)
+
+
+def analyze(trades_path: str | Path) -> None:
+    """Generate metric stratification artefacts beside the trades parquet."""
+    from tick_backtest.analysis.metric_stratification import derive_backtest_identifier, run_metric_stratification
+
+    resolved_trades_path = Path(trades_path).expanduser()
+    working_root = resolved_trades_path.parent
+    output_root = working_root / "metric_stratification"
+    identifier = derive_backtest_identifier(resolved_trades_path)
+    staged_output = output_root / identifier
+
+    if staged_output.exists():
+        shutil.rmtree(staged_output)
+    if output_root.exists():
+        for child in output_root.iterdir():
+            if child.is_dir():
+                shutil.rmtree(child)
+            else:
+                child.unlink()
+    else:
+        output_root.mkdir(parents=True, exist_ok=True)
+
+    run_metric_stratification(
+        trade_file=resolved_trades_path,
+        output_root=output_root,
+        configure_logs=False,
+    )
+
+    if not staged_output.exists():
+        raise RuntimeError(f"metric stratification output was not created: {staged_output}")
+
+    for child in list(output_root.iterdir()):
+        if child == staged_output:
+            continue
+        if child.is_dir():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
+
+    for child in staged_output.iterdir():
+        target = output_root / child.name
+        if target.exists():
+            if target.is_dir():
+                shutil.rmtree(target)
+            else:
+                target.unlink()
+        shutil.move(str(child), str(target))
+    shutil.rmtree(staged_output, ignore_errors=True)
