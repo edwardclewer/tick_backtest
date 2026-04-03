@@ -41,6 +41,9 @@ dependencies = [
 [project.optional-dependencies]
 tests = ["pytest>=8.0,<9.0"]
 
+[project.scripts]
+tick-backtest = "tick_backtest.cli:main"
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 include-package-data = false
