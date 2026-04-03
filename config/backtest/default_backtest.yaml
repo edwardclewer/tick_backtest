@@ -18,7 +18,7 @@ start: 2012-02
 end: 2013-02
 pip_size: 0.0001
 warmup_seconds: 1800
-data_base_path: "./tests/test_data/"
-output_base_path: "./output/backtests/"
-metrics_config_path: "config/metrics/default_metrics.yaml"
-strategy_config_path: "config/strategy/default_strategy.yaml"
+data_base_path: "../../tests/test_data/"
+output_base_path: "../../output/backtests/"
+metrics_config_path: "../metrics/default_metrics.yaml"
+strategy_config_path: "../strategy/default_strategy.yaml"
