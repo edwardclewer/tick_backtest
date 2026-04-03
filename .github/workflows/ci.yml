@@ -224,17 +224,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install cibuildwheel
+        run: |
+          python -m pip install -U pip
+          python -m pip install cibuildwheel==2.22.0
+
       - name: Docker preflight
         run: |
           docker version
           docker info
 
       - name: Build manylinux wheel via cibuildwheel
-        uses: pypa/cibuildwheel@v2.22.0
         env:
           CIBW_PLATFORM: linux
           CIBW_OUTPUT_DIR: wheelhouse
           CIBW_BUILD_VERBOSITY: "1"
+        run: |
+          for attempt in 1 2 3; do
+            echo "cibuildwheel attempt ${attempt}/3"
+            if python -m cibuildwheel; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "cibuildwheel failed, retrying after backoff..."
+              sleep $((attempt * 20))
+            fi
+          done
+          exit 1
 
       - name: Verify repaired wheel tag
         run: |

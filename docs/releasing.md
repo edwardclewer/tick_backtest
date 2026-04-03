@@ -64,6 +64,7 @@ TestPyPI publishing is handled by `.github/workflows/testpypi-release.yml`.
 
 The trigger is intentionally separate from future production tags so TestPyPI rehearsals do not imply a real PyPI release.
 The TestPyPI workflow currently disables package attestations because TestPyPI attestation verification can reject otherwise valid trusted-publishing uploads. Revisit this when TestPyPI attestation support is stable enough for this project.
+The workflow also retries the `cibuildwheel` step because Linux wheel builds depend on pulling manylinux container images from Quay, and transient Quay timeouts can otherwise fail the release before the build starts.
 
 For public Linux binary distribution, the release path should use the `cibuildwheel` manylinux wheels, not the plain local `python -m build` wheel produced on a developer machine or generic Ubuntu runner.
 
