@@ -58,6 +58,7 @@ TestPyPI publishing is handled by `.github/workflows/testpypi-release.yml`.
 4. The workflow publishes the artifacts to TestPyPI using GitHub OIDC trusted publishing and the `testpypi` environment.
 
 The trigger is intentionally separate from future production tags so TestPyPI rehearsals do not imply a real PyPI release.
+The TestPyPI workflow currently disables package attestations because TestPyPI attestation verification can reject otherwise valid trusted-publishing uploads. Revisit this when TestPyPI attestation support is stable enough for this project.
 
 ## Trusted publishing setup
 
@@ -68,8 +69,8 @@ Create a pending Trusted Publisher with:
 - Index: TestPyPI
 - Project name: `tick-backtest`
 - Owner: `edwardclewer`
-- Repository: `edwardclewer/tick_backtest`
-- Workflow file: `.github/workflows/testpypi-release.yml`
+- Repository: `tick_backtest`
+- Workflow file: `testpypi-release.yml`
 - Environment name: `testpypi`
 
 This matches the workflow exactly:
