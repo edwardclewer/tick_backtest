@@ -43,6 +43,7 @@ tests = ["pytest>=8.0,<9.0"]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
+include-package-data = false
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -53,10 +54,4 @@ exclude = ["tick_backtest.__pycache__*"]
 "tick_backtest" = [
   "config/**/*.yaml",
   "py.typed"
-  # "metrics/**/*.pyx",
-  # "metrics/**/*.pxd",
-  # "metrics/**/*.c",
-  # "data_feed/**/*.pyx",
-  # "data_feed/**/*.pxd",
-  # "data_feed/**/*.c",
 ]

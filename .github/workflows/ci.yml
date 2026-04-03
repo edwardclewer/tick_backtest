@@ -51,7 +51,7 @@ jobs:
       - name: Upgrade pip & install build deps (no isolation build)
         run: |
           python -m pip install -U pip
-          pip install "setuptools>=68" wheel build "cython>=3.0" "numpy>=2.0" "pybind11>=2.12"
+          pip install "setuptools>=68" wheel build twine "cython>=3.0" "numpy>=2.0" "pybind11>=2.12"
           python - <<'PY'
           import pybind11, numpy
           print("pybind11:", pybind11.__version__)
@@ -67,6 +67,10 @@ jobs:
         run: |
           python -m build --wheel --sdist --no-isolation
           ls -lh dist/
+
+      - name: Validate distribution metadata
+        run: |
+          twine check dist/*
 
       - name: Verify wheel contains ALL compiled extensions
         run: |

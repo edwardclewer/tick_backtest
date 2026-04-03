@@ -27,7 +27,6 @@ if str(SRC_ROOT) not in sys.path:
 from tick_backtest._build import BuildExt, get_extensions
 
 setup(
-    # include_package_data=True,  # DISABLING FOR CLEANER PACKAGING, TODO: See if it breaks CI or not
     zip_safe=False,
     ext_modules=get_extensions(),
     cmdclass={"build_ext": BuildExt},
