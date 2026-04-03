@@ -61,6 +61,8 @@ tick-backtest example-config --output ./tick-backtest-config
 
 Edit `backtest.yaml` to point at your parquet archive and output location, then run `tick-backtest run ./tick-backtest-config/backtest.yaml`.
 
+Path handling is config-relative: `data_base_path`, `output_base_path`, `metrics_config_path`, and `strategy_config_path` are resolved against the directory containing `backtest.yaml`.
+
 ## Repository Checkout Quickstart
 
 If you are working from a checkout rather than an installed package:
@@ -113,8 +115,21 @@ After the run completes, explore:
 
 - `manifest.json`: snapshot of configs, input shards, trade outputs, and status
 - `output/<PAIR>/trades.parquet`: trade-level dataset
-- `output/<PAIR>/analysis/report.md`: Markdown report with key metrics and equity curve
 - `output/logs/<RUN_ID>.log`: NDJSON log for auditing
+
+Then generate post-run artefacts from the pair trade file:
+
+```bash
+tick-backtest report ./demo/output/<RUN_ID>/output/EURUSD/trades.parquet
+tick-backtest analyze ./demo/output/<RUN_ID>/output/EURUSD/trades.parquet
+```
+
+These commands write beside `trades.parquet`:
+
+- `trades_report.md`
+- `trades_equity_curve.png`
+- `metric_stratification/`
+- `multivariate_analysis/`
 
 Continue to [Analysis & Reporting](analysis.md) for a detailed walkthrough of these artefacts.
 

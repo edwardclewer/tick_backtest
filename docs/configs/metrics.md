@@ -18,10 +18,10 @@ limitations under the License.
 
 This page documents every metric type available through the `config/metrics/*.yaml` files. All metrics share the same wrapper fields:
 
-- `name` — unique identifier. At runtime each output is prefixed as `<name>.<field>`.
-- `type` — registry key in `tick_backtest.config_parsers.metrics.config_registry.CONFIG_REGISTRY`.
-- `enabled` — optional boolean (defaults to `true`). Disabled metrics are skipped during the run.
-- `params` — engine-specific arguments described below.
+- `name` - unique identifier. At runtime each output is prefixed as `<name>.<field>`.
+- `type` - registry key in `tick_backtest.config_parsers.metrics.config_registry.CONFIG_REGISTRY`.
+- `enabled` - optional boolean (defaults to `true`). Disabled metrics are skipped during the run.
+- `params` - engine-specific arguments described below.
 
 Once loaded, the `MetricsManager` returns a flat dictionary of key/value pairs. Consumers (signals, predicates, analysis) reference values via `<metric_name>.<output_field>`.
 
@@ -44,7 +44,7 @@ Once loaded, the `MetricsManager` returns a flat dictionary of key/value pairs. 
 
 Momentum and mean-reversion indicators quantify how unusual the current price is relative to a trailing baseline.
 
-### `zscore` — Rolling Z-Score
+### `zscore` - Rolling Z-Score
 
 **YAML type:** `zscore`
 
@@ -52,7 +52,7 @@ Computes a time-weighted mean and standard deviation of the mid price, then expo
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `lookback_seconds` | int | ✅ | Horizon for the time-weighted statistics. Must be a positive integer. |
+| `lookback_seconds` | int | Yes | Horizon for the time-weighted statistics. Must be a positive integer. |
 
 **Outputs**
 
@@ -76,7 +76,7 @@ Example:
 
 ---
 
-### `ewma` — Exponentially Weighted Moving Average
+### `ewma` - Exponentially Weighted Moving Average
 
 **YAML type:** `ewma`
 
@@ -84,9 +84,9 @@ Tracks an exponentially weighted moving average of the chosen price field (`mid`
 
 | Parameter | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `tau_seconds` | float | ✅ | – | Decay constant τ (larger values smooth more). Must be positive. |
-| `initial_value` | float | ❌ | `null` | Optional explicit starting value. |
-| `price_field` | string | ❌ | `"mid"` | Which tick field to sample (`mid`, `bid`, or `ask`). |
+| `tau_seconds` | float | Yes | - | Decay constant τ (larger values smooth more). Must be positive. |
+| `initial_value` | float | No | `null` | Optional explicit starting value. |
+| `price_field` | string | No | `"mid"` | Which tick field to sample (`mid`, `bid`, or `ask`). |
 
 **Outputs**
 
@@ -106,7 +106,7 @@ Example:
 
 ---
 
-### `ewma_slope` — EWMA with Slope Estimate
+### `ewma_slope` - EWMA with Slope Estimate
 
 **YAML type:** `ewma_slope`
 
@@ -114,10 +114,10 @@ Extends the EWMA by adding a finite-difference slope computed over a trailing wi
 
 | Parameter | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `tau_seconds` | float | ✅ | – | EWMA decay constant. |
-| `window_seconds` | float | ✅ | – | Horizon used to compute the slope. Must be positive. |
-| `initial_value` | float | ❌ | `null` | Optional initial EWMA value. |
-| `price_field` | string | ❌ | `"mid"` | Tick field to sample (`mid`, `bid`, `ask`). |
+| `tau_seconds` | float | Yes | - | EWMA decay constant. |
+| `window_seconds` | float | Yes | - | Horizon used to compute the slope. Must be positive. |
+| `initial_value` | float | No | `null` | Optional initial EWMA value. |
+| `price_field` | string | No | `"mid"` | Tick field to sample (`mid`, `bid`, `ask`). |
 
 **Outputs**
 
@@ -136,7 +136,7 @@ Extends the EWMA by adding a finite-difference slope computed over a trailing wi
 
 These metrics characterise the prevailing volatility regime and where the current variance sits relative to history.
 
-### `ewma_vol` — EWMA of Variance with Percentile Stratification
+### `ewma_vol` - EWMA of Variance with Percentile Stratification
 
 **YAML type:** `ewma_vol`
 
@@ -144,18 +144,18 @@ Computes an EWMA of squared log returns (variance proxy) and records the current
 
 | Parameter | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `tau_seconds` | float | ✅ | – | EWMA decay constant for variance. |
-| `percentile_horizon_seconds` | float | ✅ | – | Horizon used by the histogram when computing percentiles. |
-| `bins` | int | ✅ | – | Number of histogram bins (`2`–`10 000`). |
-| `base_vol` | float | ✅ | – | Baseline standard deviation used to scale the histogram range. |
-| `stddev_cap` | float | ❌ | `5.0` | Upper bound multiple; range = `(stddev_cap × base_vol)^2`. |
+| `tau_seconds` | float | Yes | - | EWMA decay constant for variance. |
+| `percentile_horizon_seconds` | float | Yes | - | Horizon used by the histogram when computing percentiles. |
+| `bins` | int | Yes | - | Number of histogram bins (`2`-`10 000`). |
+| `base_vol` | float | Yes | - | Baseline standard deviation used to scale the histogram range. |
+| `stddev_cap` | float | No | `5.0` | Upper bound multiple; range = `(stddev_cap × base_vol)^2`. |
 
 **Outputs**
 
 | Field | Description |
 | --- | --- |
 | `vol_ewma` | Latest EWMA of squared log returns. |
-| `vol_percentile` | Percentile rank (0–1) of `vol_ewma` within the histogram. |
+| `vol_percentile` | Percentile rank (0-1) of `vol_ewma` within the histogram. |
 
 **Notes**
 - `vol_percentile` returns `NaN` until enough history accumulates to populate the histogram.
@@ -180,7 +180,7 @@ Example:
 
 Indicators that capture directional drift or session context to augment entry predicates.
 
-### `drift_sign` — Directional Drift
+### `drift_sign` - Directional Drift
 
 **YAML type:** `drift_sign`
 
@@ -188,7 +188,7 @@ Measures the directional drift of the mid price over a rolling window. The sign 
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `lookback_seconds` | int | ✅ | Rolling window for the time-weighted mean. Must be positive. |
+| `lookback_seconds` | int | Yes | Rolling window for the time-weighted mean. Must be positive. |
 
 **Outputs**
 
@@ -203,7 +203,7 @@ Measures the directional drift of the mid price over a rolling window. The sign 
 
 ---
 
-### `session` — UTC Trading Session
+### `session` - UTC Trading Session
 
 **YAML type:** `session`
 
@@ -211,7 +211,7 @@ Tags each tick with the trading session inferred from UTC time-of-day.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| *(none)* | – | – | Only the standard wrapper fields (`name`, `enabled`) are used. |
+| *(none)* | - | - | Only the standard wrapper fields (`name`, `enabled`) are used. |
 
 **Outputs**
 
@@ -227,9 +227,9 @@ Tags each tick with the trading session inferred from UTC time-of-day.
 
 ## Market Microstructure Metrics
 
-Measure liquidity conditions—spread tightness, tick frequency—to gate strategies to healthy market states.
+Measure liquidity conditions-spread tightness, tick frequency-to gate strategies to healthy market states.
 
-### `spread` — Spread Monitoring
+### `spread` - Spread Monitoring
 
 **YAML type:** `spread`
 
@@ -237,8 +237,8 @@ Tracks raw spread, spread expressed in pips, and the percentile rank within a tr
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `pip_size` | float | ✅ | Pip increment used to convert the spread to pips. |
-| `window_seconds` | float | ✅ | Rolling horizon for percentile statistics. |
+| `pip_size` | float | Yes | Pip increment used to convert the spread to pips. |
+| `window_seconds` | float | Yes | Rolling horizon for percentile statistics. |
 
 **Outputs**
 
@@ -254,7 +254,7 @@ Tracks raw spread, spread expressed in pips, and the percentile rank within a tr
 
 ---
 
-### `tick_rate` — Tick Throughput
+### `tick_rate` - Tick Throughput
 
 **YAML type:** `tick_rate`
 
@@ -262,7 +262,7 @@ Counts the number of ticks observed over a sliding window and exposes derived ra
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `window_seconds` | float | ✅ | Width of the sliding window. Must be positive. |
+| `window_seconds` | float | Yes | Width of the sliding window. Must be positive. |
 
 **Outputs**
 

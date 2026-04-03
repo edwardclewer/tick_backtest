@@ -28,7 +28,25 @@ _EXCLUDED_FEATURE_COLUMNS = {
     "pnl_pips",
     "pnl_base",
     "cumulative_pnl",
+    "entry_price",
+    "exit_price",
+    "signal_price",
+    "timestamp_entry",
+    "timestamp_exit",
+    "signal_timestamp",
+    "holding_seconds",
+    "holding_time_seconds",
+    "trade_duration_seconds",
+    "duration_seconds",
 }
+
+_ENTRY_TIME_NUMERIC_FEATURE_COLUMNS = {
+    "direction",
+}
+
+
+def _is_entry_time_predictor(column: str) -> bool:
+    return column in _ENTRY_TIME_NUMERIC_FEATURE_COLUMNS or "." in column
 
 
 def _numeric_feature_columns(df: pd.DataFrame, *, target_column: str) -> list[str]:
@@ -36,7 +54,7 @@ def _numeric_feature_columns(df: pd.DataFrame, *, target_column: str) -> list[st
     for column in df.columns:
         if column == target_column or column in _EXCLUDED_FEATURE_COLUMNS:
             continue
-        if pd.api.types.is_numeric_dtype(df[column]):
+        if pd.api.types.is_numeric_dtype(df[column]) and _is_entry_time_predictor(column):
             numeric_columns.append(column)
     return numeric_columns
 
@@ -63,7 +81,7 @@ def run_trade_regression_analysis(
     target_column: str = "pnl_pips",
 ) -> Path:
     """
-    Run a simple multivariate linear regression over numeric trade features.
+    Run a simple multivariate linear regression over entry-time numeric trade features.
 
     Outputs are written to disk under ``<trades_dir>/multivariate_analysis`` by default.
     """
@@ -79,7 +97,7 @@ def run_trade_regression_analysis(
 
     features = _numeric_feature_columns(df, target_column=target_column)
     if not features:
-        raise ValueError("No numeric feature columns available for regression analysis")
+        raise ValueError("No eligible entry-time numeric feature columns available for regression analysis")
 
     working = df[[target_column, *features]].replace([np.inf, -np.inf], np.nan).dropna()
     if len(working) < 2:
@@ -148,7 +166,9 @@ def run_trade_regression_analysis(
         f"- `coefficients.csv`: {coefficients_path.name}",
         f"- `correlations.csv`: {correlation_path.name}",
         "",
-        "This is an ordinary least squares fit over numeric trade columns. Use it as a directional multivariate diagnostic, not a production model.",
+        "This is an ordinary least squares fit over entry-time numeric predictors only.",
+        "Execution-price fields, timestamps, holding-period columns, and other post-trade or identity-linked columns are excluded.",
+        "Use it as a directional multivariate diagnostic, not a production model.",
     ]
     summary_path.write_text("\n".join(summary_lines), encoding="utf-8")
 

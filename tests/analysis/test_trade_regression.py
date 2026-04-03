@@ -56,5 +56,37 @@ def test_run_trade_regression_analysis_requires_numeric_predictors(tmp_path: Pat
         }
     ).to_parquet(trades_path)
 
-    with pytest.raises(ValueError, match="No numeric feature columns"):
+    with pytest.raises(ValueError, match="No eligible entry-time numeric feature columns"):
         run_trade_regression_analysis(trades_path)
+
+
+def test_run_trade_regression_analysis_excludes_post_trade_and_price_fields(tmp_path: Path) -> None:
+    trades_path = tmp_path / "trades.parquet"
+    pd.DataFrame(
+        {
+            "pnl_pips": [1.0, 2.0, 1.5, 3.5],
+            "direction": [1, -1, 1, -1],
+            "entry_price": [1.10, 1.11, 1.12, 1.13],
+            "exit_price": [1.11, 1.10, 1.14, 1.15],
+            "signal_price": [1.10, 1.11, 1.12, 1.13],
+            "holding_seconds": [30, 45, 60, 75],
+            "timestamp_entry": [1, 2, 3, 4],
+            "timestamp_exit": [2, 3, 4, 5],
+            "ewma_mid_5m.ewma": [1.0, 1.1, 1.2, 1.3],
+            "spread_60s.spread_pips": [0.1, 0.2, 0.15, 0.3],
+        }
+    ).to_parquet(trades_path)
+
+    output_dir = run_trade_regression_analysis(trades_path)
+
+    coefficients = pd.read_csv(output_dir / "coefficients.csv")
+    assert set(coefficients["feature"]) == {
+        "intercept",
+        "direction",
+        "ewma_mid_5m.ewma",
+        "spread_60s.spread_pips",
+    }
+
+    summary_text = (output_dir / "summary.md").read_text(encoding="utf-8")
+    assert "entry-time numeric predictors only" in summary_text
+    assert "post-trade or identity-linked columns are excluded" in summary_text

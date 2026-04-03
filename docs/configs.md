@@ -37,6 +37,7 @@ Validation highlights:
 - Start month must be less than or equal to end month.
 - Unknown keys raise a configuration error.
 - Output paths are created automatically if missing.
+- Relative paths are resolved against the directory containing `backtest.yaml`.
 
 ## Metrics Configuration (`config/metrics/*.yaml`)
 
@@ -68,7 +69,7 @@ Each metric entry maps to a dataclass in `tick_backtest.config_parsers.metrics`.
 
 </details>
 
-👉 Need per-metric parameter tables, defaults, output fields, and behavioural notes? See the dedicated [Metrics Reference](configs/metrics.md).
+Need per-metric parameter tables, defaults, output fields, and behavioural notes? See the dedicated [Metrics Reference](configs/metrics.md).
 
 ## Strategy Configuration (`config/strategy/*.yaml`)
 
@@ -106,22 +107,22 @@ strategy:
 
 Entry and exit definitions combine:
 
-- **Engine** – `engine` selects an entry implementation from `ENTRY_ENGINE_REGISTRY`.
-- **Params** – Engine-specific tuning (thresholds, TP/SL, timeouts).
-- **Predicates** – Optional guards that must evaluate `true` before opening or closing trades. Supported operands:
-  - `metric` – Dot-referenced metric field (e.g., `ewma_vol_5m.vol_percentile`).
-  - `operator` – String comparator (`<`, `>`, `<=`, `>=`, `==`, `!=`).
-  - `value` or `other_metric` – Literal value or second metric.
-  - `use_abs` – Apply absolute value before comparing.
+- **Engine** - `engine` selects an entry implementation from `ENTRY_ENGINE_REGISTRY`.
+- **Params** - Engine-specific tuning (thresholds, TP/SL, timeouts).
+- **Predicates** - Optional guards that must evaluate `true` before opening or closing trades. Supported operands:
+  - `metric` - Dot-referenced metric field (e.g., `ewma_vol_5m.vol_percentile`).
+  - `operator` - String comparator (`<`, `>`, `<=`, `>=`, `==`, `!=`).
+  - `value` or `other_metric` - Literal value or second metric.
+  - `use_abs` - Apply absolute value before comparing.
 
 Validation prevents duplicate predicates and rejects unknown fields.
 
-👉 For detailed documentation of every entry engine, predicate option, metadata field, and runtime behaviour, jump to the [Strategy Reference](configs/strategy.md).
+For detailed documentation of every entry engine, predicate option, metadata field, and runtime behaviour, jump to the [Strategy Reference](configs/strategy.md).
 
 ## Extending Configurations
 
-- **New Metrics** – Implement a metric dataclass and runtime class, register in `METRIC_CLASS_REGISTRY`, then reference via `type`.
-- **New Entry Engines** – Add implementations under `tick_backtest/signals/entries/`, register in `ENTRY_ENGINE_REGISTRY`, and expose parameters in the strategy config.
-- **Alternative Schemas** – Bump `schema_version` when adding new fields, and update config parsers to maintain backward compatibility.
+- **New Metrics** - Implement a metric dataclass and runtime class, register in `METRIC_CLASS_REGISTRY`, then reference via `type`.
+- **New Entry Engines** - Add implementations under `tick_backtest/signals/entries/`, register in `ENTRY_ENGINE_REGISTRY`, and expose parameters in the strategy config.
+- **Alternative Schemas** - Bump `schema_version` when adding new fields, and update config parsers to maintain backward compatibility.
 
 Refer to [Developer Internals](dev/internals.md) for wiring new components into registries and tests.

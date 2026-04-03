@@ -21,7 +21,7 @@ limitations under the License.
 Tick Backtest is a configuration-first Python 3.12 toolkit for reproducible FX strategy research. You provide Parquet ticks and YAML configs; the stack validates every setting, executes deterministic backtests, and writes manifests, logs, reports, and analysis artefacts to disk.
 
 ### Highlights
-- **Performance:** ~8 million ticks/minute/core on AMD 5950X (Parquet → metrics → signals → trades)
+- **Performance:** ~8 million ticks/minute/core on AMD 5950X (Parquet -> metrics -> signals -> trades)
 - **Deterministic runs:** Deterministic runs: config, git hash, dependency snapshot, and shard hashes captured per run
 - **Resilient pipelines:** Resilient pipelines: per-pair failure isolation, tick validation, and structured telemetry
 - **Declarative research:** Declarative research: swap YAML configs instead of editing code
@@ -96,15 +96,26 @@ strategy_config_path: "./strategy.yaml"
 
 `data_base_path` should contain monthly shards organised as `{data_root}/{PAIR}/{PAIR}_YYYY-MM.parquet` with `timestamp`, `bid`, and `ask` columns. Tick Backtest does not download market data itself; if you need a source-to-parquet workflow, [`dukascopy-python`](https://github.com/fx-trader/dukascopy-python) is a suitable external option.
 
-Inspect outputs under the configured `output_base_path`:
+Path handling is config-relative. In the backtest parser, `data_base_path`, `output_base_path`, `metrics_config_path`, and `strategy_config_path` are resolved against the directory containing `backtest.yaml`, so `./metrics.yaml` means "next to this backtest config", not "relative to the shell's current working directory".
+
+After `tick-backtest run`, inspect outputs under the resolved `output_base_path/<RUN_ID>/`:
 
    | Path | Purpose |
    | --- | --- |
    | `manifest.json` | Immutable run snapshot (configs, git hash, shard hashes, status). |
    | `output/logs/<RUN_ID>.log` | Structured NDJSON log with validation summaries and errors. |
    | `output/<PAIR>/trades.parquet` | Trade-level dataset including metrics and PnL. |
-   | `output/<PAIR>/analysis/report.md` | Markdown analysis summary with equity plots. |
    | `configs/*.yaml` | Copies of backtest/metrics/strategy configs with SHA256 digests. |
+
+After `tick-backtest report output/<PAIR>/trades.parquet`, additional artefacts are written beside the trade file:
+
+   | Path | Purpose |
+   | --- | --- |
+   | `output/<PAIR>/trades_report.md` | Markdown performance summary for the selected trade file. |
+   | `output/<PAIR>/trades_equity_curve.png` | Equity curve plot referenced by the report. |
+   | `output/<PAIR>/metric_stratification/` | Stratification CSV, graph, and Markdown report bundles. |
+
+After `tick-backtest analyze output/<PAIR>/trades.parquet`, multivariate artefacts are written beside the trade file under `output/<PAIR>/multivariate_analysis/`.
 
 ---
 
@@ -226,14 +237,14 @@ The project is versioned for public releases starting at `0.1.0`. Tagged release
 ---
 
 ## Architecture Snapshot
-- `config/` – versioned YAML templates validated before runtime.
-- `src/tick_backtest/config_parsers/` – schema validation → immutable dataclasses.
-- `src/tick_backtest/data_feed/` – compiled tick loader with Python fallback; wrapped by `TickValidator`.
-- `src/tick_backtest/backtest/` – `BacktestCoordinator` orchestrates per-pair runs; `Backtest` executes signals and positions.
-- `src/tick_backtest/metrics/` – registries and indicator implementations (compiled with Python fallbacks).
-- `src/tick_backtest/signals/` – predicate-aware entry/exit engines.
-- `src/tick_backtest/analysis/` – reporting, stratification, and plotting utilities.
-- `tests/` – unit, integration, and regression coverage across parsers, primitives, and pipeline stages.
+- `config/` - versioned YAML templates validated before runtime.
+- `src/tick_backtest/config_parsers/` - schema validation -> immutable dataclasses.
+- `src/tick_backtest/data_feed/` - compiled tick loader with Python fallback; wrapped by `TickValidator`.
+- `src/tick_backtest/backtest/` - `BacktestCoordinator` orchestrates per-pair runs; `Backtest` executes signals and positions.
+- `src/tick_backtest/metrics/` - registries and indicator implementations (compiled with Python fallbacks).
+- `src/tick_backtest/signals/` - predicate-aware entry/exit engines.
+- `src/tick_backtest/analysis/` - reporting, stratification, and plotting utilities.
+- `tests/` - unit, integration, and regression coverage across parsers, primitives, and pipeline stages.
 
 **Data & validation flow**
 1. Configs are parsed with forbid-by-default schemas (`config_validation/*`).
@@ -281,19 +292,19 @@ pytest
 ```
 
 Coverage highlights:
-- `tests/config_parsers` – YAML schema governance & regression checks.
-- `tests/data_feed` – tick validation and resilience.
-- `tests/metrics` – primitives plus indicator mathematics with reference helpers.
-- `tests/integration/test_backtest_run.py` – end-to-end pipeline regression.
+- `tests/config_parsers` - YAML schema governance and regression checks.
+- `tests/data_feed` - tick validation and resilience.
+- `tests/metrics` - primitives plus indicator mathematics with reference helpers.
+- `tests/integration/test_backtest_run.py` - end-to-end pipeline regression.
 
 GitHub Actions builds wheels, runs tests, validates distribution metadata, and publishes docs via `.github/workflows/mkdocs.yml`.
 
 ---
 
 ## Extending the Stack
-- **Add a metric** – create a dataclass under `metrics/dataclasses`, register it in `metrics/config_registry.py`, implement runtime logic. Validation blocks duplicates.
-- **Add a signal engine** – add a class in `signals/entries`, register it in `ENTRY_ENGINE_REGISTRY`, and expose parameters in strategy YAML.
-- **Support new data layouts** – extend `tick_backtest.data_feed` for alternative Parquet conventions; the validator enforces monotonic timestamps and finite spreads.
+- **Add a metric** - create a dataclass under `metrics/dataclasses`, register it in `metrics/config_registry.py`, implement runtime logic. Validation blocks duplicates.
+- **Add a signal engine** - add a class in `signals/entries`, register it in `ENTRY_ENGINE_REGISTRY`, and expose parameters in strategy YAML.
+- **Support new data layouts** - extend `tick_backtest.data_feed` for alternative Parquet conventions; the validator enforces monotonic timestamps and finite spreads.
 
 See the [Developer Notes](https://edwardclewer.github.io/tick_backtest/dev/internals/) for dependency maps, testing expectations, and release checklists.
 

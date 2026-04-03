@@ -38,20 +38,20 @@ def test_run_wraps_backtest_and_post_run_analysis(monkeypatch) -> None:
 def test_report_writes_report_and_stratification_beside_trades_file(monkeypatch, tmp_path: Path) -> None:
     trades_path = tmp_path / "trades.parquet"
     captured: dict[str, object] = {}
-    staged_output = tmp_path / "metric_stratification" / tmp_path.name
 
     def fake_run_trade_analysis(path, *, output_dir=None, configure_logs=False):
         captured["path"] = path
         captured["output_dir"] = output_dir
         captured["configure_logs"] = configure_logs
 
-    def fake_run_metric_stratification(*, trade_file, output_root, configure_logs=False):
+    def fake_run_metric_stratification(*, trade_file, output_root, output_subdir=None, configure_logs=False):
         captured["trade_file"] = trade_file
         captured["strat_output_root"] = output_root
+        captured["output_subdir"] = output_subdir
         captured["strat_configure_logs"] = configure_logs
-        staged_output.mkdir(parents=True, exist_ok=True)
-        (staged_output / "reports").mkdir()
-        (staged_output / "reports" / "summary.md").write_text("ok", encoding="utf-8")
+        output_root.mkdir(parents=True, exist_ok=True)
+        (output_root / "reports").mkdir()
+        (output_root / "reports" / "summary.md").write_text("ok", encoding="utf-8")
 
     monkeypatch.setattr("tick_backtest.analysis.trade_analysis.run_trade_analysis", fake_run_trade_analysis)
     monkeypatch.setattr(
@@ -67,9 +67,9 @@ def test_report_writes_report_and_stratification_beside_trades_file(monkeypatch,
         "configure_logs": False,
         "trade_file": trades_path,
         "strat_output_root": tmp_path / "metric_stratification",
+        "output_subdir": "",
         "strat_configure_logs": False,
     }
-    assert not staged_output.exists()
     assert (tmp_path / "metric_stratification" / "reports" / "summary.md").is_file()
 
 
@@ -80,7 +80,7 @@ def test_report_raises_if_metric_stratification_output_is_missing(monkeypatch, t
         lambda *args, **kwargs: None,
     )
 
-    def fake_run_metric_stratification(*, trade_file, output_root, configure_logs=False):
+    def fake_run_metric_stratification(*, trade_file, output_root, output_subdir=None, configure_logs=False):
         output_root.mkdir(parents=True, exist_ok=True)
 
     monkeypatch.setattr(

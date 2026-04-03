@@ -40,12 +40,12 @@ flowchart LR
     Manifest --> Analysis
 ```
 
-1. **Configuration Parsing** – YAML files under `config/` are validated and converted into immutable dataclasses (`BacktestConfigParser`, `MetricsConfigParser`, `StrategyConfigParser`).
-2. **Data Feed & Validation** – The compiled `DataFeed` streams ticks per month. Every feed is wrapped in a `TickValidator` that enforces monotonic timestamps, finite bid/ask/mid values, and non-negative spreads.
-3. **Metrics & Signals** – `MetricsManager` instantiates all enabled metrics and computes rolling indicators. `SignalGenerator` combines entry engines with predicate evaluation to produce open/close instructions.
-4. **Backtest Coordinator** – `BacktestCoordinator` iterates each configured pair, manages output directories, and records pair-level failures without aborting the entire batch.
-5. **Backtest Loop** – For each tick, metrics update, signals evaluate, positions open/close, and trades append to an in-memory ledger. On completion, trades persist to Parquet.
-6. **Artefact Snapshot** – Every run writes a manifest, environment snapshot, logs, and analysis outputs under `output/backtests/<RUN_ID>/`.
+1. **Configuration Parsing** - YAML files under `config/` are validated and converted into immutable dataclasses (`BacktestConfigParser`, `MetricsConfigParser`, `StrategyConfigParser`).
+2. **Data Feed & Validation** - The compiled `DataFeed` streams ticks per month. Every feed is wrapped in a `TickValidator` that enforces monotonic timestamps, finite bid/ask/mid values, and non-negative spreads.
+3. **Metrics & Signals** - `MetricsManager` instantiates all enabled metrics and computes rolling indicators. `SignalGenerator` combines entry engines with predicate evaluation to produce open/close instructions.
+4. **Backtest Coordinator** - `BacktestCoordinator` iterates each configured pair, manages output directories, and records pair-level failures without aborting the entire batch.
+5. **Backtest Loop** - For each tick, metrics update, signals evaluate, positions open/close, and trades append to an in-memory ledger. On completion, trades persist to Parquet.
+6. **Artefact Snapshot** - Every run writes a manifest, environment snapshot, logs, and trade artefacts under `output/backtests/<RUN_ID>/`. Post-run reporting and multivariate diagnostics are written later beside `trades.parquet` when `tick-backtest report` or `tick-backtest analyze` is invoked.
 
 ## Key Components
 
@@ -62,9 +62,9 @@ flowchart LR
 
 ## Resilience & Reproducibility
 
-- **Immutable Outputs** – Each run is isolated to a timestamped directory with config snapshots hashed via SHA256.
-- **Failure Isolation** – Pair-level errors (missing data, runtime exceptions) are captured in the manifest and logs; remaining pairs continue.
-- **Environment Capture** – `environment.txt` stores the result of `pip freeze` to document dependencies.
-- **Tick Validation** – Invalid ticks increment counters and are skipped, keeping the backtest deterministic without aborting.
+- **Immutable Outputs** - Each run is isolated to a timestamped directory with config snapshots hashed via SHA256.
+- **Failure Isolation** - Pair-level errors (missing data, runtime exceptions) are captured in the manifest and logs; remaining pairs continue.
+- **Environment Capture** - `environment.txt` stores the result of `pip freeze` to document dependencies.
+- **Tick Validation** - Invalid ticks increment counters and are skipped, keeping the backtest deterministic without aborting.
 
 Refer to [Developer Notes](dev/internals.md) for module dependencies, testing strategy, and extension guidelines.

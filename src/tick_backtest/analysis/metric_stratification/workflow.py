@@ -107,6 +107,7 @@ def run_metric_stratification(
     trade_file: Path | str,
     output_root: Path | str,
     *,
+    output_subdir: str | None = None,
     metrics: Sequence[str] | None = None,
     value_column: str = "pnl_pips",
     preview_columns: Sequence[str] = DEFAULT_PREVIEW_COLUMNS,
@@ -135,7 +136,13 @@ def run_metric_stratification(
     output_root_path.mkdir(parents=True, exist_ok=True)
 
     backtest_id = derive_backtest_identifier(trade_path)
-    output_base = output_root_path / backtest_id
+    if output_subdir is None:
+        output_base = output_root_path / backtest_id
+    else:
+        output_subdir_path = Path(output_subdir)
+        if output_subdir_path.is_absolute():
+            raise ValueError("output_subdir must be relative")
+        output_base = output_root_path / output_subdir_path if output_subdir else output_root_path
     output_base.mkdir(parents=True, exist_ok=True)
 
     run_logger = logger

@@ -110,38 +110,24 @@ def report(trades_path: str | Path) -> None:
     run_trade_analysis(resolved_trades_path, output_dir=output_root, configure_logs=False)
 
     stratification_root = output_root / "metric_stratification"
-    staged_output = stratification_root / derive_backtest_identifier(resolved_trades_path)
-
-    if staged_output.exists():
-        shutil.rmtree(staged_output)
+    if stratification_root.exists():
+        shutil.rmtree(stratification_root)
     stratification_root.mkdir(parents=True, exist_ok=True)
 
     run_metric_stratification(
         trade_file=resolved_trades_path,
         output_root=stratification_root,
+        output_subdir="",
         configure_logs=False,
     )
 
-    if not staged_output.exists():
-        raise RuntimeError(f"metric stratification output was not created: {staged_output}")
-
-    for child in list(stratification_root.iterdir()):
-        if child == staged_output:
-            continue
-        if child.is_dir():
-            shutil.rmtree(child)
-        else:
-            child.unlink()
-
-    for child in staged_output.iterdir():
-        target = stratification_root / child.name
-        if target.exists():
-            if target.is_dir():
-                shutil.rmtree(target)
-            else:
-                target.unlink()
-        shutil.move(str(child), str(target))
-    shutil.rmtree(staged_output, ignore_errors=True)
+    reports_dir = stratification_root / "reports"
+    if not reports_dir.exists():
+        expected = stratification_root / derive_backtest_identifier(resolved_trades_path)
+        raise RuntimeError(
+            f"metric stratification output was not created under {stratification_root} "
+            f"(legacy staged path would have been {expected})"
+        )
 
 
 def analyze(trades_path: str | Path) -> None:

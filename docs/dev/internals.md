@@ -39,10 +39,10 @@ This section captures implementation details that are useful when extending or m
 
 ## Extension Points
 
-- **Metrics** – Implement new classes under `metrics/dataclasses` and runtime behaviour under `metrics/primitives`. Register in `metrics/config_registry.py`.
-- **Signals** – Add entry engines in `signals/entries/` and update `ENTRY_ENGINE_REGISTRY`. Ensure predicate coverage in `signals/predicates.py`.
-- **Data Feed** – Extend `_data_feed.pyx` for alternative storage layouts or override the fallback `DataFeed` to adapt path conventions.
-- **Analysis** – New reports can hook into `analysis/workflow.py` or custom scripts under `scripts/`.
+- **Metrics** - Implement new classes under `metrics/dataclasses` and runtime behaviour under `metrics/primitives`. Register in `metrics/config_registry.py`.
+- **Signals** - Add entry engines in `signals/entries/` and update `ENTRY_ENGINE_REGISTRY`. Ensure predicate coverage in `signals/predicates.py`.
+- **Data Feed** - Extend `_data_feed.pyx` for alternative storage layouts or override the fallback `DataFeed` to adapt path conventions.
+- **Analysis** - New reports can hook into `analysis/workflow.py` or custom scripts under `scripts/`.
 
 ## Testing Strategy
 

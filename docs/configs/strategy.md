@@ -57,8 +57,8 @@ Predicates use the following schema:
 
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
-| `metric` | string | ✅ | Dot-referenced metric key (e.g., `z30m.z_score`). |
-| `operator` | string | ✅ | One of `<`, `<=`, `>`, `>=`, `==`, `!=`. |
+| `metric` | string | Yes | Dot-referenced metric key (e.g., `z30m.z_score`). |
+| `operator` | string | Yes | One of `<`, `<=`, `>`, `>=`, `==`, `!=`. |
 | `value` | number | ◻️ | Literal RHS. Mutually exclusive with `other_metric`. |
 | `other_metric` | string | ◻️ | Metric key to compare against. Mutually exclusive with `value`. |
 | `use_abs` | bool | ◻️ | Apply `abs()` to the left-hand side before comparison. Defaults to `false`. |
@@ -71,12 +71,12 @@ Mean-reversion entry engine driven by the compiled `ThresholdReversionMetric`. T
 
 | Parameter | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `lookback_seconds` | int | ✅ | – | Horizon for establishing the reference price. |
-| `threshold_pips` | float | ✅ | – | Minimum distance from the reference mid required to trigger a signal. |
-| `tp_pips` | float | ❌ | `threshold_pips` | Take-profit distance in pips (must be positive). |
-| `sl_pips` | float | ❌ | `threshold_pips` | Stop-loss distance in pips (must be positive). |
-| `min_recency_seconds` | float | ❌ | `0.0` | Minimum age of the reference before a new trade can open. Helps avoid rapid flip-flops. |
-| `trade_timeout_seconds` | float | ❌ | `null` | Optional timeout after which positions auto-close (`TIMEOUT`). |
+| `lookback_seconds` | int | Yes | - | Horizon for establishing the reference price. |
+| `threshold_pips` | float | Yes | - | Minimum distance from the reference mid required to trigger a signal. |
+| `tp_pips` | float | No | `threshold_pips` | Take-profit distance in pips (must be positive). |
+| `sl_pips` | float | No | `threshold_pips` | Stop-loss distance in pips (must be positive). |
+| `min_recency_seconds` | float | No | `0.0` | Minimum age of the reference before a new trade can open. Helps avoid rapid flip-flops. |
+| `trade_timeout_seconds` | float | No | `null` | Optional timeout after which positions auto-close (`TIMEOUT`). |
 
 **Metadata emitted on trade open**
 - `direction` (`1` for long, `-1` for short)
@@ -120,13 +120,13 @@ Trend-following engine that watches two metrics (typically EWMAs) and fires when
 
 | Parameter | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `fast_metric` | string | ✅ | – | Metric key representing the faster series (e.g., `ewma_mid_5m.ewma`). |
-| `slow_metric` | string | ✅ | – | Metric key representing the slower series. |
-| `long_on_cross` | bool | ❌ | `true` | Emit a long signal when `fast` crosses above `slow`. |
-| `short_on_cross` | bool | ❌ | `false` | Emit a short signal when `fast` crosses below `slow`. |
-| `tp_pips` | float | ❌ | `0.0` | Optional take-profit distance in pips (0 disables TP). |
-| `sl_pips` | float | ❌ | `0.0` | Optional stop-loss distance in pips (0 disables SL). |
-| `trade_timeout_seconds` | float | ❌ | `null` | Optional timeout for open positions. |
+| `fast_metric` | string | Yes | - | Metric key representing the faster series (e.g., `ewma_mid_5m.ewma`). |
+| `slow_metric` | string | Yes | - | Metric key representing the slower series. |
+| `long_on_cross` | bool | No | `true` | Emit a long signal when `fast` crosses above `slow`. |
+| `short_on_cross` | bool | No | `false` | Emit a short signal when `fast` crosses below `slow`. |
+| `tp_pips` | float | No | `0.0` | Optional take-profit distance in pips (0 disables TP). |
+| `sl_pips` | float | No | `0.0` | Optional stop-loss distance in pips (0 disables SL). |
+| `trade_timeout_seconds` | float | No | `null` | Optional timeout for open positions. |
 
 **Metadata emitted on trade open**
 - `fast`, `slow` (the sampled metric values)
@@ -163,7 +163,7 @@ A no-op engine used in smoke tests and dry runs. It never opens trades and ignor
 
 | Parameter | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| *(none)* | – | – | – | Only the wrapper fields (`name`, `enabled`) are honoured. |
+| *(none)* | - | - | - | Only the wrapper fields (`name`, `enabled`) are honoured. |
 
 ---
 
@@ -187,7 +187,7 @@ exit:
       value: 0
 ```
 
-If you omit predicates the exit never forces a close — trades stay open until TP/SL/timeout conditions fire.
+If you omit predicates the exit never forces a close - trades stay open until TP/SL/timeout conditions fire.
 
 ---
 
@@ -232,6 +232,6 @@ This strategy:
 ## Tips & Best Practices
 - Entry/exit predicates run on the *current* metric snapshot. Ensure referenced metrics are enabled and produce finite values under expected conditions.
 - Keep predicate combinations unique; duplicate definitions within the same block are rejected during parsing.
-- Use `trade_timeout_seconds` sparingly — timeouts close trades with `TIMEOUT` reason regardless of price.
+- Use `trade_timeout_seconds` sparingly - timeouts close trades with `TIMEOUT` reason regardless of price.
 - Place derived metric names carefully; future code often expects dotted keys (e.g., `ewma_vol_5m.vol_percentile`).
 - When introducing new engines, remember to update `ENTRY_PARAMS_REGISTRY`, `ENTRY_ENGINE_REGISTRY`, and extend this reference to keep documentation aligned.

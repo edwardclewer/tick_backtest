@@ -24,7 +24,6 @@ from typing import Dict, List, Mapping, Optional, Sequence
 import pandas as pd
 
 from tick_backtest.analysis.metric_stratification import (
-    derive_backtest_identifier,
     run_metric_stratification,
 )
 from tick_backtest.config_parsers.metrics.config_parser import MetricsConfigParser
@@ -266,17 +265,14 @@ def run_metric_stratification_analysis(
             per_pair_outputs[pair] = strat_root
             continue
 
-        backtest_id = derive_backtest_identifier(trades_path)
-        tmp_output_dir = pair_analysis_dir / backtest_id
-        if tmp_output_dir.exists():
-            shutil.rmtree(tmp_output_dir)
         if strat_root.exists():
             shutil.rmtree(strat_root)
 
         try:
             run_metric_stratification(
                 trade_file=trades_path,
-                output_root=pair_analysis_dir,
+                output_root=strat_root,
+                output_subdir="",
                 metrics=metric_columns,
                 plot=plot,
                 save_outputs=save_outputs,
@@ -287,26 +283,7 @@ def run_metric_stratification_analysis(
                 "metric stratification failed",
                 extra={"pair": pair, "error": str(exc), "metric_columns": metric_columns},
             )
-            if tmp_output_dir.exists():
-                shutil.rmtree(tmp_output_dir, ignore_errors=True)
             continue
-
-        if strat_root.exists():
-            shutil.rmtree(strat_root)
-        strat_root.mkdir(parents=True, exist_ok=True)
-
-        if tmp_output_dir.exists():
-            for child in tmp_output_dir.iterdir():
-                target = strat_root / child.name
-                if child.is_dir():
-                    if target.exists():
-                        shutil.rmtree(target)
-                    shutil.move(str(child), str(target))
-                else:
-                    if target.exists():
-                        target.unlink()
-                    shutil.move(str(child), str(target))
-            shutil.rmtree(tmp_output_dir, ignore_errors=True)
 
         per_pair_outputs[pair] = strat_root
         logger.info(
