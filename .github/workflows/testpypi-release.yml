@@ -52,21 +52,35 @@ jobs:
           python -m pip install -U pip
           python -m pip install build twine
 
-      - name: Build artifacts
+      - name: Build sdist
         run: |
-          rm -rf build dist
-          python -m build
+          rm -rf build dist wheelhouse
+          python -m build --sdist
           ls -lh dist/
+
+      - name: Build manylinux wheels
+        uses: pypa/cibuildwheel@v2.22.0
+        env:
+          CIBW_PLATFORM: linux
+          CIBW_OUTPUT_DIR: wheelhouse
+          CIBW_BUILD_VERBOSITY: "1"
+
+      - name: Show built artifacts
+        run: |
+          ls -lh dist/
+          ls -lh wheelhouse/
 
       - name: Validate artifacts
         run: |
-          python -m twine check dist/*
+          python -m twine check dist/*.tar.gz wheelhouse/*.whl
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@v4
         with:
           name: release-dist
-          path: dist/*
+          path: |
+            dist/*.tar.gz
+            wheelhouse/*.whl
           if-no-files-found: error
 
   publish_testpypi:
@@ -84,16 +98,19 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-dist
-          path: dist
+          path: artifacts
 
-      - name: Keep sdist only
+      - name: Stage publish artifacts
         run: |
-          find dist -type f ! -name "*.tar.gz" -delete
+          rm -rf dist
+          mkdir -p dist
+          find artifacts -type f \( -name "*.tar.gz" -o -name "*.whl" \) -exec cp {} dist/ \;
           ls -lh dist/
 
       - name: Publish distribution to TestPyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
+          packages-dir: dist
           repository-url: https://test.pypi.org/legacy/
           attestations: false
           verbose: true

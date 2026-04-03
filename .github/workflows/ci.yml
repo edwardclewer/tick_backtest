@@ -216,6 +216,43 @@ jobs:
             **/*.log
           if-no-files-found: warn
 
+  linux_manylinux_wheel:
+    name: Build manylinux wheel (cp312)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build manylinux wheel via cibuildwheel
+        uses: pypa/cibuildwheel@v2.22.0
+        env:
+          CIBW_PLATFORM: linux
+          CIBW_OUTPUT_DIR: wheelhouse
+          CIBW_BUILD_VERBOSITY: "1"
+
+      - name: Verify repaired wheel tag
+        run: |
+          ls -lh wheelhouse/
+          python - <<'PY'
+          import pathlib, sys
+          wheels = sorted(pathlib.Path("wheelhouse").glob("*.whl"))
+          assert wheels, "No wheels produced by cibuildwheel"
+          for wheel in wheels:
+              print("WHEEL:", wheel.name)
+              if "manylinux" not in wheel.name:
+                  print("ERROR: expected manylinux wheel tag, got", wheel.name)
+                  sys.exit(1)
+          PY
+
+      - name: Upload manylinux wheel on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: manylinux-wheelhouse
+          path: wheelhouse/**
+          if-no-files-found: warn
+
   golden:
     name: Golden run (optional)
     runs-on: ubuntu-latest

@@ -54,11 +54,17 @@ TestPyPI publishing is handled by `.github/workflows/testpypi-release.yml`.
 
 1. Bump `pyproject.toml` to a version that has not already been uploaded to TestPyPI.
 2. Create and push a tag such as `testpypi-v0.1.0`.
-3. The workflow builds the sdist and wheel, then runs `twine check`.
-4. The workflow publishes the artifacts to TestPyPI using GitHub OIDC trusted publishing and the `testpypi` environment.
+3. The workflow builds:
+   - an sdist via `python -m build --sdist`
+   - Linux wheels via `cibuildwheel`
+4. On Linux, `cibuildwheel` runs inside the standard manylinux container flow and uses `auditwheel` repair so the published wheels carry manylinux tags instead of plain `linux_x86_64` tags.
+5. The workflow runs `twine check` over the sdist and repaired wheels.
+6. The workflow publishes the artifacts to TestPyPI using GitHub OIDC trusted publishing and the `testpypi` environment.
 
 The trigger is intentionally separate from future production tags so TestPyPI rehearsals do not imply a real PyPI release.
 The TestPyPI workflow currently disables package attestations because TestPyPI attestation verification can reject otherwise valid trusted-publishing uploads. Revisit this when TestPyPI attestation support is stable enough for this project.
+
+For public Linux binary distribution, the release path should use the `cibuildwheel` manylinux wheels, not the plain local `python -m build` wheel produced on a developer machine or generic Ubuntu runner.
 
 ## Trusted publishing setup
 
