@@ -14,11 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Tick Backtest Research Stack
+# Tick Backtest
 
 *Deterministic tick-level FX backtesting for reproducible research.*
 
-Tick Backtest is a configuration-first Python 3.12 toolkit for running reproducible FX strategy research. You provide Parquet ticks and YAML configs; the stack validates every setting, executes deterministic backtests, and writes manifests, logs, and analysis reports you can trust. No proprietary data yet? The repo ships with seeded Brownian-motion fixtures so you can run the full stack immediately and swap in your own shards later.
+Tick Backtest is a configuration-first Python 3.12 toolkit for reproducible FX strategy research. You provide Parquet ticks and YAML configs; the stack validates every setting, executes deterministic backtests, and writes manifests, logs, and analysis reports to disk.
 
 ### Highlights
 - **Performance:** ~8 million ticks/minute/core on AMD 5950X (Parquet → metrics → signals → trades)
@@ -26,47 +26,61 @@ Tick Backtest is a configuration-first Python 3.12 toolkit for running reproduci
 - **Resilient pipelines:** Resilient pipelines: per-pair failure isolation, tick validation, and structured telemetry
 - **Declarative research:** Declarative research: swap YAML configs instead of editing code
 - **Report ready:** Report ready: trade tables, Markdown summaries, metric stratification CSV/PNG artefacts
-- **Bundled fixtures:** Run end-to-end on the included synthetic Parquet ticks before wiring up private data
+- **CLI + API parity:** Every supported command is exposed both as `tick-backtest ...` and `tick_backtest.api.*(...)`
 
-Documentation is hosted here: [Documentation Site](docs/index.md).
+Documentation is hosted here: [Documentation Site](https://edwardclewer.github.io/tick_backtest/).
 
 ---
 
-## Quickstart (5 minutes)
-
-ℹ️ **Zero-data mode:** The `tests/test_data/` fixtures (seeded Brownian-motion ticks packaged with this repo) power the default config, so the commands below work out of the box without downloading market data.
+## Quickstart
 
 1. **Install prerequisites**
    ```bash
    python3.12 -m venv .venv
    source .venv/bin/activate
-   pip install -r requirements.txt
+   pip install tick-backtest
    ```
 
-2. **Point the sample config at your data**
-   ```yaml
-   # config/backtest/default_backtest.yaml
-   schema_version: "1.0"
-   pairs: [EURUSD]
-   start: 2012-02
-   end: 2013-02
-   data_base_path: "/abs/path/to/dukascopy_data/"
-   output_base_path: "/abs/path/to/tick_backtest/output/backtests/"
-   ```
-
-3. **Run the backtest**
+2. **Write a starter config**
    ```bash
-   PYTHONPATH=src python scripts/run_backtest.py \
-     --config config/backtest/default_backtest.yaml
-   ```
-   or from Python:
-   ```python
-   from tick_backtest.backtest.workflow import run_backtest
-   result = run_backtest("config/backtest/default_backtest.yaml")
-   print(result["output_dir"])
+   tick-backtest example-config --dest ./tick-backtest-config
    ```
 
-4. **Inspect outputs** at `output/backtests/<RUN_ID>/`
+3. **Edit the generated YAML files**
+   ```yaml
+   # tick-backtest-config/backtest.yaml
+   data_base_path: "/abs/path/to/your/parquet/shards"
+   output_base_path: "/abs/path/to/backtest/output"
+   metrics_config_path: "./metrics.yaml"
+   strategy_config_path: "./strategy.yaml"
+   ```
+
+4. **Run the backtest**
+   ```bash
+   tick-backtest run ./tick-backtest-config/backtest.yaml
+   ```
+
+5. **Generate a report for a single trade file**
+   ```bash
+   tick-backtest report /abs/path/to/output/<RUN_ID>/output/EURUSD/trades.parquet
+   ```
+
+6. **Run post-trade stratification**
+   ```bash
+   tick-backtest analyze /abs/path/to/output/<RUN_ID>/output/EURUSD/trades.parquet
+   ```
+
+The same surface is available from Python:
+   ```python
+   from tick_backtest import api
+
+   api.example_config("./tick-backtest-config")
+   api.run("./tick-backtest-config/backtest.yaml")
+   api.report("/abs/path/to/output/<RUN_ID>/output/EURUSD/trades.parquet")
+   api.analyze("/abs/path/to/output/<RUN_ID>/output/EURUSD/trades.parquet")
+   ```
+
+Inspect outputs under the configured `output_base_path`:
 
    | Path | Purpose |
    | --- | --- |
@@ -77,6 +91,15 @@ Documentation is hosted here: [Documentation Site](docs/index.md).
    | `configs/*.yaml` | Copies of backtest/metrics/strategy configs with SHA256 digests. |
 
 ---
+
+## Public Commands
+
+| Command | Input | Output location |
+| --- | --- | --- |
+| `tick-backtest run <backtest.yaml>` | Backtest config | Writes a run directory under `output_base_path/<RUN_ID>/` |
+| `tick-backtest report <trades.parquet>` | Trade database | Writes report artefacts beside the parquet file |
+| `tick-backtest analyze <trades.parquet>` | Trade database | Writes `metric_stratification/` beside the parquet file |
+| `tick-backtest example-config [--dest DIR]` | Optional destination dir | Prints starter YAML or writes a template set |
 
 ## Configuration Cheat Sheet
 
@@ -149,21 +172,36 @@ Entry engines and predicates gate trade opens; exit predicates can force closure
 
 </details>
 
-Need full schemas or extension guidance? See the [Configuration Guide](docs/configs.md).
+Need full schemas or extension guidance? See the [Configuration Guide](https://edwardclewer.github.io/tick_backtest/configs/).
 
 ---
 
-## Script, CLI & Analysis Helpers
+## Python API
 
-| Task | Command / Call | Notes |
-| --- | --- | --- |
-| Run backtest (CLI) | `PYTHONPATH=src python scripts/run_backtest.py --config config/backtest/default_backtest.yaml` | `--output-root`, `--log-level`, `--profile` available (`--help` for full list). |
-| Run backtest (Python) | `run_backtest("config/backtest/default_backtest.yaml", output_root="...")` | Returns a metadata dict including manifest path and output dir. |
-| Backtest analysis | `tick_backtest.analysis.run_backtest_analysis(output_dir, run_id=...)` | Produces Markdown reports + equity curves per pair. |
-| Metric stratification | `tick_backtest.analysis.run_metric_stratification_analysis(output_dir, run_id=...)` | Expectancy by metric bins (CSV/PNG/Markdown). |
-| Single trade analysis | `tick_backtest.analysis.run_trade_analysis(".../trades.parquet", output_dir=...)` | Quick inspection for a single pair. |
+| Function | Purpose |
+| --- | --- |
+| `tick_backtest.api.run(config_path, *, output_root=None)` | Run a backtest and its post-run analysis workflow |
+| `tick_backtest.api.report(trades_path)` | Generate Markdown/plot artefacts for a single trades parquet |
+| `tick_backtest.api.analyze(trades_path)` | Generate metric stratification artefacts for a single trades parquet |
+| `tick_backtest.api.example_config(dest=None, *, template="minimal")` | Print or write starter YAML templates |
 
-Helpers log warnings rather than failing runs; review `output/logs/<RUN_ID>.log` to diagnose skipped artefacts.
+The API is intentionally filesystem-oriented. It writes artefacts to disk and does not aim to return in-memory result objects.
+
+---
+
+## Repository Development
+
+If you are working from a checkout rather than an installed package:
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+pip install -e .
+pytest
+```
+
+Legacy repo scripts under `scripts/` still exist for internal development and CI coverage, but installed usage should go through `tick-backtest` or `tick_backtest.api`.
 
 ---
 
@@ -184,7 +222,7 @@ Helpers log warnings rather than failing runs; review `output/logs/<RUN_ID>.log`
 4. Outputs, manifests, and environment snapshots land under `output/backtests/<RUN_ID>/`.
 
 **Design Choice**: sequential execution avoids lookahead; scale comes from multi-pair orchestration and sweep automation.  
-Dive deeper in the [Developer Notes](docs/dev/internals.md).
+Dive deeper in the [Developer Notes](https://edwardclewer.github.io/tick_backtest/dev/internals/).
 
 ---
 
@@ -192,7 +230,7 @@ Dive deeper in the [Developer Notes](docs/dev/internals.md).
 
 | Symptom | Likely Cause | Fix |
 | --- | --- | --- |
-| `ConfigError: unknown field ...` | Extra keys in YAML | Remove or rename; see [Configuration Guide](docs/configs.md). |
+| `ConfigError: unknown field ...` | Extra keys in YAML | Remove or rename; see [Configuration Guide](https://edwardclewer.github.io/tick_backtest/configs/). |
 | `pyarrow` import error | Wheel missing | Install pinned version from `requirements.txt` and rerun. |
 | Run finishes but no trades | Warmup consumed data or predicates blocked | Check `output/logs/<RUN_ID>.log` and entry predicates. |
 | Manifest shows `missing_file` | `data_base_path` doesn’t match shard layout | Adjust path or supply expected Parquet shards. |
@@ -218,7 +256,8 @@ Running offline? Pre-install these wheels in your environment. Backtests abort i
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-PYTHONPATH=src pytest
+pip install -e .
+pytest
 ```
 
 Coverage highlights:
@@ -227,7 +266,7 @@ Coverage highlights:
 - `tests/metrics` – primitives plus indicator mathematics with reference helpers.
 - `tests/integration/test_backtest_run.py` – end-to-end pipeline regression.
 
-GitHub Actions builds wheels, runs tests, executes optional golden backtests, and publishes docs via `.github/workflows/mkdocs.yml`.
+GitHub Actions builds wheels, runs tests, validates distribution metadata, and publishes docs via `.github/workflows/mkdocs.yml`.
 
 ---
 
@@ -236,21 +275,15 @@ GitHub Actions builds wheels, runs tests, executes optional golden backtests, an
 - **Add a signal engine** – add a class in `signals/entries`, register it in `ENTRY_ENGINE_REGISTRY`, and expose parameters in strategy YAML.
 - **Support new data layouts** – extend `tick_backtest.data_feed` for alternative Parquet conventions; the validator enforces monotonic timestamps and finite spreads.
 
-See the [Developer Notes](docs/dev/internals.md) for dependency maps, testing expectations, and release checklists.
+See the [Developer Notes](https://edwardclewer.github.io/tick_backtest/dev/internals/) for dependency maps, testing expectations, and release checklists.
 
 ---
 
 ## Next Steps
-1. Run the sample backtest and inspect the generated manifest/logs.
-2. Tailor metrics and strategy configs to your research question.
-3. Explore the [documentation](docs/index.md) for advanced configuration, analysis tooling, and developer internals.
-
-## Sample Data & Reports
-- Synthetic fixtures under `tests/test_data/` are generated from seeded Brownian-motion processes. They exist solely to exercise the pipeline deterministically without bundling proprietary market data.
-- Sample equity curves and report snippets referenced throughout the docs were produced from those synthetic runs; regenerate them locally via `scripts/run_backtest.py` + `scripts/run_metric_stratification.py` before updating screenshots.
-
-### Local overrides
-Copy the `.example` configs under `config/**/local_default_*.yaml.example` to files without the `.example` suffix (e.g., `config/backtest/local_default_backtest.yaml`) and update them with your private paths or strategy tweaks. These files are gitignored so you can point `run_backtest` at them without leaking private settings.
+1. Generate a starter config with `tick-backtest example-config`.
+2. Point it at your own Parquet tick data.
+3. Run `tick-backtest run` and inspect the generated manifest and pair-level artefacts.
+4. Explore the [documentation](https://edwardclewer.github.io/tick_backtest/) for advanced configuration and internals.
 
 ---
 
