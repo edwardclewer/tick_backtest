@@ -26,7 +26,6 @@ import sys
 from dataclasses import asdict, replace
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
 
 import yaml
 
@@ -51,18 +50,18 @@ def load_config(config_path: Path | str):
     return parser.parse_config(Path(config_path))
 
 
-def setup_logging(run_id: str, log_dir: Path | None, level: str | int):
+def setup_logging(run_id: str, log_dir: Path | None, level: str | int) -> logging.Logger:
     configure_logging(run_id=run_id, log_dir=log_dir, level=level)
     return logging.getLogger(__name__)
 
 
-def _snapshot_config(source: Path, dest_dir: Path) -> Dict[str, object]:
+def _snapshot_config(source: Path, dest_dir: Path) -> dict[str, object]:
     dest_dir.mkdir(parents=True, exist_ok=True)
     text = source.read_text(encoding="utf-8")
     digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
     dest_path = dest_dir / source.name
     shutil.copy2(source, dest_path)
-    schema_version: Optional[str] = None
+    schema_version: str | None = None
     try:
         parsed = yaml.safe_load(text)
         if isinstance(parsed, dict):
@@ -80,14 +79,14 @@ def _snapshot_config(source: Path, dest_dir: Path) -> Dict[str, object]:
     }
 
 
-def _summarize_metrics_config(metrics_config_path: Path) -> List[Dict[str, object]]:
+def _summarize_metrics_config(metrics_config_path: Path) -> list[dict[str, object]]:
     try:
         parser = MetricsConfigParser(metrics_config_path)
         data = parser.load_metrics_config()
     except Exception:
         return []
 
-    summary: List[Dict[str, object]] = []
+    summary: list[dict[str, object]] = []
     for cfg in data.metrics:
         summary.append(
             {
@@ -100,7 +99,7 @@ def _summarize_metrics_config(metrics_config_path: Path) -> List[Dict[str, objec
     return summary
 
 
-def _count_parquet_rows(path: Path) -> Optional[int]:
+def _count_parquet_rows(path: Path) -> int | None:
     try:
         import pyarrow.parquet as pq  # type: ignore
     except Exception:
@@ -114,8 +113,8 @@ def _count_parquet_rows(path: Path) -> Optional[int]:
         return None
 
 
-def _collect_trade_outputs(output_root: Path) -> List[Dict[str, object]]:
-    outputs: List[Dict[str, object]] = []
+def _collect_trade_outputs(output_root: Path) -> list[dict[str, object]]:
+    outputs: list[dict[str, object]] = []
     if not output_root.exists():
         return outputs
 
@@ -150,13 +149,13 @@ def _write_environment_snapshot(run_root: Path) -> Path:
     return env_path
 
 
-def _write_manifest(run_root: Path, manifest: Dict[str, object]) -> Path:
+def _write_manifest(run_root: Path, manifest: dict[str, object]) -> Path:
     manifest_path = run_root / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
     return manifest_path
 
 
-def _hash_file(path: Path, chunk_size: int = 1024 * 1024) -> Optional[str]:
+def _hash_file(path: Path, chunk_size: int = 1024 * 1024) -> str | None:
     hasher = hashlib.sha256()
     try:
         with path.open("rb") as handle:
@@ -170,8 +169,8 @@ def _hash_file(path: Path, chunk_size: int = 1024 * 1024) -> Optional[str]:
     return hasher.hexdigest()
 
 
-def _collect_input_shards(config) -> List[Dict[str, object]]:
-    shards: List[Dict[str, object]] = []
+def _collect_input_shards(config) -> list[dict[str, object]]:
+    shards: list[dict[str, object]] = []
     months = get_data_months(
         config.year_start,
         config.year_end,
@@ -187,14 +186,14 @@ def _collect_input_shards(config) -> List[Dict[str, object]]:
     for pair in config.pairs:
         for year, month in months:
             file_path = config.data_base_path / pair / f"{pair}_{year}-{month:02d}.parquet"
-            info: Dict[str, object] = {
+            info: dict[str, object] = {
                 "pair": pair,
                 "year_month": f"{year}-{month:02d}",
                 "path": str(file_path.resolve()),
             }
 
             errors: List[str] = []
-            row_count: Optional[int] = None
+            row_count: int | None = None
 
             if file_path.exists() and pq is not None:
                 try:

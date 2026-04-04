@@ -12,18 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 @dataclass
 class SignalData:
+    """Trading intent produced by the signal layer for the current tick."""
+
     should_open: bool = False
-    direction: int = 0      # +1 long, -1 short, 0 = none
-    tp: Optional[float] = None
-    sl: Optional[float] = None
+    direction: int = 0
+    tp: float | None = None
+    sl: float | None = None
     reason: str = "mean_reversion_zscore"
-    timeout_seconds: Optional[float] = None
+    timeout_seconds: float | None = None
     should_close: bool = False
-    close_reason: Optional[str] = None
-    entry_metadata: Optional[Dict[str, Any]] = None
+    close_reason: str | None = None
+    entry_metadata: dict[str, Any] | None = None

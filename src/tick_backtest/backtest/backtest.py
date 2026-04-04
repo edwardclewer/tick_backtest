@@ -12,16 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 import math
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
 from tick_backtest.data_feed.data_feed import DataFeed, NoMoreTicks
+from tick_backtest.data_feed.tick import Tick
 from tick_backtest.metrics.manager.metrics_manager import MetricsManager
 from tick_backtest.position.position import Position
+from tick_backtest.signals.signal_data import SignalData
 from tick_backtest.signals.signal_generator import SignalGenerator
 
 
@@ -34,36 +39,33 @@ class Backtest:
         signal_generator: SignalGenerator,
         metrics_manager: MetricsManager,
         output_base_path: Path,
-        pip_size: float
+        pip_size: float,
     ) -> None:
         self.data_feed = data_feed
         self.signal_generator = signal_generator
         self.metrics_manager = metrics_manager
         self.output_base_path = output_base_path
 
-        self.trades = []
+        self.trades: list[dict[str, Any]] = []
         self.is_trade_open = False
         self.trade_opened_last_tick = False
         self.trade = Position()
         self.pip_size = pip_size
         self.logger = logging.getLogger(__name__)
-        self.last_tick = None
+        self.last_tick: Tick | None = None
 
     def run(self) -> None:
-        processed = 0
         try:
             while True:
                 tick = self.data_feed.tick()
                 self._handle_tick(tick)
-                processed += 1
         except NoMoreTicks:
             pass
 
         self._finish()
 
-    def warmup(self, initial_tick, warmup_seconds) -> None:
+    def warmup(self, initial_tick: Tick, warmup_seconds: float) -> None:
         """Prime rolling metrics with historical data before trading."""
-        # Initialise with first tick
         start_ts = self._to_datetime(initial_tick.timestamp)
         last_ts = start_ts
         metrics = self.metrics_manager.update(initial_tick)
@@ -82,7 +84,7 @@ class Backtest:
         except NoMoreTicks:
             self.logger.warning("data feed exhausted during warmup phase")
 
-    def _handle_tick(self, tick) -> None:
+    def _handle_tick(self, tick: Tick) -> None:
         self.last_tick = tick
         just_filled = False
         if self.trade_opened_last_tick:
@@ -97,7 +99,7 @@ class Backtest:
         if signal.should_open:
             self._open_position(tick, signal, metrics)
 
-    def _update_outstanding(self, tick) -> bool:
+    def _update_outstanding(self, tick: Tick) -> bool:
         """Fill entry price/time for a trade opened on the prior tick."""
         fill_time = self._to_datetime(tick.timestamp)
         entry_price = float(tick.mid)
@@ -144,7 +146,12 @@ class Backtest:
         self.trade_opened_last_tick = False
         return True
 
-    def _open_position(self, tick, signal, metrics) -> None:
+    def _open_position(
+        self,
+        tick: Tick,
+        signal: SignalData,
+        metrics: dict[str, Any],
+    ) -> None:
         """Open a new position based on the generated signal."""
         if not signal.should_open:
             return
@@ -228,7 +235,7 @@ class Backtest:
         self.trades.append(record)
         self.is_trade_open = False
 
-    def _close_position(self, tick, signal=None) -> None:
+    def _close_position(self, tick: Tick, signal: SignalData | None = None) -> None:
         """Close an open position if TP/SL breached."""
         if not self.is_trade_open:
             return
@@ -328,7 +335,7 @@ class Backtest:
         )
 
     @staticmethod
-    def _to_datetime(ts) -> datetime:
+    def _to_datetime(ts: Any) -> datetime:
         if isinstance(ts, datetime):
             return ts
         if hasattr(ts, "to_pydatetime"):

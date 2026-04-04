@@ -15,12 +15,12 @@
 from __future__ import annotations
 
 import math
-from typing import Dict, Iterable
+from collections.abc import Callable, Iterable
 
 from tick_backtest.config_parsers.strategy.config_dataclass import PredicateConfig
 
 
-def _to_float(value, default=math.nan) -> float:
+def _to_float(value: object, default: float = math.nan) -> float:
     if value is None or isinstance(value, bool):
         return default
     try:
@@ -32,7 +32,7 @@ def _to_float(value, default=math.nan) -> float:
 class PredicateEvaluator:
     """Evaluate configured predicates against the current metric snapshot."""
 
-    _OPS = {
+    _OPERATORS: dict[str, Callable[[float, float], bool]] = {
         ">": lambda a, b: a > b,
         ">=": lambda a, b: a >= b,
         "<": lambda a, b: a < b,
@@ -42,7 +42,7 @@ class PredicateEvaluator:
     }
 
     @classmethod
-    def evaluate(cls, predicate: PredicateConfig, metrics: Dict[str, float]) -> bool:
+    def evaluate(cls, predicate: PredicateConfig, metrics: dict[str, float]) -> bool:
         left = _to_float(metrics.get(predicate.metric))
         if not math.isfinite(left):
             return False
@@ -56,10 +56,9 @@ class PredicateEvaluator:
             if not math.isfinite(right):
                 return False
 
-        op = cls._OPS[predicate.operator]
+        op = cls._OPERATORS[predicate.operator]
         return bool(op(left, right))
 
     @classmethod
-    def evaluate_all(cls, predicates: Iterable[PredicateConfig], metrics: Dict[str, float]) -> bool:
+    def evaluate_all(cls, predicates: Iterable[PredicateConfig], metrics: dict[str, float]) -> bool:
         return all(cls.evaluate(pred, metrics) for pred in predicates)
-

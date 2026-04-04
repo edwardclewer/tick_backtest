@@ -20,14 +20,14 @@ import subprocess
 import sys
 import uuid
 from contextlib import contextmanager
-from contextvars import ContextVar
+from contextvars import ContextVar, Token
 from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, Mapping, MutableMapping, Optional
+from typing import Any, Iterator, Mapping
 
 
-_CONTEXT: ContextVar[Dict[str, Any]] = ContextVar(
+_CONTEXT: ContextVar[dict[str, Any]] = ContextVar(
     "tick_backtest_logging_context",
     default={"run_id": None, "pair": None},
 )
@@ -90,7 +90,7 @@ class StructuredFormatter(logging.Formatter):
         run_id = getattr(record, "run_id", context.get("run_id"))
         pair = getattr(record, "pair", context.get("pair"))
 
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "ts": datetime.fromtimestamp(record.created, tz=timezone.utc)
             .isoformat(timespec="milliseconds"),
             "level": record.levelname,
@@ -100,7 +100,7 @@ class StructuredFormatter(logging.Formatter):
             "pair": pair,
         }
 
-        extra: Dict[str, Any] = {}
+        extra: dict[str, Any] = {}
         for key, value in record.__dict__.items():
             if key in self.RESERVED or key in ("run_id", "pair"):
                 continue
@@ -117,7 +117,7 @@ class StructuredFormatter(logging.Formatter):
 def configure_logging(
     *,
     run_id: str,
-    log_dir: Optional[Path] = None,
+    log_dir: Path | None = None,
     level: int | str = logging.INFO,
 ) -> None:
     """Set up root logging with structured JSON output."""
@@ -157,7 +157,7 @@ def set_run_context(**updates: Any) -> ContextVarToken:
     """Merge updates into the current logging context."""
     ctx = dict(_CONTEXT.get())
     ctx.update(updates)
-    return ContextVarToken(token=_CONTEXT.set(ctx))
+    return ContextVarToken(context_token=_CONTEXT.set(ctx))
 
 
 def reset_run_context(token: "ContextVarToken") -> None:
@@ -170,12 +170,12 @@ class ContextVarToken:
 
     __slots__ = ("value",)
 
-    def __init__(self, token):
-        self.value = token
+    def __init__(self, context_token: Token[dict[str, Any]]) -> None:
+        self.value = context_token
 
 
 @contextmanager
-def run_context(**updates: Any):
+def run_context(**updates: Any) -> Iterator[None]:
     """Context manager that temporarily overrides logging context."""
     token = set_run_context(**updates)
     try:
@@ -184,7 +184,7 @@ def run_context(**updates: Any):
         reset_run_context(token)
 
 
-def get_git_hash() -> Optional[str]:
+def get_git_hash() -> str | None:
     """Return the current git commit hash if available."""
     try:
         result = subprocess.run(
@@ -206,10 +206,10 @@ def log_run_metadata(
     backtest_config: Any,
     metrics_config_path: Path,
     strategy_config_path: Path,
-    git_hash: Optional[str],
+    git_hash: str | None,
 ) -> None:
     """Emit configuration and environment metadata for reproducibility."""
-    metadata: Dict[str, Any] = {
+    metadata: dict[str, Any] = {
         "git_hash": git_hash,
         "backtest_config": _serialize(backtest_config),
         "metrics_config_path": str(metrics_config_path),

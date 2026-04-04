@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import math
-from typing import Dict
 
 from tick_backtest.config_parsers.strategy.config_dataclass import EntryConfig
 from tick_backtest.config_parsers.strategy.entry_configs import EWMACrossoverEntryParams
@@ -23,7 +22,7 @@ from tick_backtest.data_feed.tick import Tick
 from tick_backtest.signals.entries.base import BaseEntryEngine, EntryResult
 
 
-def _to_float(value, default=math.nan):
+def _to_float(value: object, default: float = math.nan) -> float:
     if value is None or isinstance(value, bool):
         return default
     try:
@@ -42,7 +41,7 @@ class EWMACrossoverEntryEngine(BaseEntryEngine):
         self.params = entry_config.params
         self._last_diff: float | None = None
 
-    def update(self, tick: Tick, metrics: Dict[str, float]) -> EntryResult:
+    def update(self, tick: Tick, metrics: dict[str, float]) -> EntryResult:
         fast = _to_float(metrics.get(self.params.fast_metric))
         slow = _to_float(metrics.get(self.params.slow_metric))
         metadata = {"fast": fast, "slow": slow}

@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import logging
+
 from tick_backtest.backtest.backtest import Backtest
 from tick_backtest.data_feed.data_feed import DataFeed, DataFeedError, NoMoreTicks
 from tick_backtest.data_feed.validation import TickValidator, ValidatingDataFeed
@@ -25,20 +26,21 @@ from tick_backtest.signals.signal_generator import SignalGenerator
 
 logger = logging.getLogger(__name__)
 
+
 class BacktestCoordinator:
     def __init__(
         self,
         backtest_config,
         *,
         run_id: str,
-        ):
+    ) -> None:
         self.backtest_config = backtest_config
         self.backtest_config.output_base_path.mkdir(parents=True, exist_ok=True)
         self.run_id = run_id
         self.pair_failures: dict[str, str] = {}
         self.tick_validation_stats: dict[str, TickValidator] = {}
 
-    def run_backtests(self):
+    def run_backtests(self) -> None:
         """Run a backtest for each configured pair."""
         logger.info(
             "starting backtest run",
@@ -56,7 +58,7 @@ class BacktestCoordinator:
                 logger.info("completed pair backtest")
         logger.info("all backtests complete")
 
-    def _run_backtest(self, pair: str):
+    def _run_backtest(self, pair: str) -> None:
         """Run a single backtest for the supplied pair."""
         raw_feed = DataFeed(
             base_path=self.backtest_config.data_base_path,
@@ -64,7 +66,7 @@ class BacktestCoordinator:
             year_start=self.backtest_config.year_start,
             year_end=self.backtest_config.year_end,
             month_start=self.backtest_config.month_start,
-            month_end=self.backtest_config.month_end
+            month_end=self.backtest_config.month_end,
         )
 
         validator = TickValidator(pair=pair)
@@ -92,7 +94,7 @@ class BacktestCoordinator:
             signal_generator=signal_generator,
             metrics_manager=metrics_manager,
             output_base_path=trades_path,
-            pip_size=self.backtest_config.pip_size
+            pip_size=self.backtest_config.pip_size,
         )
         try:
             backtest.warmup(initial_tick=initial_tick, warmup_seconds=self.backtest_config.warmup_seconds)

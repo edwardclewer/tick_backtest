@@ -12,29 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Any
 
 
 @dataclass
 class Position:
-    """
-    Represents an open or closed trade position.
-    """
-    entry_time: Optional[datetime] = None
-    entry_price: float = 0.0
-    tp: Optional[float] = None
-    sl: Optional[float] = None
-    direction: int = 0             # +1 long, -1 short
-    timeout_seconds: Optional[float] = None
-    exit_time: Optional[datetime] = None
-    exit_price: Optional[float] = None
-    pnl_pips: Optional[float] = None
-    outcome_label: Optional[str] = None
-    meta: Dict[str, Any] = field(default_factory=dict)
+    """Represents an open or closed trade position."""
 
-    # --- Lifecycle helpers ---
+    entry_time: datetime | None = None
+    entry_price: float = 0.0
+    tp: float | None = None
+    sl: float | None = None
+    direction: int = 0
+    timeout_seconds: float | None = None
+    exit_time: datetime | None = None
+    exit_price: float | None = None
+    pnl_pips: float | None = None
+    outcome_label: str | None = None
+    meta: dict[str, Any] = field(default_factory=dict)
 
     def set_entry_fill(self, price: float, fill_time: datetime) -> None:
         """Record the fill price/time once the trade actually opens."""

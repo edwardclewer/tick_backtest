@@ -15,8 +15,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 from tick_backtest.config_parsers.strategy.config_dataclass import EntryConfig
 from tick_backtest.data_feed.tick import Tick
@@ -28,11 +28,11 @@ class EntryResult:
 
     should_open: bool = False
     direction: int = 0
-    tp: Optional[float] = None
-    sl: Optional[float] = None
-    timeout_seconds: Optional[float] = None
+    tp: float | None = None
+    sl: float | None = None
+    timeout_seconds: float | None = None
     reason: str = "no_signal"
-    metadata: Optional[Dict[str, float]] = None
+    metadata: Mapping[str, float] | None = None
 
 
 class BaseEntryEngine(ABC):
@@ -43,6 +43,5 @@ class BaseEntryEngine(ABC):
         self.pip_size = float(pip_size)
 
     @abstractmethod
-    def update(self, tick: Tick, metrics: Dict[str, float]) -> EntryResult:
+    def update(self, tick: Tick, metrics: dict[str, float]) -> EntryResult:
         """Return the latest entry decision given current metrics."""
-

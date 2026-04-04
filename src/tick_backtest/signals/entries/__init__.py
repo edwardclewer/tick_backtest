@@ -26,8 +26,8 @@ ENTRY_ENGINE_REGISTRY = {
 __all__ = [
     "BaseEntryEngine",
     "EntryResult",
-    "ThresholdReversionEntryEngine",
     "EWMACrossoverEntryEngine",
     "NullEntryEngine",
+    "ThresholdReversionEntryEngine",
     "ENTRY_ENGINE_REGISTRY",
 ]

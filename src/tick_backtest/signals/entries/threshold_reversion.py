@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 import math
-from typing import Dict
 
 from tick_backtest.config_parsers.strategy.config_dataclass import EntryConfig
 from tick_backtest.config_parsers.strategy.entry_configs import ThresholdReversionEntryParams
@@ -24,7 +23,7 @@ from tick_backtest.metrics.indicators.threshold_reversion_metric import Threshol
 from tick_backtest.signals.entries.base import BaseEntryEngine, EntryResult
 
 
-def _to_float(value, default=math.nan) -> float:
+def _to_float(value: object, default: float = math.nan) -> float:
     if value is None or isinstance(value, bool):
         return default
     try:
@@ -57,7 +56,7 @@ class ThresholdReversionEntryEngine(BaseEntryEngine):
         self.sl_multiple = self.params.sl_pips / self.params.threshold_pips
         self._last_position = 0
 
-    def update(self, tick: Tick, metrics: Dict[str, float]) -> EntryResult:
+    def update(self, tick: Tick, metrics: dict[str, float]) -> EntryResult:
         self.metric.update(tick)
         snapshot = self.metric.value_dict()
         metadata = {

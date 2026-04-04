@@ -15,24 +15,26 @@
 """Top-level exports for the tick_backtest package."""
 
 __all__ = [
-    "DEFAULT_METRICS",
-    "BacktestAnalysisSummary",
-    "MetricStratificationSummary",
+    "run",
+    "report",
     "analyze",
     "example_config",
     "run_backtest",
+    "BacktestAnalysisSummary",
+    "MetricStratificationSummary",
     "run_backtest_analysis",
     "run_metric_stratification_analysis",
     "run_metric_stratification",
     "run_trade_analysis",
-    "report",
     "TradeAnalysisResult",
-    "run",
+    "DEFAULT_METRICS",
 ]
 
 
-def __getattr__(name):
+def __getattr__(name: str) -> object:
     """Lazily import heavy submodules when their symbols are first accessed."""
+    # Keep the public package surface import-light while still presenting a small,
+    # curated top-level API.
     if name in {"analyze", "example_config", "report", "run"}:
         from tick_backtest.api import analyze, example_config, report, run
 

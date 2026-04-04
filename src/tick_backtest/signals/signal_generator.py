@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional
+from typing import Any
 
 from tick_backtest.config_parsers.strategy.config_dataclass import EntryConfig, ExitConfig, StrategyConfigData
 from tick_backtest.config_parsers.strategy.entry_configs import ThresholdReversionEntryParams
@@ -30,7 +30,7 @@ class SignalGenerator:
     def __init__(
         self,
         *,
-        strategy_config: Optional[StrategyConfigData] = None,
+        strategy_config: StrategyConfigData | None = None,
         pip_size: float = 0.0001,
     ) -> None:
         if strategy_config is None:
@@ -46,7 +46,7 @@ class SignalGenerator:
         self.sl_multiple = getattr(self.entry_engine, "sl_multiple", 1.0)
         self.last_signal = SignalData()
 
-    def _build_entry_engine(self, entry_config: EntryConfig):
+    def _build_entry_engine(self, entry_config: EntryConfig) -> Any:
         engine_cls = ENTRY_ENGINE_REGISTRY.get(entry_config.engine)
         if engine_cls is None:
             raise ValueError(f"Unrecognised strategy entry engine '{entry_config.engine}'")
@@ -74,7 +74,13 @@ class SignalGenerator:
             exit=exit_cfg,
         )
 
-    def update(self, metrics: Dict[str, float], tick: Tick, *, is_warmup: bool = False) -> SignalData:
+    def update(
+        self,
+        metrics: dict[str, float],
+        tick: Tick,
+        *,
+        is_warmup: bool = False,
+    ) -> SignalData:
         """Compute the latest trading intent from metrics and tick."""
         signal = SignalData(reason=self.strategy_config.entry.name)
 

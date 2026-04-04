@@ -16,41 +16,41 @@ from __future__ import annotations
 
 from contextlib import ExitStack
 from importlib.resources import as_file, files
+from importlib.resources.abc import Traversable
 from pathlib import Path
 import shutil
-from typing import Iterable
 
 __all__ = ["analyze", "example_config", "report", "run"]
 
 
-def _template_dir(template: str):
+def _template_dir(template: str) -> Traversable:
     resource = files("tick_backtest").joinpath("config", "templates", template)
     if not resource.is_dir():
         raise ValueError(f"unknown config template: {template}")
     return resource
 
 
-def _yaml_templates(template_dir) -> Iterable:
+def _yaml_templates(template_dir: Traversable) -> list[Traversable]:
     return sorted(
         child for child in template_dir.iterdir() if child.is_file() and child.name.endswith(".yaml")
     )
 
 
-def _copy_resource_tree(resource_dir, dest_dir: Path) -> None:
+def _copy_resource_tree(resource_dir: Traversable, dest_dir: Path) -> None:
     with ExitStack() as stack:
-        def walk(current_resource, current_dest: Path) -> None:
+        def copy_resource_children(current_resource: Traversable, current_dest: Path) -> None:
             current_dest.mkdir(parents=True, exist_ok=True)
             for child in current_resource.iterdir():
                 target_path = current_dest / child.name
                 if child.is_dir():
-                    walk(child, target_path)
+                    copy_resource_children(child, target_path)
                     continue
 
                 target_path.parent.mkdir(parents=True, exist_ok=True)
                 resource_path = Path(stack.enter_context(as_file(child)))
                 shutil.copy2(resource_path, target_path)
 
-        walk(resource_dir, dest_dir)
+        copy_resource_children(resource_dir, dest_dir)
 
 
 def example_config(
