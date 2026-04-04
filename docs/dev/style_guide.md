@@ -29,7 +29,8 @@ Use this guide when contributing to the Tick Backtest Research Stack or updating
 1. Draft updates in Markdown under `docs/`.
 2. Run `mkdocs serve` locally to preview changes.
 3. Place contributor-/maintainer-focused material under `docs/dev/` to keep the main guides user-friendly.
-4. Keep user-facing pages concise and task-oriented; link to deeper references when needed.
+4. Keep installed-package usage primary on user-facing pages; move checkout-only details into clearly labeled contributor sections or `docs/dev/`.
+5. Keep user-facing pages concise and task-oriented; link to deeper references when needed.
 
 ### Tooling
 
@@ -37,7 +38,6 @@ Use this guide when contributing to the Tick Backtest Research Stack or updating
   ```bash
   pip install -r requirements-docs.txt
   ```
-- Lint Markdown with `pre-commit run --all-files` (configure in `.pre-commit-config.yaml` if available).
 - Build the static site with:
   ```bash
   mkdocs build --strict
@@ -53,7 +53,7 @@ Use this guide when contributing to the Tick Backtest Research Stack or updating
 
 - Update `mkdocs.yml` navigation if new pages are added.
 - Regenerate screenshots or sample manifests when output format changes.
-- Verify Quickstart instructions against the latest `requirements.txt`.
+- Verify Quickstart and contributor setup instructions against the latest `README.md`, `requirements.txt`, and actual package workflow.
 - Summarise documentation changes in the project changelog or release notes so external users can track updates.
 
 Maintain this guide as your checklist for consistent documentation quality.

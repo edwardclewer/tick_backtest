@@ -18,7 +18,7 @@ limitations under the License.
 
 See also: [Configuration Overview](configs.md) · [Metrics Reference](configs/metrics.md) · [Strategy Reference](configs/strategy.md)
 
-This guide covers both installed-package usage and repository-checkout usage. Installed users should start with the packaged demo project. Repository-root configs under `config/` are for checkout-only development and CI.
+This guide covers both installed-package usage and repository-checkout usage. Installed users should start with the packaged demo project. Repository-checkout setup appears later as a secondary contributor workflow.
 
 !!! info "No proprietary market data required"
     The package ships with seeded Brownian-motion Parquet fixtures, so you can complete this quickstart immediately and only later point the stack at private shards.
@@ -26,10 +26,13 @@ This guide covers both installed-package usage and repository-checkout usage. In
 ## Prerequisites
 
 - Python 3.12
-- Access to Dukascopy-style Parquet shards organised as `{data_root}/{PAIR}/{PAIR}_YYYY-MM.parquet`
 - Sufficient disk space for output manifests and trade artefacts
 
-Each shard should contain `timestamp`, `bid`, and `ask` columns. Tick Backtest expects this archive to exist already and does not download market data itself; if you need a fetch pipeline, [`dukascopy-python`](https://github.com/fx-trader/dukascopy-python) is a suitable external option.
+If you want to run the bundled demo project, no external market data is required.
+
+For your own data, Tick Backtest expects an existing archive of Parquet shards organised as `{data_root}/{PAIR}/{PAIR}_YYYY-MM.parquet` with `timestamp`, `bid`, and `ask` columns. Tick Backtest does not download market data itself; if you need a fetch pipeline, [`dukascopy-python`](https://github.com/fx-trader/dukascopy-python) is a suitable external option.
+
+Tick Backtest does not impose an experiment-level directory scheme beyond writing each run to `output_base_path/<RUN_ID>/`. If you are running related strategies or config sweeps, a simple pattern is to group runs under an experiment folder and point `output_base_path` at an experiment-specific `runs/` directory.
 
 ## Installed Package Quickstart
 
@@ -53,6 +56,12 @@ tick-backtest report ./demo/output/<RUN_ID>/output/EURUSD/trades.parquet
 tick-backtest analyze ./demo/output/<RUN_ID>/output/EURUSD/trades.parquet
 ```
 
+The generated demo project contains:
+
+- `backtest.yaml`, `metrics.yaml`, and `strategy.yaml`
+- `demo_data/` with bundled EURUSD and GBPUSD Parquet shards
+- `output/` as the configured run destination
+
 For your own data, start from the generic packaged templates:
 
 ```bash
@@ -63,6 +72,21 @@ Edit `backtest.yaml` to point at your parquet archive and output location, then 
 
 Path handling is config-relative: `data_base_path`, `output_base_path`, `metrics_config_path`, and `strategy_config_path` are resolved against the directory containing `backtest.yaml`.
 
+For example, you might use a layout like:
+
+```text
+research/
+  configs/
+  experiments/
+    mean_reversion_q2_2026/
+      runs/
+        <RUN_ID>/
+      notes/
+      summaries/
+```
+
+This keeps the package flexible while still giving you a clean place to organise sweeps and follow-up analysis.
+
 ## Repository Checkout Quickstart
 
 If you are working from a checkout rather than an installed package:
@@ -71,7 +95,8 @@ If you are working from a checkout rather than an installed package:
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-pip install -e .[tests]
+pip install -e .
+pytest
 ```
 
 ??? tip "Need docs tooling?"
@@ -80,7 +105,9 @@ pip install -e .[tests]
     pip install -r requirements-docs.txt
     ```
 
-Repository-root configs live under `config/` and are checkout-only development assets. The default backtest config lives at `config/backtest/default_backtest.yaml`. Update these fields for your data environment or copy the `.example` files (for example `config/backtest/local_default_backtest.yaml.example`) to files without the `.example` suffix and customise those versions for private datasets:
+This editable install step is required for a clean local test run because the package builds compiled extensions used by the runtime and test suite.
+
+Repository helper configs live under `config/` and are checkout-only development assets. The default backtest config lives at `config/backtest/default_backtest.yaml`. Update these fields for your data environment or copy the `.example` files (for example `config/backtest/local_default_backtest.yaml.example`) to files without the `.example` suffix and customise those versions for private datasets:
 
 - `data_base_path`: absolute path to your Parquet archive
 - `output_base_path`: directory for backtest artefacts
@@ -107,7 +134,7 @@ print(result["run_id"], result["output_dir"])
 tick-backtest run config/backtest/default_backtest.yaml
 ```
 
-Both entry points create a timestamped directory under `output/backtests/`.
+Both entry points create a timestamped directory under the configured `output_base_path/<RUN_ID>/`.
 
 ## Inspect the Results
 

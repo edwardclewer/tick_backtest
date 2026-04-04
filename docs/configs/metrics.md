@@ -16,7 +16,7 @@ limitations under the License.
 
 # Metrics Reference
 
-This page documents every metric type available through the `config/metrics/*.yaml` files. All metrics share the same wrapper fields:
+This page documents every metric type available through the metrics YAML surface used by Tick Backtest. All metrics share the same wrapper fields:
 
 - `name` - unique identifier. At runtime each output is prefixed as `<name>.<field>`.
 - `type` - registry key in `tick_backtest.config_parsers.metrics.config_registry.CONFIG_REGISTRY`.

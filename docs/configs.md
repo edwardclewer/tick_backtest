@@ -18,7 +18,9 @@ limitations under the License.
 
 Backtests are driven entirely by YAML files. This guide explains each schema and how validation enforces correctness.
 
-## Backtest Configuration (`config/backtest/*.yaml`)
+Packaged starter templates are exposed through `tick-backtest example-config`. You can edit those emitted YAML files directly, or maintain your own equivalent config files anywhere on disk.
+
+## Backtest Configuration (`backtest.yaml`)
 
 | Field | Type | Description |
 | --- | --- | --- |
@@ -28,7 +30,7 @@ Backtests are driven entirely by YAML files. This guide explains each schema and
 | `pip_size` | float | Pip precision used for PnL and TP/SL calculations. |
 | `warmup_seconds` | int | Seconds of historical ticks consumed before trading. |
 | `data_base_path` | path | Root directory containing `{pair}/{pair}_YYYY-MM.parquet` shards. |
-| `output_base_path` | path | Directory where `output/backtests/<RUN_ID>/` will be created. |
+| `output_base_path` | path | Directory where a run directory named `<RUN_ID>/` will be created. |
 | `metrics_config_path` | path | Metrics YAML to load. |
 | `strategy_config_path` | path | Strategy YAML to load. |
 
@@ -39,7 +41,7 @@ Validation highlights:
 - Output paths are created automatically if missing.
 - Relative paths are resolved against the directory containing `backtest.yaml`.
 
-## Metrics Configuration (`config/metrics/*.yaml`)
+## Metrics Configuration (`metrics.yaml`)
 
 Each metric entry maps to a dataclass in `tick_backtest.config_parsers.metrics`. Validation enforces:
 
@@ -51,27 +53,29 @@ Each metric entry maps to a dataclass in `tick_backtest.config_parsers.metrics`.
 <details>
 <summary><strong>Sample metrics YAML</strong></summary>
 
-```
-- name: z30m
-  type: zscore
-  enabled: true
-  params:
-    lookback_seconds: 1800
-- name: ewma_vol_5m
-  type: ewma_vol
-  params:
-    tau_seconds: 300
-    percentile_horizon_seconds: 300
-    bins: 256
-    base_vol: 0.0001
-    stddev_cap: 5.0
+```yaml
+schema_version: "1.0"
+metrics:
+  - name: z30m
+    type: zscore
+    enabled: true
+    params:
+      lookback_seconds: 1800
+  - name: ewma_vol_5m
+    type: ewma_vol
+    params:
+      tau_seconds: 300
+      percentile_horizon_seconds: 300
+      bins: 256
+      base_vol: 0.0001
+      stddev_cap: 5.0
 ```
 
 </details>
 
 Need per-metric parameter tables, defaults, output fields, and behavioural notes? See the dedicated [Metrics Reference](configs/metrics.md).
 
-## Strategy Configuration (`config/strategy/*.yaml`)
+## Strategy Configuration (`strategy.yaml`)
 
 <details>
 <summary><strong>Sample strategy YAML</strong></summary>

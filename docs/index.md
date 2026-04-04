@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Tick Backtest Research Stack
+# Tick Backtest
 
-Welcome to the user documentation for the Tick Backtest Research Stack. This site explains how to run tick-level FX backtests, configure strategies and metrics, and interpret the generated artefacts.
+Welcome to the user documentation for Tick Backtest. This site explains how to install the package, run tick-level FX backtests, configure strategies and metrics, and interpret the generated artefacts.
 
 ## What You Can Do
 
@@ -27,9 +27,9 @@ Welcome to the user documentation for the Tick Backtest Research Stack. This sit
 
 ## How to Navigate
 
-- New users should start with the [Quickstart](quickstart.md) to install dependencies and execute the sample run.
+- New users should start with the [Quickstart](quickstart.md) to install the package and execute the packaged demo project.
 - Use [Configuration](configs.md) as a reference when editing backtest, metrics, or strategy YAML.
-- [Analysis & Reporting](analysis.md) walks through the outputs stored under `output/backtests/<RUN_ID>/`.
+- [Analysis & Reporting](analysis.md) walks through the outputs written under the configured `output_base_path/<RUN_ID>/`.
 - Developers can explore [Architecture](architecture.md) for a deeper look at the runtime flow and resilience features.
 - Advanced implementation notes live under [Developer Notes](dev/internals.md); these are optional for end users.
 

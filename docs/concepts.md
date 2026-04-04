@@ -19,7 +19,7 @@ limitations under the License.
 This page defines the key abstractions used throughout the Tick Backtest Research Stack. Each term links to the page where it is most frequently applied.
 
 ## Backtest run
-One invocation of `run_backtest` (or the CLI wrapper) using a specific backtest, metrics, and strategy configuration. Each run writes a unique directory under `output/backtests/<RUN_ID>/`.
+One invocation of `run_backtest` (or the CLI wrapper) using a specific backtest, metrics, and strategy configuration. Each run writes a unique directory under the configured `output_base_path/<RUN_ID>/`.
 
 ## Manifest
 `manifest.json` inside each run directory capturing metadata: run ID, git hash, input shard hashes, config snapshots, validation stats, outputs, and status. See [Analysis & Reporting](analysis.md#manifest-highlights).

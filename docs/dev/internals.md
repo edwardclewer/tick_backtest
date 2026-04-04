@@ -35,7 +35,7 @@ This section captures implementation details that are useful when extending or m
 1. `run_backtest` loads the backtest config and snapshots YAML files.
 2. `BacktestCoordinator` iterates pairs, building a `DataFeed`, `TickValidator`, `MetricsManager`, and `SignalGenerator` for each.
 3. The `Backtest` loop consumes ticks, updates metrics, and pushes trade lifecycle events.
-4. Once the feed is exhausted, trades persist to Parquet and analysis hooks run (triggered in `scripts/run_backtest.py`).
+4. Once the feed is exhausted, trades persist to Parquet. Post-run analysis remains a separate package workflow (`report` / `analyze`) even though the repository helper script `scripts/run_backtest.py` chains extra analysis for internal use.
 
 ## Extension Points
 
@@ -47,13 +47,13 @@ This section captures implementation details that are useful when extending or m
 ## Testing Strategy
 
 - Unit tests live in `tests/` broken down by concern (config parsing, data feed validation, backtest coordinator, integration runs).
-- Use `PYTHONPATH=src pytest -m "not slow"` for fast cycles; integration tests exercise manifest creation and analysis outputs.
+- Use a clean editable install before running tests so compiled extensions are available: `pip install -e . && pytest -m "not slow"`.
 - When adding new metrics or signals, include regression fixtures to lock expected schema and trade behaviour.
 
 ## Build & Release Notes
 
 - Wheels are built via `python -m build`. Ensure the Cython extension is compiled before distribution.
-- CI (GitHub Actions) runs unit tests and optional golden checks when `config/backtest/ci_backtest.yaml` is present.
+- CI (GitHub Actions) runs unit tests plus smoke/release workflows defined under `.github/workflows/`.
 - When bumping schema versions, update config templates, parsers, and this documentation simultaneously.
 
 ## Open Questions / TODOs

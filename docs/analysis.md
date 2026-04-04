@@ -18,7 +18,7 @@ limitations under the License.
 
 See also: [Quickstart](quickstart.md) · [Metrics Reference](configs/metrics.md) · [Concepts](concepts.md)
 
-Every backtest produces a reproducible bundle under `output/backtests/<RUN_ID>/`. This guide explains the structure and how to interpret the artefacts. Screenshots and snippets in this page originate from seeded Brownian-motion fixtures so you can reproduce them locally.
+Every backtest produces a reproducible bundle under the configured `output_base_path/<RUN_ID>/`. This guide explains the structure and how to interpret the artefacts. Screenshots and snippets in this page originate from seeded Brownian-motion fixtures so you can reproduce them locally.
 
 Path handling is config-relative for `run`: the backtest parser resolves `data_base_path`, `output_base_path`, `metrics_config_path`, and `strategy_config_path` against the directory containing `backtest.yaml`.
 
@@ -27,7 +27,7 @@ Path handling is config-relative for `run`: the backtest parser resolves `data_b
 The `run` command writes the base bundle:
 
 ```
-output/backtests/<RUN_ID>/
+<output_base_path>/<RUN_ID>/
 ├── configs/                  # Snapshots of the YAML files and SHA256 digests
 ├── environment.txt           # pip freeze output captured at runtime
 ├── manifest.json             # High-level run metadata
@@ -40,7 +40,7 @@ output/backtests/<RUN_ID>/
 The `report <trades.parquet>` command writes beside the selected trade file:
 
 ```
-output/backtests/<RUN_ID>/output/<PAIR>/
+<output_base_path>/<RUN_ID>/output/<PAIR>/
 ├── trades.parquet
 ├── trades_report.md
 ├── trades_equity_curve.png
@@ -53,7 +53,7 @@ output/backtests/<RUN_ID>/output/<PAIR>/
 The `analyze <trades.parquet>` command writes beside the selected trade file:
 
 ```
-output/backtests/<RUN_ID>/output/<PAIR>/
+<output_base_path>/<RUN_ID>/output/<PAIR>/
 ├── trades.parquet
 └── multivariate_analysis/
     ├── coefficients.csv

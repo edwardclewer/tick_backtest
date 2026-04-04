@@ -116,6 +116,21 @@ Expected data layout:
 
 Tick Backtest does not download market data itself. If you need a source-to-parquet workflow, [`dukascopy-python`](https://github.com/fx-trader/dukascopy-python) is a suitable external option.
 
+Tick Backtest does not impose a portfolio- or experiment-level directory scheme beyond writing each run to `output_base_path/<RUN_ID>/`. For repeatable research, it is often useful to group related runs under an experiment directory and point `output_base_path` at an experiment-specific `runs/` folder, for example:
+
+```text
+research/
+  configs/
+  experiments/
+    mean_reversion_q2_2026/
+      runs/
+        <RUN_ID>/
+      notes/
+      summaries/
+```
+
+This keeps the package flexible while still giving you a clean place to organise sweeps, comparisons, and follow-up analysis.
+
 ---
 
 ## Outputs

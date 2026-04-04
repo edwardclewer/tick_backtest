@@ -16,7 +16,7 @@ limitations under the License.
 
 # Strategy Reference
 
-Strategy files (`config/strategy/*.yaml`) define a single entry engine plus an exit condition composed of predicates. At runtime the parser converts the YAML into `StrategyConfigData`, feeds it to the signal generator, and enriches all generated trades with entry metadata.
+Strategy files define a single entry engine plus an exit condition composed of predicates. At runtime the parser converts the YAML into `StrategyConfigData`, feeds it to the signal generator, and enriches all generated trades with entry metadata.
 
 ```mermaid
 flowchart LR
