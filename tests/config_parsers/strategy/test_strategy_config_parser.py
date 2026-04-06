@@ -14,6 +14,7 @@
 
 """Tests for the strategy config parser."""
 
+# mypy: disable-error-code="no-untyped-def"
 from __future__ import annotations
 
 from pathlib import Path

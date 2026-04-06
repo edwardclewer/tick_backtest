@@ -14,9 +14,11 @@
 
 """Tests for `analysis.trade_analysis`."""
 
+# mypy: disable-error-code="no-untyped-def"
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 import pytest
@@ -70,7 +72,7 @@ def test_compute_performance_metrics_aggregates_results():
     assert metrics["breakeven_trades"] == 1
     assert metrics["net_pnl_pips"] == pytest.approx(5.0)
     assert metrics["win_rate"] == pytest.approx(1 / 3)
-    assert metrics["max_drawdown_pips"] <= 0.0
+    assert cast(float, metrics["max_drawdown_pips"]) <= 0.0
     assert metrics["avg_holding_minutes"] == pytest.approx(2.0)
 
 

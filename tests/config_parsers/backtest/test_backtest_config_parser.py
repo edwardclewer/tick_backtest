@@ -14,6 +14,7 @@
 
 """Tests for the backtest config parser."""
 
+# mypy: disable-error-code="no-untyped-def"
 from __future__ import annotations
 
 from pathlib import Path
@@ -21,6 +22,7 @@ from pathlib import Path
 import pytest
 
 from tick_backtest.config_parsers.backtest.config_parser import BacktestConfigParser
+from tick_backtest.config_parsers.strategy.entry_configs import EWMACrossoverEntryParams
 from tick_backtest.exceptions import ConfigError
 
 MIN_STRATEGY_YAML = "\n".join(
@@ -306,6 +308,8 @@ strategy_config_path: {strategy_path}
     parser = BacktestConfigParser()
     cfg = parser.parse_config(config_path)
 
+    assert cfg.strategy_config is not None
+    assert isinstance(cfg.strategy_config.entry.params, EWMACrossoverEntryParams)
     assert cfg.strategy_config.entry.params.fast_metric == "ewma_mid_5m.ewma"
     assert cfg.strategy_config.exit.predicates[0].other_metric == "ewma_mid_30m.ewma"
 

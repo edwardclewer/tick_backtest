@@ -14,6 +14,7 @@
 
 """Tests for the metrics config parser."""
 
+# mypy: disable-error-code="no-untyped-def"
 from __future__ import annotations
 
 from dataclasses import dataclass

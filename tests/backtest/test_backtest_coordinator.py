@@ -14,6 +14,7 @@
 
 """Tests for `backtest.backtest_coordinator.BacktestCoordinator`."""
 
+# mypy: disable-error-code="no-untyped-def"
 from __future__ import annotations
 
 import logging

@@ -14,9 +14,11 @@
 
 """Tests for the configurable signal generator facade."""
 
+# mypy: disable-error-code="no-untyped-def"
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 import pytest
 
@@ -27,6 +29,7 @@ from tick_backtest.config_parsers.strategy.config_dataclass import (
     StrategyConfigData,
 )
 from tick_backtest.config_parsers.strategy.entry_configs import StubEntryParams
+from tick_backtest.data_feed.tick import Tick
 from tick_backtest.signals.entries import ENTRY_ENGINE_REGISTRY
 from tick_backtest.signals.entries.base import EntryResult
 from tick_backtest.signals.signal_generator import SignalGenerator
@@ -102,7 +105,7 @@ def test_signal_generator_emits_entry_when_engine_triggers(monkeypatch, stub_eng
         metadata={"threshold": 0.0010},
     )
 
-    signal = generator.update(_metrics(), StubTick(mid=1.2000))
+    signal = generator.update(_metrics(), cast(Tick, StubTick(mid=1.2000)))
 
     assert signal.should_open is True
     assert signal.direction == 1
@@ -120,7 +123,7 @@ def test_signal_generator_blocks_on_predicate(stub_engine):
     engine: _DeterministicEntryEngine = generator.entry_engine  # type: ignore[assignment]
     engine._next_result = EntryResult(should_open=True, direction=1, reason="entry_triggered")
 
-    signal = generator.update(_metrics(), StubTick(mid=1.2000))
+    signal = generator.update(_metrics(), cast(Tick, StubTick(mid=1.2000)))
 
     assert signal.should_open is False
     assert signal.reason == "entry_predicate_blocked"
@@ -131,7 +134,7 @@ def test_signal_generator_emits_exit_signal(stub_engine):
     strategy = _strategy(exit_predicates=[exit_predicate])
     generator = SignalGenerator(strategy_config=strategy, pip_size=0.0001)
 
-    signal = generator.update(_metrics(), StubTick(mid=1.2000))
+    signal = generator.update(_metrics(), cast(Tick, StubTick(mid=1.2000)))
 
     assert signal.should_close is True
     assert signal.close_reason == "stub_exit"
@@ -144,7 +147,7 @@ def test_signal_generator_propagates_last_reason(stub_engine):
     engine: _DeterministicEntryEngine = generator.entry_engine  # type: ignore[assignment]
     engine._next_result = EntryResult(should_open=False, reason="no_setup")
 
-    signal = generator.update(_metrics(), StubTick(mid=1.2000))
+    signal = generator.update(_metrics(), cast(Tick, StubTick(mid=1.2000)))
 
     assert signal.should_open is False
     assert signal.reason == "no_setup"

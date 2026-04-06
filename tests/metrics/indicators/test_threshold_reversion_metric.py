@@ -14,29 +14,44 @@
 
 """Tests for the threshold reversion metric."""
 
+# mypy: disable-error-code="no-untyped-def"
 from __future__ import annotations
 
 import math
 from datetime import UTC, datetime, timedelta
+from typing import Any, cast
 
 import pytest
 
 from tick_backtest.metrics.indicators.threshold_reversion_metric import ThresholdReversionMetric
 
 
+def _as_float(value: object) -> float:
+    return float(cast(int | float, value))
+
+
 def _make_metric(**overrides) -> ThresholdReversionMetric:
-    params = {
+    params: dict[str, Any] = {
         "name": "reversion",
         "lookback_seconds": 120,
-        "threshold_pips": 10,
+        "threshold_pips": 10.0,
         "pip_size": 0.0001,
-        "tp_pips": 10,
-        "sl_pips": 12,
+        "tp_pips": 10.0,
+        "sl_pips": 12.0,
         "min_recency_seconds": 0.0,
         "trade_timeout_seconds": None,
     }
     params.update(overrides)
-    return ThresholdReversionMetric(**params)
+    return ThresholdReversionMetric(
+        name=cast(str, params["name"]),
+        lookback_seconds=cast(int, params["lookback_seconds"]),
+        threshold_pips=cast(float, params["threshold_pips"]),
+        pip_size=cast(float, params["pip_size"]),
+        tp_pips=cast(float | None, params["tp_pips"]),
+        sl_pips=cast(float | None, params["sl_pips"]),
+        min_recency_seconds=cast(float, params["min_recency_seconds"]),
+        trade_timeout_seconds=cast(float | None, params["trade_timeout_seconds"]),
+    )
 
 
 def test_threshold_reversion_goes_short_on_upward_breach(tick_factory):
@@ -63,10 +78,10 @@ def test_threshold_reversion_goes_short_on_upward_breach(tick_factory):
 
     values = metric.value()
     assert values["position"] == -1.0  # short toward reference
-    assert math.isclose(values["reference_price"], 1.2000, rel_tol=0, abs_tol=1e-9)
-    assert values["distance_from_reference"] >= 0.0010
-    assert math.isclose(values["tp_price"], 1.2002, rel_tol=0, abs_tol=1e-6)
-    assert math.isclose(values["sl_price"], 1.2024, rel_tol=0, abs_tol=1e-6)
+    assert math.isclose(_as_float(values["reference_price"]), 1.2000, rel_tol=0, abs_tol=1e-9)
+    assert _as_float(values["distance_from_reference"]) >= 0.0010
+    assert math.isclose(_as_float(values["tp_price"]), 1.2002, rel_tol=0, abs_tol=1e-6)
+    assert math.isclose(_as_float(values["sl_price"]), 1.2024, rel_tol=0, abs_tol=1e-6)
 
 
 def test_threshold_reversion_min_recency_blocks_recent_reference(tick_factory):
@@ -83,8 +98,8 @@ def test_threshold_reversion_min_recency_blocks_recent_reference(tick_factory):
 
     values = metric.value()
     assert values["position"] == 0.0
-    assert math.isnan(values["tp_price"])
-    assert math.isnan(values["sl_price"])
+    assert math.isnan(_as_float(values["tp_price"]))
+    assert math.isnan(_as_float(values["sl_price"]))
 
     # Once the reference is old enough the position should form.
     metric.update(
@@ -95,7 +110,7 @@ def test_threshold_reversion_min_recency_blocks_recent_reference(tick_factory):
     )
     values = metric.value()
     assert values["position"] == -1.0
-    assert values["reference_age_seconds"] >= 30.0
+    assert _as_float(values["reference_age_seconds"]) >= 30.0
 
 
 def test_threshold_reversion_flattens_on_return(tick_factory):

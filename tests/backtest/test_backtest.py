@@ -14,6 +14,7 @@
 
 """Unit tests for `backtest.backtest.Backtest`."""
 
+# mypy: disable-error-code="no-untyped-def,var-annotated"
 from __future__ import annotations
 
 import logging
@@ -34,6 +35,7 @@ class StubDataFeed:
     """Deterministic data feed that iterates through supplied ticks."""
 
     def __init__(self, ticks) -> None:
+        self.pair = "EURUSD"
         self._ticks = iter(ticks)
 
     def tick(self):
@@ -63,6 +65,8 @@ class StubSignalGenerator:
     """Signal generator stub yielding predetermined SignalData objects."""
 
     def __init__(self, signals) -> None:
+        self.tp_multiple = 1.0
+        self.sl_multiple = 1.0
         self._signals = iter(signals)
 
     def update(self, metrics, tick, *, is_warmup: bool = False):
@@ -76,7 +80,7 @@ def make_backtest(tmp_path, metrics_snapshots=None, signals=None, data_feed=None
     snapshots = list(metrics_snapshots or [{}])
     manager = StubMetricsManager(snapshots)
     signal_generator = StubSignalGenerator(signals or [SignalData()])
-    feed = data_feed or StubDataFeed([])
+    feed = data_feed if data_feed is not None else StubDataFeed([])
     return Backtest(
         data_feed=feed,
         signal_generator=signal_generator,

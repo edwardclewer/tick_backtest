@@ -14,6 +14,7 @@
 
 """Integration tests for backtest orchestration and analysis outputs."""
 
+# mypy: disable-error-code="no-untyped-def,var-annotated"
 from __future__ import annotations
 
 import json

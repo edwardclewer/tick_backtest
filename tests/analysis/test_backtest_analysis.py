@@ -14,6 +14,7 @@
 
 """Tests for the batch backtest analysis helper."""
 
+# mypy: disable-error-code="no-untyped-def"
 from __future__ import annotations
 
 from pathlib import Path

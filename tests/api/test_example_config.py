@@ -14,6 +14,7 @@
 
 import logging
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -57,8 +58,8 @@ def test_example_config_demo_project_runs_end_to_end(tmp_path: Path) -> None:
 
     result = run_backtest(tmp_path / "backtest.yaml", log_level=logging.WARNING)
 
-    run_root = Path(result["run_root"])
-    manifest_path = Path(result["manifest_path"])
+    run_root = Path(cast(str, result["run_root"]))
+    manifest_path = Path(cast(str, result["manifest_path"]))
     assert run_root.is_dir()
     assert manifest_path.is_file()
     assert (run_root / "output" / "EURUSD" / "trades.parquet").is_file()

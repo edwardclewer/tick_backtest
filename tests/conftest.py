@@ -31,6 +31,8 @@ if signal_init.exists():
         signal_init,
         submodule_search_locations=[str(signal_init.parent)],
     )
+    assert spec is not None
+    assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     sys.modules["signal"] = module
     spec.loader.exec_module(module)

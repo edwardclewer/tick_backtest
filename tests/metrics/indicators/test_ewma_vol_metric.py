@@ -18,12 +18,21 @@ from __future__ import annotations
 
 import math
 from datetime import UTC, datetime, timedelta
+from typing import TypedDict
 
 import numpy as np
 import pytest
 
 from tests.helpers.metrics_reference import ewma_vol_expected
 from tick_backtest.metrics.indicators.ewma_vol_metric import EWMAVolMetric
+
+
+class EWMAVolParams(TypedDict):
+    tau_seconds: float
+    percentile_horizon_seconds: float
+    bins: int
+    base_vol: float
+    stddev_cap: float
 
 
 def test_ewma_vol_requires_previous_mid(tick_factory):
@@ -118,7 +127,7 @@ def test_ewma_vol_random_sequence_matches_reference(tick_factory):
     """Cross-check EWMA variance and percentile against Python primitives."""
 
     rng = np.random.default_rng(77)
-    params = {
+    params: EWMAVolParams = {
         "tau_seconds": 45.0,
         "percentile_horizon_seconds": 90.0,
         "bins": 64,

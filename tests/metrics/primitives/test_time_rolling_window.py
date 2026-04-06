@@ -14,6 +14,7 @@
 
 """Tests for the time-weighted rolling window primitive."""
 
+# mypy: disable-error-code="no-untyped-def"
 from __future__ import annotations
 
 import math
@@ -41,7 +42,7 @@ if CTimeRollingWindow is not None:
 
 def _assert_len(window, expected: int) -> None:
     if hasattr(window, "__len__"):
-        assert len(window) == expected  # type: ignore[arg-type]
+        assert len(window) == expected
 
 
 @pytest.mark.parametrize("impl", IMPLEMENTATIONS)

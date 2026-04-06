@@ -14,6 +14,7 @@
 
 """Tests for backtest-level metric stratification orchestration."""
 
+# mypy: disable-error-code="no-untyped-def"
 from __future__ import annotations
 
 import json

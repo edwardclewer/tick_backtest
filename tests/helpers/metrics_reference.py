@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
@@ -30,7 +30,7 @@ class RollingWindowReference:
     """Incremental helper mirroring TimeRollingWindow behaviour."""
 
     lookback_seconds: float
-    window: PyTimeRollingWindow | None = None
+    window: PyTimeRollingWindow = field(init=False)
     last_timestamp: float | None = None
 
     def __post_init__(self) -> None:
