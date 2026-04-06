@@ -35,7 +35,17 @@ fi
 
 # Import & quick tests
 python -c "import tick_backtest; print('import OK')"
-pytest -q  # or: pytest -q -k 'not slow'
+if [ "${SKIP_SMOKE_INSTALL:-0}" = "1" ] && [ -d "src" ]; then
+  TMP_SRC_ROOT="$(mktemp -d -t tick-backtest-src-hide.XXXXXX)"
+  mv src "$TMP_SRC_ROOT/src"
+  trap 'if [ -d "$TMP_SRC_ROOT/src" ]; then mv "$TMP_SRC_ROOT/src" "$REPO_ROOT/src"; fi; rmdir "$TMP_SRC_ROOT" 2>/dev/null || true' EXIT
+  pytest -q --import-mode=importlib -m "not checkout_only" tests
+  mv "$TMP_SRC_ROOT/src" "$REPO_ROOT/src"
+  rmdir "$TMP_SRC_ROOT"
+  trap - EXIT
+else
+  pytest -q  # or: pytest -q -k 'not slow'
+fi
 
 # Tiny backtest
 if [ -d "src" ]; then
