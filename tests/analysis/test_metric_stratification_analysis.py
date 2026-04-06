@@ -84,8 +84,8 @@ def test_metric_stratification_outputs(tmp_path: Path):
         run_id="test-run",
     )
 
-    assert summary.analysis_root == output_dir
-    pair_dir = output_dir / "EURUSD" / "analysis" / "metric_stratification"
+    assert summary.analysis_root == output_dir / "analysis"
+    pair_dir = output_dir / "analysis" / "EURUSD" / "metric_stratification"
     csv_root = pair_dir / "csv"
     graph_root = pair_dir / "graphs"
     reports_root = pair_dir / "reports"
@@ -140,10 +140,27 @@ def test_metric_stratification_outputs_without_tabulate(tmp_path: Path, monkeypa
         run_id="test-run",
     )
 
-    pair_dir = output_dir / "EURUSD" / "analysis" / "metric_stratification"
+    pair_dir = output_dir / "analysis" / "EURUSD" / "metric_stratification"
     assert (pair_dir / "reports").exists()
     assert not (pair_dir / "md").exists()
     assert summary.failures == {}
+
+
+def test_metric_stratification_honors_explicit_analysis_root(tmp_path: Path):
+    run_root = tmp_path / "run"
+    output_dir = run_root / "output"
+    trades_path = output_dir / "EURUSD" / "trades.parquet"
+    _write_trades(trades_path)
+
+    metrics_cfg = run_root / "configs" / "metrics.yaml"
+    _write_metrics_config(metrics_cfg)
+    _write_manifest(run_root, metrics_cfg)
+
+    analysis_root = tmp_path / "custom-analysis"
+    summary = run_metric_stratification_analysis(output_dir, analysis_root=analysis_root, run_id="test-run")
+
+    assert summary.analysis_root == analysis_root
+    assert summary.per_pair["EURUSD"] == analysis_root / "EURUSD" / "metric_stratification"
 
 
 def test_metric_stratification_records_failures(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

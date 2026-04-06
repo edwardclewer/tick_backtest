@@ -38,7 +38,7 @@ def _write_trades(path: Path, *, include_exit: bool = True) -> None:
 
 
 def test_run_backtest_analysis_creates_per_pair_reports(tmp_path: Path):
-    """Expect analysis artefacts to land under output/<run>/analysis/<pair>/."""
+    """Expect analysis artefacts to land under the batch analysis root."""
 
     run_output_dir = tmp_path / "run" / "output"
     trades_path = run_output_dir / "EURUSD" / "trades.parquet"
@@ -50,8 +50,8 @@ def test_run_backtest_analysis_creates_per_pair_reports(tmp_path: Path):
         run_id="test-run",
     )
 
-    expected_dir = run_output_dir / "EURUSD" / "analysis"
-    assert summary.analysis_root == run_output_dir
+    expected_dir = run_output_dir / "analysis" / "EURUSD"
+    assert summary.analysis_root == run_output_dir / "analysis"
     assert "EURUSD" in summary.per_pair
     artefacts = summary.per_pair["EURUSD"]
     assert artefacts.report_path is not None
@@ -59,6 +59,18 @@ def test_run_backtest_analysis_creates_per_pair_reports(tmp_path: Path):
     assert artefacts.plot_path is None
     assert artefacts.report_path.parent == expected_dir
     assert summary.failures == {}
+
+
+def test_run_backtest_analysis_honors_explicit_analysis_root(tmp_path: Path):
+    run_output_dir = tmp_path / "run" / "output"
+    trades_path = run_output_dir / "EURUSD" / "trades.parquet"
+    _write_trades(trades_path)
+
+    analysis_root = tmp_path / "custom-analysis"
+    summary = run_backtest_analysis(run_output_dir, analysis_root=analysis_root, generate_plot=False)
+
+    assert summary.analysis_root == analysis_root
+    assert summary.per_pair["EURUSD"].report_path == analysis_root / "EURUSD" / "report.md"
 
 
 def test_run_backtest_analysis_records_failures(tmp_path: Path):

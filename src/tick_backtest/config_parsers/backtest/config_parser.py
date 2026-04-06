@@ -19,6 +19,7 @@ from pathlib import Path
 import yaml
 
 from tick_backtest.config_parsers.backtest.config_dataclass import BacktestConfigData
+from tick_backtest.config_parsers.metrics.config_parser import MetricsConfigParser
 from tick_backtest.config_parsers.strategy.config_parser import StrategyConfigParser
 from tick_backtest.config_parsers.utils.utils import (
     parse_year_month,
@@ -121,9 +122,21 @@ class BacktestConfigParser:
         pip_size = validate_positive_float(cfg["pip_size"], "pip_size")
         warmup_seconds = validate_nonnegative_int(cfg["warmup_seconds"], "warmup_seconds")
 
+        metrics_parser = MetricsConfigParser(metrics_config_path)
+        try:
+            metrics_config = metrics_parser.load_metrics_config()
+        except ConfigError as exc:
+            raise ConfigError(f"invalid metrics configuration: {exc}") from exc
+
+        enabled_metric_names = {
+            metric.name
+            for metric in metrics_config.metrics
+            if getattr(metric, "enabled", True)
+        }
+
         strategy_parser = StrategyConfigParser(strategy_config_path)
         try:
-            strategy_config = strategy_parser.load()
+            strategy_config = strategy_parser.load(enabled_metric_names=enabled_metric_names)
         except ConfigError as exc:
             raise ConfigError(f"invalid strategy configuration: {exc}") from exc
 

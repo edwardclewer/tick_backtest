@@ -37,10 +37,13 @@ This section captures implementation details that are useful when extending or m
 3. The `Backtest` loop consumes ticks, updates metrics, and pushes trade lifecycle events.
 4. Once the feed is exhausted, trades persist to Parquet. Post-run analysis remains a separate package workflow (`report` / `analyze`) even though the repository helper script `scripts/run_backtest.py` chains extra analysis for internal use.
 
+`threshold_reversion` is the one built-in exception to the normal metric ownership model. Its entry engine maintains a private `ThresholdReversionMetric` instance inside `signals/entries/threshold_reversion.py` rather than registering that indicator through `MetricsManager`. Keep that distinction explicit when adding new engines so config-time metric validation does not treat strategy-private indicator state as a required metrics-config dependency.
+
 ## Extension Points
 
 - **Metrics** - Implement new classes under `metrics/dataclasses` and runtime behaviour under `metrics/primitives`. Register in `metrics/config_registry.py`.
 - **Signals** - Add entry engines in `signals/entries/` and update `ENTRY_ENGINE_REGISTRY`. Ensure predicate coverage in `signals/predicates.py`.
+  `threshold_reversion` is strategy-owned today; use it as the template only when the indicator state is intentionally private to the engine.
 - **Data Feed** - Extend `_data_feed.pyx` for alternative storage layouts or override the fallback `DataFeed` to adapt path conventions.
 - **Analysis** - New reports can hook into `analysis/workflow.py` or custom scripts under `scripts/`.
 

@@ -56,6 +56,16 @@ def _iter_trades(output_dir: Path) -> dict[str, Path]:
     return trades
 
 
+def _resolve_analysis_root(output_dir: Path, analysis_root: Path | str | None) -> Path:
+    if analysis_root is not None:
+        return Path(analysis_root).expanduser()
+    return output_dir / "analysis"
+
+
+def _pair_analysis_root(analysis_root: Path, pair: str) -> Path:
+    return analysis_root / pair
+
+
 def run_backtest_analysis(
     run_output_dir: Path | str,
     *,
@@ -72,8 +82,9 @@ def run_backtest_analysis(
     run_output_dir:
         Path to the ``output`` directory produced by ``run_backtest``.
     analysis_root:
-        Optional override for where analysis artefacts are written. Defaults to
-        ``<run_output_dir>/analysis``.
+        Optional override for where batch analysis artefacts are written.
+        Defaults to ``<run_output_dir>/analysis`` and writes per-pair outputs
+        under ``<analysis_root>/<PAIR>/``.
     run_id:
         Optional identifier used for logging context.
     generate_plot / generate_report:
@@ -83,7 +94,7 @@ def run_backtest_analysis(
     if not output_dir.exists():
         raise FileNotFoundError(f"Backtest output directory not found: {output_dir}")
 
-    analysis_dir = Path(analysis_root).expanduser() if analysis_root else output_dir
+    analysis_dir = _resolve_analysis_root(output_dir, analysis_root)
     analysis_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info(
@@ -100,8 +111,7 @@ def run_backtest_analysis(
     trades_map = _iter_trades(output_dir)
 
     for pair, trades_path in trades_map.items():
-        pair_output_dir = trades_path.parent
-        pair_analysis_dir = pair_output_dir / "analysis"
+        pair_analysis_dir = _pair_analysis_root(analysis_dir, pair)
         pair_analysis_dir.mkdir(parents=True, exist_ok=True)
         try:
             result = run_trade_analysis(
@@ -222,7 +232,7 @@ def run_metric_stratification_analysis(
     parser = MetricsConfigParser(cfg_path)
     metric_names = _enabled_metric_names(parser)
 
-    analysis_dir = Path(analysis_root).expanduser() if analysis_root else output_dir
+    analysis_dir = _resolve_analysis_root(output_dir, analysis_root)
     analysis_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info(
@@ -241,8 +251,7 @@ def run_metric_stratification_analysis(
 
     trades_map = _iter_trades(output_dir)
     for pair, trades_path in trades_map.items():
-        pair_dir = trades_path.parent
-        pair_analysis_dir = pair_dir / "analysis"
+        pair_analysis_dir = _pair_analysis_root(analysis_dir, pair)
         pair_analysis_dir.mkdir(parents=True, exist_ok=True)
         strat_root = pair_analysis_dir / "metric_stratification"
 

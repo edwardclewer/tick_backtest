@@ -173,3 +173,119 @@ def test_strategy_parser_rejects_duplicate_predicates(tmp_path: Path):
     with pytest.raises(ConfigError) as excinfo:
         parser.load()
     assert "duplicate predicate" in str(excinfo.value).lower()
+
+
+def test_strategy_parser_rejects_unknown_predicate_metric_reference(tmp_path: Path):
+    path = _write_config(
+        tmp_path,
+        "\n".join(
+            [
+                SCHEMA_HEADER,
+                "strategy:",
+                "  name: stub_strategy",
+                "  entry:",
+                "    name: entry",
+                "    engine: stub",
+                "    params: {}",
+                "    predicates:",
+                "      - metric: missing_metric",
+                "        operator: '>'",
+                "        value: 1",
+                "  exit:",
+                "    name: exit",
+                "    predicates: []",
+                "",
+            ]
+        ),
+    )
+    parser = StrategyConfigParser(path)
+    with pytest.raises(ConfigError) as excinfo:
+        parser.load(enabled_metric_names={"known_metric"})
+    assert "unknown metric" in str(excinfo.value).lower()
+    assert "missing_metric" in str(excinfo.value)
+
+
+def test_strategy_parser_rejects_unknown_other_metric_reference(tmp_path: Path):
+    path = _write_config(
+        tmp_path,
+        "\n".join(
+            [
+                SCHEMA_HEADER,
+                "strategy:",
+                "  name: stub_strategy",
+                "  entry:",
+                "    name: entry",
+                "    engine: stub",
+                "    params: {}",
+                "    predicates:",
+                "      - metric: fast_metric",
+                "        operator: '>'",
+                "        other_metric: slow_metric",
+                "  exit:",
+                "    name: exit",
+                "    predicates: []",
+                "",
+            ]
+        ),
+    )
+    parser = StrategyConfigParser(path)
+    with pytest.raises(ConfigError) as excinfo:
+        parser.load(enabled_metric_names={"fast_metric"})
+    assert "unknown other_metric" in str(excinfo.value).lower()
+    assert "slow_metric" in str(excinfo.value)
+
+
+def test_strategy_parser_rejects_unknown_ewma_crossover_metric_reference(tmp_path: Path):
+    path = _write_config(
+        tmp_path,
+        "\n".join(
+            [
+                SCHEMA_HEADER,
+                "strategy:",
+                "  name: crossover_strategy",
+                "  entry:",
+                "    name: entry",
+                "    engine: ewma_crossover",
+                "    params:",
+                "      fast_metric: ewma_fast",
+                "      slow_metric: ewma_slow",
+                "    predicates: []",
+                "  exit:",
+                "    name: exit",
+                "    predicates: []",
+                "",
+            ]
+        ),
+    )
+    parser = StrategyConfigParser(path)
+    with pytest.raises(ConfigError) as excinfo:
+        parser.load(enabled_metric_names={"ewma_fast"})
+    assert "ewma_crossover" in str(excinfo.value)
+    assert "ewma_slow" in str(excinfo.value)
+
+
+def test_strategy_parser_allows_threshold_reversion_without_metrics_config_dependency(tmp_path: Path):
+    path = _write_config(
+        tmp_path,
+        "\n".join(
+            [
+                SCHEMA_HEADER,
+                "strategy:",
+                "  name: threshold_reversion_strategy",
+                "  entry:",
+                "    name: threshold_reversion_entry",
+                "    engine: threshold_reversion",
+                "    params:",
+                "      lookback_seconds: 1800",
+                "      threshold_pips: 10",
+                "    predicates: []",
+                "  exit:",
+                "    name: exit",
+                "    predicates: []",
+                "",
+            ]
+        ),
+    )
+    parser = StrategyConfigParser(path)
+    data = parser.load(enabled_metric_names=set())
+    assert data.entry.engine == "threshold_reversion"

@@ -26,7 +26,7 @@ from tick_backtest.config_parsers.strategy.config_dataclass import (
     StrategyConfigData,
 )
 from tick_backtest.config_parsers.strategy.config_registry import ENTRY_PARAMS_REGISTRY
-from tick_backtest.config_parsers.strategy.entry_configs import EntryParamsBase
+from tick_backtest.config_parsers.strategy.entry_configs import EWMACrossoverEntryParams, EntryParamsBase
 from tick_backtest.config_validation import validate_strategy_config
 from tick_backtest.exceptions import ConfigError
 
@@ -39,7 +39,7 @@ class StrategyConfigParser:
         if not self.config_path.exists():
             raise FileNotFoundError(f"Strategy config not found: {self.config_path}")
 
-    def load(self) -> StrategyConfigData:
+    def load(self, *, enabled_metric_names: set[str] | None = None) -> StrategyConfigData:
         try:
             raw = self._load_yaml()
             validated = validate_strategy_config(raw)
@@ -49,6 +49,11 @@ class StrategyConfigParser:
             name = strategy_raw.get("name")
             if not isinstance(name, str) or not name:
                 raise ValueError("Strategy config must define a non-empty 'name'")
+            self._validate_metric_references(
+                entry_cfg=entry_cfg,
+                exit_cfg=exit_cfg,
+                enabled_metric_names=enabled_metric_names,
+            )
             schema_version = validated.get("schema_version", "1.0")
             return StrategyConfigData(schema_version=schema_version, name=name, entry=entry_cfg, exit=exit_cfg)
         except (ValueError, TypeError) as exc:
@@ -141,3 +146,55 @@ class StrategyConfigParser:
             seen.add(key)
             predicates.append(predicate)
         return predicates
+
+    def _validate_metric_references(
+        self,
+        *,
+        entry_cfg: EntryConfig,
+        exit_cfg: ExitConfig,
+        enabled_metric_names: set[str] | None,
+    ) -> None:
+        if enabled_metric_names is None:
+            return
+
+        self._validate_predicate_metric_references(
+            entry_cfg.predicates,
+            enabled_metric_names,
+            context="entry predicate",
+        )
+        self._validate_predicate_metric_references(
+            exit_cfg.predicates,
+            enabled_metric_names,
+            context="exit predicate",
+        )
+
+        if entry_cfg.engine == "ewma_crossover" and isinstance(entry_cfg.params, EWMACrossoverEntryParams):
+            missing: list[tuple[str, str]] = []
+            if entry_cfg.params.fast_metric not in enabled_metric_names:
+                missing.append(("fast_metric", entry_cfg.params.fast_metric))
+            if entry_cfg.params.slow_metric not in enabled_metric_names:
+                missing.append(("slow_metric", entry_cfg.params.slow_metric))
+            if missing:
+                details = ", ".join(f"{label}={metric!r}" for label, metric in missing)
+                raise ValueError(
+                    "Strategy config references unknown metrics for ewma_crossover entry: "
+                    f"{details}"
+                )
+
+    @staticmethod
+    def _validate_predicate_metric_references(
+        predicates: list[PredicateConfig],
+        enabled_metric_names: set[str],
+        *,
+        context: str,
+    ) -> None:
+        for predicate in predicates:
+            if predicate.metric not in enabled_metric_names:
+                raise ValueError(
+                    f"Strategy config references unknown metric {predicate.metric!r} in {context}"
+                )
+            if predicate.other_metric is not None and predicate.other_metric not in enabled_metric_names:
+                raise ValueError(
+                    "Strategy config references unknown other_metric "
+                    f"{predicate.other_metric!r} in {context}"
+                )

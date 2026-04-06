@@ -42,7 +42,7 @@ flowchart LR
 
 1. **Configuration Parsing** - User-supplied YAML files are validated and converted into immutable dataclasses (`BacktestConfigParser`, `MetricsConfigParser`, `StrategyConfigParser`).
 2. **Data Feed & Validation** - The compiled `DataFeed` streams ticks per month. Every feed is wrapped in a `TickValidator` that enforces monotonic timestamps, finite bid/ask/mid values, and non-negative spreads.
-3. **Metrics & Signals** - `MetricsManager` instantiates all enabled metrics and computes rolling indicators. `SignalGenerator` combines entry engines with predicate evaluation to produce open/close instructions.
+3. **Metrics & Signals** - `MetricsManager` instantiates all enabled metrics and computes rolling indicators. `SignalGenerator` combines entry engines with predicate evaluation to produce open/close instructions. The built-in `threshold_reversion` entry engine is an intentional exception: it owns a private `ThresholdReversionMetric` instance inside the strategy layer instead of sourcing that state from `MetricsManager`.
 4. **Backtest Coordinator** - `BacktestCoordinator` iterates each configured pair, manages output directories, and records pair-level failures without aborting the entire batch.
 5. **Backtest Loop** - For each tick, metrics update, signals evaluate, positions open/close, and trades append to an in-memory ledger. On completion, trades persist to Parquet.
 6. **Artefact Snapshot** - Every run writes a manifest, environment snapshot, logs, and trade artefacts under the configured `output_base_path/<RUN_ID>/`. Post-run reporting and multivariate diagnostics are written later beside `trades.parquet` when `tick-backtest report` or `tick-backtest analyze` is invoked.
@@ -58,6 +58,7 @@ flowchart LR
 | `tick_backtest/data_feed/validation.py` | Tick validation, issue tallying, and feed wrappers to skip invalid ticks. |
 | `tick_backtest/metrics/manager/metrics_manager.py` | Builds metric instances from config and updates them per tick. |
 | `tick_backtest/signals/signal_generator.py` | Wires entry engines and predicates into runtime signals. |
+| `tick_backtest/signals/entries/threshold_reversion.py` | Strategy-owned threshold-reversion engine with its own private indicator state. |
 | `tick_backtest/analysis/*` | Reporting utilities that derive Markdown summaries, equity curves, and stratification studies. |
 
 ## Resilience & Reproducibility

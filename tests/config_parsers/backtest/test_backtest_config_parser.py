@@ -343,3 +343,72 @@ unexpected_key: true
         parser.parse_config(config_path)
 
     assert "invalid backtest configuration" in str(excinfo.value).lower()
+
+
+def test_parse_config_rejects_strategy_reference_to_unknown_metric(tmp_path: Path):
+    data_dir = tmp_path / "data"
+    output_dir = tmp_path / "output"
+    data_dir.mkdir()
+    output_dir.mkdir()
+
+    metrics_path = tmp_path / "metrics.yaml"
+    metrics_path.write_text(
+        "\n".join(
+            [
+                'schema_version: "1.0"',
+                "metrics:",
+                "  - name: known_metric",
+                "    type: zscore",
+                "    enabled: true",
+                "    params:",
+                "      lookback_seconds: 300",
+                "",
+            ]
+        )
+    )
+
+    strategy_path = tmp_path / "strategy.yaml"
+    strategy_path.write_text(
+        "\n".join(
+            [
+                'schema_version: "1.0"',
+                "strategy:",
+                "  name: stub_strategy",
+                "  entry:",
+                "    name: entry",
+                "    engine: stub",
+                "    params: {}",
+                "    predicates:",
+                "      - metric: missing_metric",
+                "        operator: '>'",
+                "        value: 1",
+                "  exit:",
+                "    name: exit",
+                "    predicates: []",
+                "",
+            ]
+        )
+    )
+
+    config_path = _write_config(
+        tmp_path,
+        f"""
+schema_version: "1.0"
+pairs: [EURUSD]
+start: 2015-01
+end: 2015-02
+pip_size: 0.0001
+warmup_seconds: 600
+data_base_path: {data_dir}
+output_base_path: {output_dir}
+metrics_config_path: {metrics_path}
+strategy_config_path: {strategy_path}
+        """,
+    )
+
+    parser = BacktestConfigParser()
+    with pytest.raises(ConfigError) as excinfo:
+        parser.parse_config(config_path)
+
+    assert "invalid strategy configuration" in str(excinfo.value).lower()
+    assert "missing_metric" in str(excinfo.value)
