@@ -21,7 +21,7 @@ This repository is prepared to publish Python packages via GitHub Actions using 
 ## Release posture
 
 - Public releases follow semantic versioning.
-- The first intentional public release line is `0.1.x`.
+- The current public release line is `0.2.x`.
 - `main` should stay releasable: CI green, `python -m build` green, and both installed-wheel and installed-sdist smoke tests passing.
 
 ## Config surfaces
@@ -54,7 +54,7 @@ The CI workflow validates both sides:
 TestPyPI publishing is handled by `.github/workflows/testpypi-release.yml`.
 
 1. Bump `pyproject.toml` to a version that has not already been uploaded to TestPyPI.
-2. Create and push a tag such as `testpypi-v0.1.0`.
+2. Create and push a tag such as `testpypi-v0.2.0`.
 3. The workflow builds:
    - an sdist via `python -m build --sdist`
    - Linux wheels via `cibuildwheel`
@@ -99,7 +99,7 @@ You may optionally add GitHub environment protection rules to `testpypi`, but th
 Real PyPI publishing is handled by `.github/workflows/pypi-release.yml`.
 
 1. Bump `pyproject.toml` to the intended release version.
-2. Create and push a tag such as `v0.1.1`.
+2. Create and push a tag such as `v0.2.0`.
 3. The workflow builds:
    - an sdist via `python -m build --sdist`
    - Linux wheels via `cibuildwheel`
