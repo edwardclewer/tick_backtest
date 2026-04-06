@@ -22,7 +22,7 @@ import tick_backtest.api as api
 def test_run_wraps_backtest_and_post_run_analysis(monkeypatch) -> None:
     calls: list[tuple[str, object, object]] = []
 
-    def fake_run_backtest(*, config_path, output_root=None):
+    def fake_run_backtest(*, config_path: object, output_root: object = None) -> dict[str, str]:
         calls.append(("run_backtest", config_path, output_root))
         return {"run_id": "run-123"}
 
@@ -39,12 +39,18 @@ def test_report_writes_report_and_stratification_beside_trades_file(monkeypatch,
     trades_path = tmp_path / "trades.parquet"
     captured: dict[str, object] = {}
 
-    def fake_run_trade_analysis(path, *, output_dir=None, configure_logs=False):
+    def fake_run_trade_analysis(path: object, *, output_dir: object = None, configure_logs: bool = False) -> None:
         captured["path"] = path
         captured["output_dir"] = output_dir
         captured["configure_logs"] = configure_logs
 
-    def fake_run_metric_stratification(*, trade_file, output_root, output_subdir=None, configure_logs=False):
+    def fake_run_metric_stratification(
+        *,
+        trade_file: Path,
+        output_root: Path,
+        output_subdir: str | None = None,
+        configure_logs: bool = False,
+    ) -> None:
         captured["trade_file"] = trade_file
         captured["strat_output_root"] = output_root
         captured["output_subdir"] = output_subdir
@@ -80,7 +86,13 @@ def test_report_raises_if_metric_stratification_output_is_missing(monkeypatch, t
         lambda *args, **kwargs: None,
     )
 
-    def fake_run_metric_stratification(*, trade_file, output_root, output_subdir=None, configure_logs=False):
+    def fake_run_metric_stratification(
+        *,
+        trade_file: Path,
+        output_root: Path,
+        output_subdir: str | None = None,
+        configure_logs: bool = False,
+    ) -> None:
         output_root.mkdir(parents=True, exist_ok=True)
 
     monkeypatch.setattr(
@@ -96,7 +108,12 @@ def test_analyze_runs_trade_regression_analysis(monkeypatch, tmp_path: Path) -> 
     trades_path = tmp_path / "trades.parquet"
     captured: dict[str, object] = {}
 
-    def fake_run_trade_regression_analysis(trades_path_arg, *, output_dir=None, target_column="pnl_pips"):
+    def fake_run_trade_regression_analysis(
+        trades_path_arg: Path,
+        *,
+        output_dir: Path | None = None,
+        target_column: str = "pnl_pips",
+    ) -> None:
         captured["trades_path"] = trades_path_arg
         captured["output_dir"] = output_dir
         captured["target_column"] = target_column

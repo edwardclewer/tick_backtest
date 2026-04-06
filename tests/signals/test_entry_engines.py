@@ -17,7 +17,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List
 
 import pytest
 
@@ -40,14 +39,14 @@ class StubTick:
 class FakeThresholdMetric:
     """Test double that returns a deterministic series of snapshots."""
 
-    def __init__(self, snapshots: List[Dict[str, float]]):
+    def __init__(self, snapshots: list[dict[str, float]]) -> None:
         self.snapshots = snapshots
         self.index = 0
 
-    def update(self, _tick):
+    def update(self, _tick) -> None:
         return None
 
-    def value_dict(self):
+    def value_dict(self) -> dict[str, float]:
         if self.index >= len(self.snapshots):
             return self.snapshots[-1]
         snapshot = self.snapshots[self.index]

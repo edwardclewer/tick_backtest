@@ -25,7 +25,7 @@ from tick_backtest.data_feed.validation import TickValidator, ValidatingDataFeed
 class DummyFeed:
     """Simple feed that yields a predetermined sequence of ticks."""
 
-    def __init__(self, ticks):
+    def __init__(self, ticks) -> None:
         self._ticks = iter(ticks)
         self.pair = "DUMMY"
 
@@ -36,7 +36,7 @@ class DummyFeed:
             raise NoMoreTicks
 
 
-def _tick(timestamp, bid, ask):
+def _tick(timestamp: float, bid: float, ask: float) -> SimpleNamespace:
     return SimpleNamespace(timestamp=timestamp, bid=bid, ask=ask, mid=0.5 * (bid + ask))
 
 

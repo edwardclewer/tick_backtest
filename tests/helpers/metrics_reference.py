@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Iterable, List, Optional, Sequence, Tuple
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -30,8 +30,8 @@ class RollingWindowReference:
     """Incremental helper mirroring TimeRollingWindow behaviour."""
 
     lookback_seconds: float
-    window: PyTimeRollingWindow = None  # type: ignore[assignment]
-    last_timestamp: Optional[float] = None
+    window: PyTimeRollingWindow | None = None
+    last_timestamp: float | None = None
 
     def __post_init__(self) -> None:
         self.window = PyTimeRollingWindow(lookback_seconds=self.lookback_seconds)
@@ -58,7 +58,7 @@ def ewma_sequence(
     """Generate EWMA values matching the primitive implementation."""
 
     smoother = PyEWMA(tau_seconds=tau_seconds, power=power)
-    output: List[float] = []
+    output: list[float] = []
     last_val = 0.0
     for idx, (ts, value) in enumerate(zip(timestamps, values)):
         last_val = smoother.update(ts, value)
@@ -77,7 +77,7 @@ def ewma_metric_expected(
 ) -> List[float]:
     """Replicate EWMAMetric behaviour (initial seed = first price)."""
 
-    results: List[float] = []
+    results: list[float] = []
     last_value = math.nan
     last_ts = math.nan
     for ts, price in zip(timestamps, prices):
@@ -103,9 +103,9 @@ def ewma_slope_expected(
 ) -> List[Tuple[float, float]]:
     """Return (ewma, slope) pairs mirroring EWMASlopeMetric fallback."""
 
-    history: List[Tuple[float, float]] = []
+    history: list[tuple[float, float]] = []
     ewma_values = ewma_metric_expected(timestamps, prices, tau_seconds)
-    slopes: List[Tuple[float, float]] = []
+    slopes: list[tuple[float, float]] = []
 
     for ts, ewma in zip(timestamps, ewma_values):
         history.append((ts, ewma))
@@ -132,7 +132,7 @@ def drift_expected(
     """Replicate DriftSignMetric behaviour using the Python rolling window."""
 
     window = PyTimeRollingWindow(lookback_seconds=lookback_seconds)
-    results: List[Tuple[float, int]] = []
+    results: list[tuple[float, int]] = []
     last_ts = None
 
     for ts, mid in zip(timestamps, mids):
@@ -178,7 +178,7 @@ def ewma_vol_expected(
     hist = PyTimeWeightedHistogram(edges, percentile_horizon_seconds)
     smoother = PyEWMA(tau_seconds=tau_seconds, power=2)
 
-    outputs: List[Tuple[float, float]] = []
+    outputs: list[tuple[float, float]] = []
     last_t = None
     last_mid = None
 
@@ -210,7 +210,7 @@ def ewma_vol_expected(
     return outputs
 
 
-def spread_percentile_reference(history: Sequence[Tuple[float, float]], current: float) -> float:
+def spread_percentile_reference(history: Sequence[tuple[float, float]], current: float) -> float:
     """Return empirical percentile identical to SpreadMetric (<= comparator)."""
 
     if not history:
@@ -219,11 +219,11 @@ def spread_percentile_reference(history: Sequence[Tuple[float, float]], current:
     return count / len(history)
 
 
-def tick_rate_expected(timestamps: Sequence[float], window_seconds: float) -> List[Tuple[int, float, float]]:
+def tick_rate_expected(timestamps: Sequence[float], window_seconds: float) -> list[tuple[int, float, float]]:
     """Return counts and rates matching TickRateMetric fallback."""
 
-    history: List[float] = []
-    outputs: List[Tuple[int, float, float]] = []
+    history: list[float] = []
+    outputs: list[tuple[int, float, float]] = []
     for ts in timestamps:
         history.append(ts)
         cutoff = ts - window_seconds

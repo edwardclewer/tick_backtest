@@ -20,7 +20,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterator, List
+from typing import Any, Iterator
 
 import pandas as pd
 import pytest
@@ -35,7 +35,7 @@ from tick_backtest.data_feed.tick import Tick
 from tick_backtest.signals.signal_data import SignalData
 
 
-def _make_config(tmp_path: Path, pairs: List[str]) -> BacktestConfigData:
+def _make_config(tmp_path: Path, pairs: list[str]) -> BacktestConfigData:
     data_base = tmp_path / "data"
     output_base = tmp_path / "output"
     metrics_cfg = tmp_path / "metrics.yaml"
@@ -181,7 +181,7 @@ def test_run_backtest_wires_dependencies_and_runs(monkeypatch, tmp_path):
             self.tp_multiple = 1.0
             self.sl_multiple = 1.0
 
-        def update(self, _metrics, _tick, *, is_warmup=False):
+        def update(self, _metrics, _tick, *, is_warmup: bool = False):
             return SignalData()
 
     class RecordingBacktest:

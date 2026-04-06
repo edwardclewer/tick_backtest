@@ -63,7 +63,7 @@ class CoordinatorSignalStub:
         self.triggered = False
         CoordinatorSignalStub.instances.append(self)
 
-    def update(self, _metrics, tick, *, is_warmup=False):
+    def update(self, _metrics, tick, *, is_warmup: bool = False):
         if is_warmup:
             return SignalData()
         if not self.triggered:
@@ -170,7 +170,7 @@ def _make_config(tmp_path: Path) -> BacktestConfigData:
     )
 
 
-def test_backtest_pipeline_executes_with_mock_data(tmp_path):
+def test_backtest_pipeline_executes_with_mock_data(tmp_path: Path) -> None:
     """Simulate running the full pipeline using synthetic parquet inputs."""
 
     config = _make_config(tmp_path)
@@ -189,7 +189,7 @@ def test_backtest_pipeline_executes_with_mock_data(tmp_path):
     assert stats["accepted_ticks"] >= 1
 
 
-def test_analysis_report_generated_after_backtest(tmp_path):
+def test_analysis_report_generated_after_backtest(tmp_path: Path) -> None:
     """Ensure analytics step consumes backtest output and produces reports."""
 
     config = _make_config(tmp_path)
@@ -216,7 +216,7 @@ def test_analysis_report_generated_after_backtest(tmp_path):
         assert plot_path.stat().st_size > 0
 
 
-def test_run_backtests_emits_manifest_and_run_directory(monkeypatch, tmp_path):
+def test_run_backtests_emits_manifest_and_run_directory(monkeypatch, tmp_path: Path) -> None:
     """Full entrypoint should snapshot configs and emit immutable outputs."""
 
     output_base = tmp_path / "run_outputs"

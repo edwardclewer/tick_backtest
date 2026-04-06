@@ -12,20 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# src/tick_backtest/_build.py
 from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import List
 
 import numpy as np
 from setuptools import Extension
 from setuptools.command.build_ext import build_ext as _build_ext
 
-# Optional Cython
 try:
     from Cython.Build import cythonize  # type: ignore
+
     HAVE_CYTHON = True
 except Exception:  # pragma: no cover
     cythonize = None  # type: ignore
@@ -40,12 +38,10 @@ CYTHON_DIRECTIVES = {
     "cdivision": True,
 }
 
-# Paths:
-#   this file -> src/tick_backtest/_build.py
-SRC_DIR = Path(__file__).resolve().parents[1]   # .../src
-PROJECT_ROOT = SRC_DIR.parent                    # repo root (where setup.py lives)
+SRC_DIR = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = SRC_DIR.parent
 
-MODULES: List[str] = [
+MODULES: list[str] = [
     # primitives
     "tick_backtest.metrics.primitives._time_rolling_window",
     "tick_backtest.metrics.primitives._base_metric",
@@ -75,9 +71,9 @@ MODULES: List[str] = [
 def _choose_source(modname: str) -> tuple[Path, str | None]:
     """
     Return (relative_source_path, language) for the module.
-    By default prefers generated .c/.cpp files when present so standard builds
-    do not attempt to cythonize over existing generated outputs. Clean checkouts
-    naturally fall back to .pyx and still exercise Cython compilation.
+    Prefer generated .c/.cpp files when present so standard builds do not
+    cythonize over existing generated outputs. Clean checkouts naturally fall
+    back to .pyx and still exercise Cython compilation.
     """
     base_abs = SRC_DIR / modname.replace(".", "/")
     if HAVE_CYTHON and FORCE_CYTHON:
@@ -89,10 +85,8 @@ def _choose_source(modname: str) -> tuple[Path, str | None]:
         p = base_abs.with_suffix(ext)
         if p.exists():
             lang = "c++" if ext == ".cpp" else None
-            # setuptools requires sources to be *relative* to setup.py dir
             return p.resolve().relative_to(PROJECT_ROOT), lang
 
-    # Last-chance scan in fixed order
     for ext in (".cpp", ".c", ".pyx"):
         p = base_abs.with_suffix(ext)
         if p.exists():
@@ -109,7 +103,7 @@ def _make_extension(modname: str) -> Extension:
     kwargs = {"language": lang} if lang else {}
     return Extension(
         modname,
-        sources=[src_rel.as_posix()],          # <= RELATIVE POSIX PATH
+        sources=[src_rel.as_posix()],
         include_dirs=[np.get_include()],
         **kwargs,
     )
@@ -151,7 +145,6 @@ class BuildExt(_build_ext):
         for ext in self.extensions:
             if np_inc not in getattr(ext, "include_dirs", []):
                 ext.include_dirs.append(np_inc)
-            # Avoid stub generation; these are pure extension modules
             setattr(ext, "_needs_stub", False)
 
         super().build_extensions()

@@ -53,8 +53,6 @@ def _write_config(tmp_path: Path, yaml_text: str) -> Path:
 
 def test_parse_config_loads_yaml(tmp_path: Path):
     """Parser should read YAML and return a populated dataclass."""
-
-    # create real directories so path validation passes
     data_dir = tmp_path / "data"
     output_dir = tmp_path / "output"
     data_dir.mkdir()

@@ -33,7 +33,7 @@ from tick_backtest.signals.signal_data import SignalData
 class StubDataFeed:
     """Deterministic data feed that iterates through supplied ticks."""
 
-    def __init__(self, ticks):
+    def __init__(self, ticks) -> None:
         self._ticks = iter(ticks)
 
     def tick(self):
@@ -49,7 +49,7 @@ class StubMetricsManager:
 
     snapshots: list[dict]
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.updates = []
 
     def update(self, tick):
@@ -62,10 +62,10 @@ class StubMetricsManager:
 class StubSignalGenerator:
     """Signal generator stub yielding predetermined SignalData objects."""
 
-    def __init__(self, signals):
+    def __init__(self, signals) -> None:
         self._signals = iter(signals)
 
-    def update(self, metrics, tick, *, is_warmup=False):
+    def update(self, metrics, tick, *, is_warmup: bool = False):
         try:
             return next(self._signals)
         except StopIteration:
@@ -125,7 +125,7 @@ def test_warmup_feeds_signal_generator(tick_factory, tmp_path):
             except StopIteration:
                 return SignalData()
 
-        def set_responses(self, responses):
+        def set_responses(self, responses) -> None:
             self._responses = iter(responses)
 
     metrics_snapshots = [{}, {}, {}]

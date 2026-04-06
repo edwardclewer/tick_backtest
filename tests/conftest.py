@@ -66,7 +66,7 @@ def tick_factory() -> Callable[[float, float, float, datetime | None], Tick]:
 def tick_series_factory(tick_factory: Callable[..., Tick]) -> Callable[[Iterable[tuple[float, float]]], list[Tick]]:
     """Return a helper that creates a list of ticks from bid/ask pairs."""
 
-    def _series(pairs: Iterable[tuple[float, float]]):
+    def _series(pairs: Iterable[tuple[float, float]]) -> list[Tick]:
         base_time = datetime(2015, 1, 1, tzinfo=timezone.utc)
         ticks: list[Tick] = []
         for idx, (bid, ask) in enumerate(pairs):

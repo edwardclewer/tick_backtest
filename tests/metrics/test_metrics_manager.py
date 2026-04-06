@@ -18,7 +18,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterable
+from collections.abc import Iterable
+from typing import Any
 import textwrap
 
 import pytest
@@ -41,16 +42,13 @@ class DummyMetric:
         """Record the tick for validation."""
         self.updates.append(tick)
 
-    def value(self) -> Dict[str, Any]:
+    def value(self) -> dict[str, Any]:
         """Return deterministic metric values."""
         if not self.payloads:
             return {}
         idx = min(self._index, len(self.payloads) - 1)
         self._index += 1
         return self.payloads[idx]
-
-
-# ---------------------------------------------------------------------------
 
 
 @pytest.fixture
@@ -101,9 +99,6 @@ def manager_factory(monkeypatch):
     return _factory
 
 
-# ---------------------------------------------------------------------------
-
-
 def test_update_invokes_metrics_and_returns_prefixed_snapshot(manager_factory, tick_factory):
     """Ensure .update() calls each metric and produces prefixed snapshot."""
     metric_a = DummyMetric(name="alpha", payloads=[{"z": 1}, {"z": 2}])
@@ -119,8 +114,6 @@ def test_update_invokes_metrics_and_returns_prefixed_snapshot(manager_factory, t
     assert internal_a.updates == [tick]
     assert internal_b.updates == [tick]
     assert snapshot == {"alpha.z": 1, "beta.vol": 0.5}
-
-
 
 def test_update_overwrites_previous_values(manager_factory, tick_factory):
     """Second update replaces previous snapshot values."""

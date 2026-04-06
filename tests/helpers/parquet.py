@@ -16,16 +16,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Iterable, Sequence
 
 import pandas as pd
 
 REQUIRED_COLUMNS = ("timestamp", "bid", "ask")
 
 
-def _normalise_rows(rows: Iterable[dict]) -> Sequence[dict]:
-    normalised: list[dict] = []
+def _normalise_rows(rows: Iterable[dict[str, object]]) -> Sequence[dict[str, object]]:
+    normalised: list[dict[str, object]] = []
     for idx, row in enumerate(rows):
         if not isinstance(row, dict):
             raise TypeError(f"Row {idx} must be a dict, got {type(row).__name__}")
@@ -39,7 +39,7 @@ def _normalise_rows(rows: Iterable[dict]) -> Sequence[dict]:
     return normalised
 
 
-def write_tick_parquet(path: Path, rows: Iterable[dict]) -> None:
+def write_tick_parquet(path: Path, rows: Iterable[dict[str, object]]) -> None:
     """Persist iterable tick dictionaries to parquet for use in tests."""
     payload = _normalise_rows(rows)
     df = pd.DataFrame(payload)

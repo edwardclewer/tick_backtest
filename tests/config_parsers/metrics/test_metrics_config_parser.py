@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 
@@ -37,7 +37,7 @@ class StubMetricConfig(MetricConfigBase):
     window: int
     alpha: float = 1.0
 
-    def to_kwargs(self) -> Dict[str, Any]:
+    def to_kwargs(self) -> dict[str, Any]:
         payload = super().to_kwargs()
         payload.update({"window": self.window, "alpha": self.alpha})
         return payload

@@ -17,7 +17,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 import pytest
 
@@ -33,7 +32,7 @@ from tick_backtest.signals.entries.base import EntryResult
 from tick_backtest.signals.signal_generator import SignalGenerator
 
 
-def _metrics(**overrides) -> Dict[str, float]:
+def _metrics(**overrides: float) -> dict[str, float]:
     base = {
         "tick_rate_30s.tick_rate_per_min": 120.0,
         "ewma_mid_5m.ewma": 1.2,
@@ -59,7 +58,7 @@ class _DeterministicEntryEngine:
         self.sl_multiple = 1.0
         self._next_result: EntryResult = EntryResult(reason=entry_config.name)
 
-    def update(self, tick, metrics):
+    def update(self, tick, metrics) -> EntryResult:
         return self._next_result
 
 
@@ -72,7 +71,11 @@ def stub_engine(monkeypatch):
     ENTRY_ENGINE_REGISTRY.pop("deterministic", None)
 
 
-def _strategy(entry_result: Optional[EntryResult] = None, predicates=None, exit_predicates=None):
+def _strategy(
+    entry_result: EntryResult | None = None,
+    predicates=None,
+    exit_predicates=None,
+):
     entry = EntryConfig(
         name="stub_entry",
         engine="deterministic",
