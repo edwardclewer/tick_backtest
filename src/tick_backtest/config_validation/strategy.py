@@ -14,13 +14,44 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TypedDict
 
 from tick_backtest.config_validation.schema_registry import validate_schema_version
 from tick_backtest.exceptions import ConfigError
 
 
-def _validate_predicates(items: Any, context: str) -> list[dict[str, Any]]:
+class PredicatePayload(TypedDict):
+    metric: str
+    operator: str
+    value: float | None
+    other_metric: str | None
+    use_abs: bool
+
+
+class EntryPayload(TypedDict):
+    name: str
+    engine: str
+    params: dict[str, object]
+    predicates: list[PredicatePayload]
+
+
+class ExitPayload(TypedDict):
+    name: str
+    predicates: list[PredicatePayload]
+
+
+class StrategyPayload(TypedDict):
+    name: str
+    entry: EntryPayload
+    exit: ExitPayload
+
+
+class ValidatedStrategyConfig(TypedDict):
+    schema_version: str
+    strategy: StrategyPayload
+
+
+def _validate_predicates(items: object, context: str) -> list[PredicatePayload]:
     if items is None:
         return []
     if not isinstance(items, list):
@@ -28,7 +59,7 @@ def _validate_predicates(items: Any, context: str) -> list[dict[str, Any]]:
             f"Invalid strategy configuration: {context} 'predicates' must be a list"
         )
 
-    normalized: list[dict[str, Any]] = []
+    normalized: list[PredicatePayload] = []
     allowed_keys = {"metric", "operator", "value", "other_metric", "use_abs"}
 
     for idx, item in enumerate(items, start=1):
@@ -43,12 +74,40 @@ def _validate_predicates(items: Any, context: str) -> list[dict[str, Any]]:
                 f"Invalid strategy configuration: {context} predicate #{idx} has unexpected keys {extra}"
             )
 
+        metric = _require_string(item.get("metric"), label=f"{context}.predicate.metric")
+        operator = _require_string(item.get("operator"), label=f"{context}.predicate.operator")
+
+        other_metric_raw = item.get("other_metric")
+        if other_metric_raw is not None:
+            other_metric = _require_string(
+                other_metric_raw,
+                label=f"{context}.predicate.other_metric",
+            )
+        else:
+            other_metric = None
+
+        value_raw = item.get("value")
+        value: float | None
+        if value_raw is None:
+            value = None
+        else:
+            if isinstance(value_raw, bool) or not isinstance(value_raw, (int, float, str)):
+                raise ValueError(
+                    f"Invalid strategy configuration: {context} predicate #{idx} 'value' must be numeric"
+                )
+            try:
+                value = float(value_raw)
+            except ValueError as exc:
+                raise ValueError(
+                    f"Invalid strategy configuration: {context} predicate #{idx} 'value' must be numeric"
+                ) from exc
+
         normalized.append(
             {
-                "metric": item.get("metric"),
-                "operator": item.get("operator"),
-                "value": item.get("value"),
-                "other_metric": item.get("other_metric"),
+                "metric": metric,
+                "operator": operator,
+                "value": value,
+                "other_metric": other_metric,
                 "use_abs": bool(item.get("use_abs", False)),
             }
         )
@@ -56,13 +115,13 @@ def _validate_predicates(items: Any, context: str) -> list[dict[str, Any]]:
     return normalized
 
 
-def _require_mapping(value: Any, *, label: str) -> dict[str, Any]:
+def _require_mapping(value: object, *, label: str) -> dict[str, object]:
     if not isinstance(value, dict):
         raise ValueError(f"Invalid strategy configuration: {label} must be a mapping")
     return value
 
 
-def _require_string(value: Any, *, label: str) -> str:
+def _require_string(value: object, *, label: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(
             f"Invalid strategy configuration: '{label}' must be a non-empty string"
@@ -70,13 +129,16 @@ def _require_string(value: Any, *, label: str) -> str:
     return value.strip()
 
 
-def validate_strategy_config(raw: dict) -> dict:
+def validate_strategy_config(raw: dict[str, object]) -> ValidatedStrategyConfig:
     """Validate strategy YAML payload and return normalized mapping."""
     if not isinstance(raw, dict):
         raise ValueError("Invalid strategy configuration: root must be a mapping")
 
+    schema_version_raw = raw.get("schema_version")
+    if schema_version_raw is not None and not isinstance(schema_version_raw, str):
+        raise ValueError("Invalid strategy configuration: 'schema_version' must be a string")
     try:
-        schema_spec = validate_schema_version("strategy", raw.get("schema_version"))
+        schema_spec = validate_schema_version("strategy", schema_version_raw)
     except ConfigError as exc:
         raise ValueError(str(exc)) from exc
 

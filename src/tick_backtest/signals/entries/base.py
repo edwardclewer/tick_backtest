@@ -17,6 +17,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import Protocol
 
 from tick_backtest.config_parsers.strategy.config_dataclass import EntryConfig
 from tick_backtest.data_feed.tick import Tick
@@ -32,11 +33,27 @@ class EntryResult:
     sl: float | None = None
     timeout_seconds: float | None = None
     reason: str = "no_signal"
-    metadata: Mapping[str, float] | None = None
+    metadata: Mapping[str, object] | None = None
+
+
+class EntryEngine(Protocol):
+    tp_multiple: float
+    sl_multiple: float
+
+    def update(self, tick: Tick, metrics: dict[str, float]) -> EntryResult:
+        """Return the latest entry decision given current metrics."""
+
+
+class EntryEngineFactory(Protocol):
+    def __call__(self, entry_config: EntryConfig, pip_size: float) -> EntryEngine:
+        """Construct an entry engine for the provided configuration."""
 
 
 class BaseEntryEngine(ABC):
     """Interface for entry engines. Implementations must be stateless or encode their own state."""
+
+    tp_multiple = 1.0
+    sl_multiple = 1.0
 
     def __init__(self, entry_config: EntryConfig, pip_size: float) -> None:
         self.entry_config = entry_config

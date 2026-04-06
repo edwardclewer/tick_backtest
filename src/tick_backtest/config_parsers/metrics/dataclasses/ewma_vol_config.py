@@ -17,6 +17,7 @@ import warnings
 from dataclasses import dataclass
 
 import numpy as np
+from numpy.typing import NDArray
 
 from ..config_dataclass import MetricConfigBase
 
@@ -87,6 +88,6 @@ class EWMAVolConfig(MetricConfigBase):
             )
 
     @property
-    def edges(self) -> np.ndarray:
+    def edges(self) -> NDArray[np.float64]:
         """Return variance bin edges as a numpy array."""
         return np.linspace(self.var_min, self.var_max, self.bins + 1)

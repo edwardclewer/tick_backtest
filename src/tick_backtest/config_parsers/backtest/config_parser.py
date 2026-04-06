@@ -19,6 +19,7 @@ from pathlib import Path
 import yaml
 
 from tick_backtest.config_parsers.backtest.config_dataclass import BacktestConfigData
+from tick_backtest.config_parsers.metrics.config_dataclass import MetricsConfigData
 from tick_backtest.config_parsers.metrics.config_parser import MetricsConfigParser
 from tick_backtest.config_parsers.strategy.config_parser import StrategyConfigParser
 from tick_backtest.config_parsers.utils.utils import (
@@ -29,13 +30,14 @@ from tick_backtest.config_parsers.utils.utils import (
     validate_positive_float,
 )
 from tick_backtest.config_validation import validate_backtest_config
+from tick_backtest.config_validation.backtest import ValidatedBacktestConfig
 from tick_backtest.exceptions import ConfigError
 from tick_backtest.metrics.manager.metric_registry import METRIC_CLASS_REGISTRY
 
 
 class BacktestConfigParser:
     @staticmethod
-    def _enabled_metric_references(metrics_config) -> set[str]:
+    def _enabled_metric_references(metrics_config: MetricsConfigData) -> set[str]:
         references: set[str] = set()
 
         for metric_cfg in metrics_config.metrics:
@@ -71,12 +73,12 @@ class BacktestConfigParser:
         return references
 
     def parse_config(self, backtest_config_path: Path) -> BacktestConfigData:
-        cfg, config_path = self._validate_yaml(backtest_config_path)
+        raw_cfg, config_path = self._validate_yaml(backtest_config_path)
         try:
-            cfg = validate_backtest_config(cfg)
+            validated_cfg = validate_backtest_config(raw_cfg)
         except ValueError as exc:
             raise ConfigError(str(exc)) from exc
-        return self._validate_and_build_backtest_config(cfg, config_path.parent)
+        return self._validate_and_build_backtest_config(validated_cfg, config_path.parent)
 
     def _validate_yaml(self, backtest_config_path: Path) -> tuple[dict[str, object], Path]:
         try:
@@ -97,7 +99,7 @@ class BacktestConfigParser:
 
     def _validate_and_build_backtest_config(
         self,
-        cfg: dict[str, object],
+        cfg: ValidatedBacktestConfig,
         config_dir: Path,
     ) -> BacktestConfigData:
         required = [

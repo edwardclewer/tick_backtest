@@ -25,10 +25,9 @@ from tick_backtest.signals.entries.base import BaseEntryEngine, EntryResult
 def _to_float(value: object, default: float = math.nan) -> float:
     if value is None or isinstance(value, bool):
         return default
-    try:
+    if isinstance(value, (int, float, str)):
         return float(value)
-    except Exception:
-        return default
+    return default
 
 
 class EWMACrossoverEntryEngine(BaseEntryEngine):

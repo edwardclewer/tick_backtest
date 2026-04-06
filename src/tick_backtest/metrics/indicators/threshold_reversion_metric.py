@@ -17,13 +17,38 @@
 from __future__ import annotations
 
 from importlib import import_module
+from typing import Protocol, cast
 
 __all__ = ["ThresholdReversionMetric"]
 
 
-def _load_impl() -> type[object]:
+class ThresholdReversionMetricProtocol(Protocol):
+    def update(self, tick: object) -> None:
+        """Update the metric with a new tick."""
+
+    def value_dict(self) -> dict[str, object]:
+        """Return the current metric snapshot."""
+
+
+class ThresholdReversionMetricFactory(Protocol):
+    def __call__(
+        self,
+        *,
+        name: str,
+        lookback_seconds: int,
+        threshold_pips: float,
+        pip_size: float,
+        tp_pips: float | None = None,
+        sl_pips: float | None = None,
+        min_recency_seconds: float = 0.0,
+        trade_timeout_seconds: float | None = None,
+    ) -> ThresholdReversionMetricProtocol:
+        """Construct a threshold reversion metric."""
+
+
+def _load_impl() -> ThresholdReversionMetricFactory:
     module = import_module("tick_backtest.metrics.indicators._threshold_reversion_metric")
-    return module.ThresholdReversionMetric
+    return cast(ThresholdReversionMetricFactory, module.ThresholdReversionMetric)
 
 
 ThresholdReversionMetric = _load_impl()

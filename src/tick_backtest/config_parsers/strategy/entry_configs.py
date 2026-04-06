@@ -80,9 +80,11 @@ class ThresholdReversionEntryParams(EntryParamsBase):
     def _coerce_positive_float(value: object, name: str) -> float:
         if isinstance(value, bool):
             raise TypeError(f"'{name}' must be numeric")
+        if not isinstance(value, (int, float, str)):
+            raise TypeError(f"'{name}' must be numeric")
         try:
             numeric = float(value)
-        except Exception as exc:
+        except ValueError as exc:
             raise TypeError(f"'{name}' must be numeric") from exc
         if numeric <= 0 or not numeric == numeric:
             raise ValueError(f"'{name}' must be positive and finite, got {value}")
@@ -92,9 +94,11 @@ class ThresholdReversionEntryParams(EntryParamsBase):
     def _coerce_nonnegative_float(value: object, name: str) -> float:
         if isinstance(value, bool):
             raise TypeError(f"'{name}' must be numeric")
+        if not isinstance(value, (int, float, str)):
+            raise TypeError(f"'{name}' must be numeric")
         try:
             numeric = float(value)
-        except Exception as exc:
+        except ValueError as exc:
             raise TypeError(f"'{name}' must be numeric") from exc
         if numeric < 0 or not numeric == numeric:
             raise ValueError(f"'{name}' must be non-negative and finite, got {value}")
@@ -133,9 +137,11 @@ class EWMACrossoverEntryParams(EntryParamsBase):
     def _coerce_nonnegative_float(value: object, name: str) -> float:
         if isinstance(value, bool):
             raise TypeError(f"'{name}' must be numeric")
+        if not isinstance(value, (int, float, str)):
+            raise TypeError(f"'{name}' must be numeric")
         try:
             numeric = float(value)
-        except Exception as exc:
+        except ValueError as exc:
             raise TypeError(f"'{name}' must be numeric") from exc
         if numeric < 0 or not numeric == numeric:
             raise ValueError(f"'{name}' must be non-negative and finite, got {value}")
@@ -145,9 +151,11 @@ class EWMACrossoverEntryParams(EntryParamsBase):
     def _coerce_positive_float(value: object, name: str) -> float:
         if isinstance(value, bool):
             raise TypeError(f"'{name}' must be numeric")
+        if not isinstance(value, (int, float, str)):
+            raise TypeError(f"'{name}' must be numeric")
         try:
             numeric = float(value)
-        except Exception as exc:
+        except ValueError as exc:
             raise TypeError(f"'{name}' must be numeric") from exc
         if numeric <= 0 or not numeric == numeric:
             raise ValueError(f"'{name}' must be positive and finite, got {value}")

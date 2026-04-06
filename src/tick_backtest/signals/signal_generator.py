@@ -14,8 +14,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from tick_backtest.config_parsers.strategy.config_dataclass import (
     EntryConfig,
     ExitConfig,
@@ -24,6 +22,7 @@ from tick_backtest.config_parsers.strategy.config_dataclass import (
 from tick_backtest.config_parsers.strategy.entry_configs import ThresholdReversionEntryParams
 from tick_backtest.data_feed.tick import Tick
 from tick_backtest.signals.entries import ENTRY_ENGINE_REGISTRY, EntryResult
+from tick_backtest.signals.entries.base import EntryEngine
 from tick_backtest.signals.predicates import PredicateEvaluator
 from tick_backtest.signals.signal_data import SignalData
 
@@ -50,7 +49,7 @@ class SignalGenerator:
         self.sl_multiple = getattr(self.entry_engine, "sl_multiple", 1.0)
         self.last_signal = SignalData()
 
-    def _build_entry_engine(self, entry_config: EntryConfig) -> Any:
+    def _build_entry_engine(self, entry_config: EntryConfig) -> EntryEngine:
         engine_cls = ENTRY_ENGINE_REGISTRY.get(entry_config.engine)
         if engine_cls is None:
             raise ValueError(f"Unrecognised strategy entry engine '{entry_config.engine}'")

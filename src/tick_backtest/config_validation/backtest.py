@@ -15,18 +15,35 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TypedDict
 
 from tick_backtest.config_validation.schema_registry import validate_schema_version
 from tick_backtest.exceptions import ConfigError
 
 
-def validate_backtest_config(raw: dict) -> dict:
+class ValidatedBacktestConfig(TypedDict):
+    schema_version: str
+    pairs: list[str]
+    start: str
+    end: str
+    pip_size: float
+    warmup_seconds: int
+    data_base_path: Path
+    output_base_path: Path
+    metrics_config_path: Path
+    strategy_config_path: Path
+
+
+def validate_backtest_config(raw: dict[str, object]) -> ValidatedBacktestConfig:
     """Validate a raw backtest configuration mapping."""
     if not isinstance(raw, dict):
         raise ValueError("Invalid backtest configuration: root must be a mapping")
 
+    schema_version_raw = raw.get("schema_version")
+    if schema_version_raw is not None and not isinstance(schema_version_raw, str):
+        raise ValueError("Invalid backtest configuration: 'schema_version' must be a string")
     try:
-        schema_spec = validate_schema_version("backtest", raw.get("schema_version"))
+        schema_spec = validate_schema_version("backtest", schema_version_raw)
     except ConfigError as exc:
         raise ValueError(str(exc)) from exc
 
@@ -66,7 +83,7 @@ def validate_backtest_config(raw: dict) -> dict:
     pairs = working["pairs"]
     if not isinstance(pairs, list) or not pairs:
         raise ValueError("Invalid backtest configuration: 'pairs' must be a non-empty list")
-    normalized_pairs = []
+    normalized_pairs: list[str] = []
     for pair in pairs:
         if not isinstance(pair, str) or not pair.strip():
             raise ValueError("Invalid backtest configuration: each pair must be a non-empty string")
@@ -84,16 +101,22 @@ def validate_backtest_config(raw: dict) -> dict:
     start = _require_str("start")
     end = _require_str("end")
 
+    pip_size_raw = working["pip_size"]
+    if isinstance(pip_size_raw, bool) or not isinstance(pip_size_raw, (int, float, str)):
+        raise ValueError("Invalid backtest configuration: 'pip_size' must be numeric")
     try:
-        pip_size = float(working["pip_size"])
-    except Exception as exc:
+        pip_size = float(pip_size_raw)
+    except ValueError as exc:
         raise ValueError("Invalid backtest configuration: 'pip_size' must be numeric") from exc
     if pip_size <= 0:
         raise ValueError("Invalid backtest configuration: 'pip_size' must be positive")
 
+    warmup_raw = working["warmup_seconds"]
+    if isinstance(warmup_raw, bool) or not isinstance(warmup_raw, (int, float, str)):
+        raise ValueError("Invalid backtest configuration: 'warmup_seconds' must be an integer")
     try:
-        warmup_seconds = int(working["warmup_seconds"])
-    except Exception as exc:
+        warmup_seconds = int(warmup_raw)
+    except ValueError as exc:
         raise ValueError("Invalid backtest configuration: 'warmup_seconds' must be an integer") from exc
     if warmup_seconds < 0:
         raise ValueError("Invalid backtest configuration: 'warmup_seconds' must be non-negative")

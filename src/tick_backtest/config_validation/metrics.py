@@ -14,17 +14,34 @@
 
 from __future__ import annotations
 
+from typing import TypedDict
+
 from tick_backtest.config_validation.schema_registry import validate_schema_version
 from tick_backtest.exceptions import ConfigError
 
 
-def validate_metrics_config(raw: dict) -> dict:
+class MetricEntryConfig(TypedDict):
+    name: str
+    type: str
+    enabled: bool
+    params: dict[str, object]
+
+
+class ValidatedMetricsConfig(TypedDict):
+    schema_version: str
+    metrics: list[MetricEntryConfig]
+
+
+def validate_metrics_config(raw: dict[str, object]) -> ValidatedMetricsConfig:
     """Validate metrics YAML payload and return normalized mapping."""
     if not isinstance(raw, dict):
         raise ValueError("Invalid metrics configuration: root must be a mapping")
 
+    schema_version_raw = raw.get("schema_version")
+    if schema_version_raw is not None and not isinstance(schema_version_raw, str):
+        raise ValueError("Invalid metrics configuration: 'schema_version' must be a string")
     try:
-        schema_spec = validate_schema_version("metrics", raw.get("schema_version"))
+        schema_spec = validate_schema_version("metrics", schema_version_raw)
     except ConfigError as exc:
         raise ValueError(str(exc)) from exc
 
@@ -46,7 +63,7 @@ def validate_metrics_config(raw: dict) -> dict:
     if not isinstance(metrics, list):
         raise ValueError("Invalid metrics configuration: 'metrics' must be a list")
 
-    normalized = []
+    normalized: list[MetricEntryConfig] = []
     for idx, entry in enumerate(metrics, start=1):
         if not isinstance(entry, dict):
             raise ValueError(

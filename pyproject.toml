@@ -113,20 +113,36 @@ files = [
   "src/tick_backtest/exceptions.py",
   "src/tick_backtest/position/position.py",
   "src/tick_backtest/signals/signal_data.py",
+  "src/tick_backtest/signals/predicates.py",
+  "src/tick_backtest/signals/signal_generator.py",
+  "src/tick_backtest/signals/entries",
   "src/tick_backtest/config_parsers/utils/utils.py",
   "src/tick_backtest/config_parsers/backtest/config_dataclass.py",
+  "src/tick_backtest/config_parsers/backtest/config_parser.py",
   "src/tick_backtest/config_parsers/metrics/config_dataclass.py",
   "src/tick_backtest/config_parsers/metrics/config_registry.py",
   "src/tick_backtest/config_parsers/metrics/dataclasses",
   "src/tick_backtest/config_parsers/strategy/config_dataclass.py",
+  "src/tick_backtest/config_parsers/strategy/config_parser.py",
+  "src/tick_backtest/config_parsers/strategy/entry_configs.py",
   "src/tick_backtest/config_parsers/strategy/config_registry.py",
   "src/tick_backtest/config_validation/backtest.py",
   "src/tick_backtest/config_validation/metrics.py",
   "src/tick_backtest/config_validation/schema_registry.py",
+  "src/tick_backtest/config_validation/strategy.py",
+  "src/tick_backtest/metrics/indicators/threshold_reversion_metric.py",
 ]
 check_untyped_defs = true
+disallow_any_generics = true
+disallow_untyped_defs = true
 disallow_incomplete_defs = true
 ignore_missing_imports = true
 no_implicit_optional = true
+strict_equality = true
+warn_return_any = true
 warn_redundant_casts = true
 warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["yaml"]
+ignore_missing_imports = true

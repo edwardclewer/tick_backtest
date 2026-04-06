@@ -14,12 +14,12 @@
 
 """Entry engine exports and registry."""
 
-from .base import BaseEntryEngine, EntryResult
+from .base import BaseEntryEngine, EntryEngineFactory, EntryResult
 from .ewma_crossover import EWMACrossoverEntryEngine
 from .null import NullEntryEngine
 from .threshold_reversion import ThresholdReversionEntryEngine
 
-ENTRY_ENGINE_REGISTRY = {
+ENTRY_ENGINE_REGISTRY: dict[str, EntryEngineFactory] = {
     "threshold_reversion": ThresholdReversionEntryEngine,
     "ewma_crossover": EWMACrossoverEntryEngine,
     "stub": NullEntryEngine,

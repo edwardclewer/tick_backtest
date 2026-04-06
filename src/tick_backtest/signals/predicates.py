@@ -23,10 +23,9 @@ from tick_backtest.config_parsers.strategy.config_dataclass import PredicateConf
 def _to_float(value: object, default: float = math.nan) -> float:
     if value is None or isinstance(value, bool):
         return default
-    try:
+    if isinstance(value, (int, float, str)):
         return float(value)
-    except Exception:
-        return default
+    return default
 
 
 class PredicateEvaluator:
@@ -50,8 +49,10 @@ class PredicateEvaluator:
             left = abs(left)
 
         if predicate.value is not None:
-            right = float(predicate.value)
+            right = predicate.value
         else:
+            if predicate.other_metric is None:
+                return False
             right = _to_float(metrics.get(predicate.other_metric))
             if not math.isfinite(right):
                 return False

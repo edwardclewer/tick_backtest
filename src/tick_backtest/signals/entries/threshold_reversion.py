@@ -26,10 +26,9 @@ from tick_backtest.signals.entries.base import BaseEntryEngine, EntryResult
 def _to_float(value: object, default: float = math.nan) -> float:
     if value is None or isinstance(value, bool):
         return default
-    try:
+    if isinstance(value, (int, float, str)):
         return float(value)
-    except Exception:
-        return default
+    return default
 
 
 class ThresholdReversionEntryEngine(BaseEntryEngine):
@@ -52,14 +51,19 @@ class ThresholdReversionEntryEngine(BaseEntryEngine):
             trade_timeout_seconds=self.params.trade_timeout_seconds,
         )
 
-        self.tp_multiple = self.params.tp_pips / self.params.threshold_pips
-        self.sl_multiple = self.params.sl_pips / self.params.threshold_pips
+        tp_pips = self.params.tp_pips
+        sl_pips = self.params.sl_pips
+        if tp_pips is None or sl_pips is None:
+            raise ValueError("ThresholdReversionEntryParams must define tp_pips and sl_pips")
+
+        self.tp_multiple = tp_pips / self.params.threshold_pips
+        self.sl_multiple = sl_pips / self.params.threshold_pips
         self._last_position = 0
 
     def update(self, tick: Tick, metrics: dict[str, float]) -> EntryResult:
         self.metric.update(tick)
         snapshot = self.metric.value_dict()
-        metadata = {
+        metadata: dict[str, object] = {
             "reference_price": _to_float(snapshot.get("reference_price")),
             "threshold": _to_float(snapshot.get("threshold")),
             "threshold_pips": self.params.threshold_pips,
@@ -84,8 +88,12 @@ class ThresholdReversionEntryEngine(BaseEntryEngine):
         tp = _to_float(snapshot.get("tp_price"))
         sl = _to_float(snapshot.get("sl_price"))
         if not math.isfinite(tp) or not math.isfinite(sl):
-            tp_offset = self.params.tp_pips * self.pip_size
-            sl_offset = self.params.sl_pips * self.pip_size
+            tp_pips_fallback = self.params.tp_pips
+            sl_pips_fallback = self.params.sl_pips
+            if tp_pips_fallback is None or sl_pips_fallback is None:
+                raise ValueError("ThresholdReversionEntryParams must define tp_pips and sl_pips")
+            tp_offset = tp_pips_fallback * self.pip_size
+            sl_offset = sl_pips_fallback * self.pip_size
             if position == 1:
                 tp = price + tp_offset
                 sl = price - sl_offset
@@ -94,7 +102,11 @@ class ThresholdReversionEntryEngine(BaseEntryEngine):
                 sl = price + sl_offset
 
         timeout = self.params.trade_timeout_seconds
-        timeout_seconds = float(timeout) if timeout is not None and timeout > 0 else None
+        timeout_seconds: float | None
+        if timeout is not None and timeout > 0:
+            timeout_seconds = timeout
+        else:
+            timeout_seconds = None
 
         metadata.update(
             {
