@@ -136,31 +136,31 @@ pytest
 
 This editable install step is required for a clean local test run because the package builds compiled extensions used by the runtime and test suite.
 
-Repository helper configs live under `config/` and are checkout-only development assets. The default backtest config lives at `config/backtest/default_backtest.yaml`. Update these fields for your data environment or copy the `.example` files (for example `config/backtest/local_default_backtest.yaml.example`) to files without the `.example` suffix and customise those versions for private datasets:
+Repository helper fixtures live under `src/tick_backtest/config/` and are checkout-only development assets. The bundled test backtest fixture lives at `src/tick_backtest/config/backtest/test_backtest.yaml`. Update these fields for your local data environment before using that fixture outside CI-style checks:
 
 - `data_base_path`: absolute path to your Parquet archive
 - `output_base_path`: directory for backtest artefacts
 - `start` / `end`: inclusive year-month ranges (ISO `YYYY-MM`)
 - `pairs`: list of currency pairs
 
-Metrics and strategy definitions live in:
+The paired metrics and strategy fixtures live in:
 
-- `config/metrics/default_metrics.yaml`
-- `config/strategy/default_strategy.yaml`
+- `src/tick_backtest/config/metrics/test_metrics.yaml`
+- `src/tick_backtest/config/strategy/test_strategy.yaml`
 
 ### Python API
 
 ```python
 from tick_backtest.backtest.workflow import run_backtest
 
-result = run_backtest("config/backtest/default_backtest.yaml")
+result = run_backtest("src/tick_backtest/config/backtest/test_backtest.yaml")
 print(result["run_id"], result["output_dir"])
 ```
 
 ### Command Line Helper
 
 ```bash
-tick-backtest run config/backtest/default_backtest.yaml
+tick-backtest run src/tick_backtest/config/backtest/test_backtest.yaml
 ```
 
 Both entry points create a timestamped directory under the configured `output_base_path/<RUN_ID>/`.

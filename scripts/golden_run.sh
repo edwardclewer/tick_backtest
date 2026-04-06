@@ -22,7 +22,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 # ---- config ----
-CONFIG_PATH=${1:-config/backtest/test_backtest.yaml}
+CONFIG_PATH=${1:-src/tick_backtest/config/backtest/test_backtest.yaml}
 RUNS_ROOT="output/backtests"
 
 # ---- preflight ----

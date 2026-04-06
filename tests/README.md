@@ -14,21 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Test Suite Scaffolding
+# Test Suite
 
-This directory holds the pytest-based test harness. The current files are placeholders that outline the intended coverage areas without implementing assertions yet. Each module-level skip marker documents the scenarios we plan to exercise once the synthetic fixtures and assertions are ready.
+This directory holds the active pytest suite for the project. The tests cover config parsing, data-feed behaviour, backtest orchestration, package/API/CLI surface area, analytics workflows, and cython-backed primitives.
 
 ## Conventions
 - Use `pytest` as the runner (`pytest.ini` configures strict markers and default paths).
 - Organise tests by top-level package (`tests/backtest`, `tests/metrics`, etc.) to keep responsibilities clear.
 - Prefer small, fixture-driven unit tests first; promote heavier cross-module flows into `tests/integration/`.
 - Helper utilities shared between tests live under `tests/helpers/`.
-
-When adding real tests, remove the `pytestmark = pytest.mark.skip(...)` lines and fill in the skeleton functions with assertions.
+- Keep repository fixtures deterministic so integration coverage stays stable across local runs and CI.
 
 ## Cython Primitive Smoke Tests
 
-A dedicated suite under `tests/metrics/test_cython_primitives.py` exercises each cython-backed primitive on a small synthetic dataset. The goal is to ensure the compiled extensions behave identically to their Python fallbacks across platforms, so that regressions surface quickly in CI.
+A dedicated suite under `tests/metrics/test_cython_primitives.py` exercises each cython-backed primitive on a small synthetic dataset. The goal is to ensure the compiled extensions behave identically to their Python fallbacks on supported build targets, so regressions surface quickly in CI.
 
 ## Sample Data Provenance
 

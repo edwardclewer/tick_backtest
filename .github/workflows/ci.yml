@@ -211,7 +211,7 @@ jobs:
           TB_REQUIRE_COMPILED: "1"
         run: |
           . .venv_ci/bin/activate
-          ./scripts/golden_run.sh config/backtest/test_backtest.yaml
+          ./scripts/golden_run.sh src/tick_backtest/config/backtest/test_backtest.yaml
 
 
       - name: Upload build artefacts on failure

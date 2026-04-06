@@ -40,6 +40,6 @@ pytest -q  # or: pytest -q -k 'not slow'
 # Tiny backtest (adjust config path as needed)
 python - <<'PY'
 from tick_backtest.backtest.workflow import run_backtest
-meta = run_backtest("config/backtest/test_backtest.yaml")
+meta = run_backtest("src/tick_backtest/config/backtest/test_backtest.yaml")
 print("run OK:", meta.get("run_id"))
 PY

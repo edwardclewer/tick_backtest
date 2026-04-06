@@ -28,7 +28,7 @@ This repository is prepared to publish Python packages via GitHub Actions using 
 
 - `src/tick_backtest/config/templates/` contains the public packaged templates exposed by `tick-backtest example-config`.
 - `src/tick_backtest/demo_data/` contains the bundled public demo dataset used for the packaged example project.
-- `config/` at repo root contains checkout-only development and CI configs. These are not part of the public installed template surface.
+- `src/tick_backtest/config/` contains checkout-only development fixtures used by repo smoke/golden checks. These are not part of the public installed template surface.
 
 The CI workflow validates both sides:
 - installed-package smoke tests exercise the public packaged templates and demo data
