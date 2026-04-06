@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+from typing import Protocol, cast
+
 from tick_backtest.metrics.indicators.drift_sign_metric import DriftSignMetric
 from tick_backtest.metrics.indicators.ewma_metric import EWMAMetric
 from tick_backtest.metrics.indicators.ewma_slope_metric import EWMASlopeMetric
@@ -22,14 +24,21 @@ from tick_backtest.metrics.indicators.session_metric import SessionMetric
 from tick_backtest.metrics.indicators.spread_metric import SpreadMetric
 from tick_backtest.metrics.indicators.tick_rate_metric import TickRateMetric
 from tick_backtest.metrics.indicators.zscore_metric import ZScoreMetric
+from tick_backtest.metrics.primitives.base_metric import BaseMetricProtocol
 
-METRIC_CLASS_REGISTRY: dict[str, type] = {
-    "ewma_vol": EWMAVolMetric,
-    "drift_sign": DriftSignMetric,
-    "zscore": ZScoreMetric,
-    "session": SessionMetric,
-    "ewma": EWMAMetric,
-    "ewma_slope": EWMASlopeMetric,
-    "spread": SpreadMetric,
-    "tick_rate": TickRateMetric,
+
+class MetricFactory(Protocol):
+    def __call__(self, *, name: str, **kwargs: object) -> BaseMetricProtocol:
+        """Construct a metric instance."""
+
+
+METRIC_CLASS_REGISTRY: dict[str, MetricFactory] = {
+    "ewma_vol": cast(MetricFactory, EWMAVolMetric),
+    "drift_sign": cast(MetricFactory, DriftSignMetric),
+    "zscore": cast(MetricFactory, ZScoreMetric),
+    "session": cast(MetricFactory, SessionMetric),
+    "ewma": cast(MetricFactory, EWMAMetric),
+    "ewma_slope": cast(MetricFactory, EWMASlopeMetric),
+    "spread": cast(MetricFactory, SpreadMetric),
+    "tick_rate": cast(MetricFactory, TickRateMetric),
 }

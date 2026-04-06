@@ -17,13 +17,27 @@
 from __future__ import annotations
 
 from importlib import import_module
+from typing import TYPE_CHECKING, Protocol, cast
+
+from tick_backtest.data_feed.tick import Tick
 
 __all__ = ["DriftSignMetric"]
 
 
-def _load_impl() -> type[object]:
+class DriftSignMetricProtocol(Protocol):
+    name: str
+
+    def __init__(self, *, name: str, horizon_seconds: float) -> None: ...
+    def update(self, tick: Tick) -> None: ...
+    def value(self) -> dict[str, float]: ...
+
+
+def _load_impl() -> type[DriftSignMetricProtocol]:
     module = import_module("tick_backtest.metrics.indicators._drift_sign_metric")
-    return module.DriftSignMetric
+    return cast(type[DriftSignMetricProtocol], module.DriftSignMetric)
 
 
-DriftSignMetric = _load_impl()
+if TYPE_CHECKING:
+    DriftSignMetric = DriftSignMetricProtocol
+else:
+    DriftSignMetric = _load_impl()

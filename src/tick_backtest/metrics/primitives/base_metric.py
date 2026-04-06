@@ -17,13 +17,29 @@
 from __future__ import annotations
 
 from importlib import import_module
+from typing import TYPE_CHECKING, Protocol, cast
+
+from tick_backtest.data_feed.tick import Tick
 
 __all__ = ["BaseMetric"]
 
 
-def _load_impl() -> type[object]:
+class BaseMetricProtocol(Protocol):
+    name: str
+
+    def update(self, tick: Tick) -> None:
+        """Update metric state."""
+
+    def value(self) -> dict[str, float]:
+        """Return the current metric snapshot."""
+
+
+def _load_impl() -> type[BaseMetricProtocol]:
     module = import_module("tick_backtest.metrics.primitives._base_metric")
-    return module.BaseMetric
+    return cast(type[BaseMetricProtocol], module.BaseMetric)
 
 
-BaseMetric = _load_impl()
+if TYPE_CHECKING:
+    BaseMetric = BaseMetricProtocol
+else:
+    BaseMetric = _load_impl()

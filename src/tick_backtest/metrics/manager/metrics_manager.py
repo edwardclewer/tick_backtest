@@ -19,6 +19,7 @@ from __future__ import annotations
 import logging
 from importlib import import_module
 from pathlib import Path
+from typing import Protocol, cast
 
 from tick_backtest.config_parsers.metrics.config_dataclass import MetricsConfigData
 from tick_backtest.config_parsers.metrics.config_parser import MetricsConfigParser
@@ -29,9 +30,20 @@ from tick_backtest.metrics.primitives.base_metric import BaseMetric
 logger = logging.getLogger(__name__)
 
 
-def _load_impl() -> type[object]:
+class CompiledMetricsManagerProtocol(Protocol):
+    def __init__(self, metrics: list[BaseMetric]) -> None:
+        """Construct the compiled manager."""
+
+    def update_all(self, tick: Tick) -> dict[str, float]:
+        """Update all metrics and return the flattened snapshot."""
+
+    def current(self) -> dict[str, float]:
+        """Return the current flattened snapshot."""
+
+
+def _load_impl() -> type[CompiledMetricsManagerProtocol]:
     module = import_module("tick_backtest.metrics.manager._metrics_manager")
-    return module.MetricsManager
+    return cast(type[CompiledMetricsManagerProtocol], module.MetricsManager)
 
 
 _CompiledManager = _load_impl()

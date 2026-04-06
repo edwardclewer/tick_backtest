@@ -17,46 +17,58 @@ from __future__ import annotations
 import math
 from collections import deque
 from importlib import import_module
+from typing import TYPE_CHECKING, Protocol, cast
 
 from tick_backtest.data_feed.tick import Tick
 
 
-def _load_impl() -> type[object]:
+class TickRateMetricProtocol(Protocol):
+    name: str
+
+    def __init__(self, *, name: str, window_seconds: float) -> None: ...
+    def update(self, tick: Tick) -> None: ...
+    def value(self) -> dict[str, float]: ...
+
+
+def _load_impl() -> type[TickRateMetricProtocol]:
     module = import_module("tick_backtest.metrics.indicators._tick_rate_metric")
-    return module.TickRateMetric
+    return cast(type[TickRateMetricProtocol], module.TickRateMetric)
 
 
-try:  # pragma: no cover - exercised when Cython extension is available
-    TickRateMetric = _load_impl()
-except (ImportError, AttributeError):  # pragma: no cover - fallback during development
+if TYPE_CHECKING:
+    TickRateMetric = TickRateMetricProtocol
+else:
+    try:  # pragma: no cover - exercised when Cython extension is available
+        TickRateMetric = _load_impl()
+    except (ImportError, AttributeError):  # pragma: no cover - fallback during development
 
-    class TickRateMetric:
-        """Count ticks over a rolling window and emit rates per second/minute."""
+        class TickRateMetric:
+            """Count ticks over a rolling window and emit rates per second/minute."""
 
-        def __init__(self, *, name: str, window_seconds: float) -> None:
-            if window_seconds <= 0:
-                raise ValueError(f"window_seconds must be positive, got {window_seconds}")
+            def __init__(self, *, name: str, window_seconds: float) -> None:
+                if window_seconds <= 0:
+                    raise ValueError(f"window_seconds must be positive, got {window_seconds}")
 
-            self.name = name
-            self.window = float(window_seconds)
-            self._timestamps: deque[float] = deque()
-            self._count = 0
+                self.name = name
+                self.window = float(window_seconds)
+                self._timestamps: deque[float] = deque()
+                self._count = 0
 
-        def update(self, tick: Tick) -> None:
-            timestamp = float(getattr(tick, "timestamp", 0.0))
-            self._timestamps.append(timestamp)
-            cutoff = timestamp - self.window
+            def update(self, tick: Tick) -> None:
+                timestamp = float(getattr(tick, "timestamp", 0.0))
+                self._timestamps.append(timestamp)
+                cutoff = timestamp - self.window
 
-            while self._timestamps and self._timestamps[0] <= cutoff:
-                self._timestamps.popleft()
+                while self._timestamps and self._timestamps[0] <= cutoff:
+                    self._timestamps.popleft()
 
-            self._count = len(self._timestamps)
+                self._count = len(self._timestamps)
 
-        def value(self) -> dict[str, float]:
-            rate_per_sec = self._count / self.window if self.window > 0 else math.nan
-            rate_per_min = rate_per_sec * 60.0 if self.window > 0 else math.nan
-            return {
-                "tick_count": float(self._count),
-                "tick_rate_per_sec": rate_per_sec,
-                "tick_rate_per_min": rate_per_min,
-            }
+            def value(self) -> dict[str, float]:
+                rate_per_sec = self._count / self.window if self.window > 0 else math.nan
+                rate_per_min = rate_per_sec * 60.0 if self.window > 0 else math.nan
+                return {
+                    "tick_count": float(self._count),
+                    "tick_rate_per_sec": rate_per_sec,
+                    "tick_rate_per_min": rate_per_min,
+                }

@@ -21,16 +21,31 @@ pure Python reference kept for parity and testing.
 from __future__ import annotations
 
 from importlib import import_module
+from typing import TYPE_CHECKING, Protocol, cast
 
 __all__ = ["TimeRollingWindow"]
 
 
-def _load_impl() -> type[object]:
+class TimeRollingWindowProtocol(Protocol):
+    sum_w: float
+    sum_x: float
+    sum_x2: float
+
+    def __init__(self, lookback_seconds: float) -> None: ...
+    def __len__(self) -> int: ...
+    def append(self, ts: float, value: float, dt: float) -> None: ...
+    def stats(self) -> tuple[float, float]: ...
+
+
+def _load_impl() -> type[TimeRollingWindowProtocol]:
     module = import_module("tick_backtest.metrics.primitives._time_rolling_window")
-    return module.TimeRollingWindow
+    return cast(type[TimeRollingWindowProtocol], module.TimeRollingWindow)
 
 
-try:
-    TimeRollingWindow = _load_impl()
-except ImportError:  # pragma: no cover - fallback when extension unavailable
-    from ._time_rolling_window_py import PyTimeRollingWindow as TimeRollingWindow  # noqa: F401
+if TYPE_CHECKING:
+    from ._time_rolling_window_py import PyTimeRollingWindow as TimeRollingWindow
+else:
+    try:
+        TimeRollingWindow = _load_impl()
+    except ImportError:  # pragma: no cover - fallback when extension unavailable
+        from ._time_rolling_window_py import PyTimeRollingWindow as TimeRollingWindow

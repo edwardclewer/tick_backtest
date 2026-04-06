@@ -17,67 +17,88 @@ from __future__ import annotations
 import math
 from collections.abc import Callable
 from importlib import import_module
+from typing import TYPE_CHECKING, Protocol, cast
 
 from tick_backtest.data_feed.tick import Tick
 
 MIN_DT = 1e-6
 
 
-def _load_impl() -> type[object]:
+class EWMAMetricProtocol(Protocol):
+    name: str
+
+    def __init__(
+        self,
+        *,
+        name: str,
+        tau_seconds: float,
+        initial_value: float | None = None,
+        price_field: str = "mid",
+    ) -> None: ...
+    def update(self, tick: Tick) -> None: ...
+    def value(self) -> dict[str, float]: ...
+    @property
+    def current(self) -> float: ...
+
+
+def _load_impl() -> type[EWMAMetricProtocol]:
     module = import_module("tick_backtest.metrics.indicators._ewma_metric")
-    return module.EWMAMetric
+    return cast(type[EWMAMetricProtocol], module.EWMAMetric)
 
 
-try:  # pragma: no cover - exercised when Cython extension is available
-    EWMAMetric = _load_impl()
-except (ImportError, AttributeError):  # pragma: no cover - fallback during development
+if TYPE_CHECKING:
+    EWMAMetric = EWMAMetricProtocol
+else:
+    try:  # pragma: no cover - exercised when Cython extension is available
+        EWMAMetric = _load_impl()
+    except (ImportError, AttributeError):  # pragma: no cover - fallback during development
 
-    class EWMAMetric:
-        """Python implementation of a basic EWMA over the selected price field."""
+        class EWMAMetric:
+            """Python implementation of a basic EWMA over the selected price field."""
 
-        def __init__(
-            self,
-            *,
-            name: str,
-            tau_seconds: float,
-            initial_value: float | None = None,
-            price_field: str = "mid",
-        ) -> None:
-            if tau_seconds <= 0:
-                raise ValueError(f"tau_seconds must be positive, got {tau_seconds}")
+            def __init__(
+                self,
+                *,
+                name: str,
+                tau_seconds: float,
+                initial_value: float | None = None,
+                price_field: str = "mid",
+            ) -> None:
+                if tau_seconds <= 0:
+                    raise ValueError(f"tau_seconds must be positive, got {tau_seconds}")
 
-            self.name = name
-            self.tau = float(tau_seconds)
-            self._value = float(initial_value) if initial_value is not None else math.nan
-            self._last_ts = math.nan
-            self._price_getter: Callable[[Tick], float] = self._resolve_price_field(price_field)
+                self.name = name
+                self.tau = float(tau_seconds)
+                self._value = float(initial_value) if initial_value is not None else math.nan
+                self._last_ts = math.nan
+                self._price_getter: Callable[[Tick], float] = self._resolve_price_field(price_field)
 
-        def update(self, tick: Tick) -> None:
-            price = float(self._price_getter(tick))
-            t = float(getattr(tick, "timestamp", 0.0))
+            def update(self, tick: Tick) -> None:
+                price = float(self._price_getter(tick))
+                t = float(getattr(tick, "timestamp", 0.0))
 
-            if math.isnan(self._value):
-                self._value = price
+                if math.isnan(self._value):
+                    self._value = price
+                    self._last_ts = t
+                    return
+
+                dt = max(MIN_DT, t - self._last_ts if not math.isnan(self._last_ts) else MIN_DT)
+                alpha = 1.0 - math.exp(-dt / self.tau)
+                self._value = (1.0 - alpha) * self._value + alpha * price
                 self._last_ts = t
-                return
 
-            dt = max(MIN_DT, t - self._last_ts if not math.isnan(self._last_ts) else MIN_DT)
-            alpha = 1.0 - math.exp(-dt / self.tau)
-            self._value = (1.0 - alpha) * self._value + alpha * price
-            self._last_ts = t
+            def value(self) -> dict[str, float]:
+                return {"ewma": self._value}
 
-        def value(self) -> dict[str, float]:
-            return {"ewma": self._value}
+            @property
+            def current(self) -> float:
+                return self._value
 
-        @property
-        def current(self) -> float:
-            return self._value
+            def _resolve_price_field(self, field: str) -> Callable[[Tick], float]:
+                if field not in ("mid", "bid", "ask"):
+                    raise ValueError(f"Unsupported price_field '{field}'. Expected one of ['mid', 'bid', 'ask'].")
 
-        def _resolve_price_field(self, field: str) -> Callable[[Tick], float]:
-            if field not in ("mid", "bid", "ask"):
-                raise ValueError(f"Unsupported price_field '{field}'. Expected one of ['mid', 'bid', 'ask'].")
+                def _getter(tick: Tick) -> float:
+                    return float(getattr(tick, field))
 
-            def _getter(tick: Tick) -> float:
-                return float(getattr(tick, field))
-
-            return _getter
+                return _getter

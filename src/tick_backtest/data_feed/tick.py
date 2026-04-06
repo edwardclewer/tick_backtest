@@ -14,17 +14,23 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 __all__ = ["Tick"]
 
 
-try:
-    from tick_backtest.data_feed._data_feed import TickRecord as Tick  # type: ignore
-except ImportError:  # pragma: no cover - fallback when C extensions unavailable
+if TYPE_CHECKING:
 
     class Tick:
-        """Lightweight Python tick with UTC timestamp tracked at nanosecond precision."""
+        """Tick record interface shared by compiled and Python implementations."""
 
-        __slots__ = ("timestamp", "timestamp_ns", "bid", "ask", "mid", "hour", "minute")
+        timestamp: float
+        timestamp_ns: int
+        bid: float
+        ask: float
+        mid: float
+        hour: int
+        minute: int
 
         def __init__(
             self,
@@ -34,16 +40,36 @@ except ImportError:  # pragma: no cover - fallback when C extensions unavailable
             mid: float,
             *,
             timestamp_ns: int | None = None,
-        ) -> None:
-            if timestamp_ns is None:
-                timestamp_ns = int(float(timestamp) * 1_000_000_000)
-            self.timestamp_ns = int(timestamp_ns)
-            self.timestamp = float(self.timestamp_ns) / 1_000_000_000.0
-            self.bid = float(bid)
-            self.ask = float(ask)
-            self.mid = float(mid)
+        ) -> None: ...
 
-            seconds = self.timestamp_ns // 1_000_000_000
-            seconds_in_day = seconds % 86400
-            self.hour = seconds_in_day // 3600
-            self.minute = (seconds_in_day % 3600) // 60
+else:
+    try:
+        from tick_backtest.data_feed._data_feed import TickRecord as Tick
+    except ImportError:  # pragma: no cover - fallback when C extensions unavailable
+
+        class Tick:
+            """Lightweight Python tick with UTC timestamp tracked at nanosecond precision."""
+
+            __slots__ = ("timestamp", "timestamp_ns", "bid", "ask", "mid", "hour", "minute")
+
+            def __init__(
+                self,
+                timestamp: float,
+                bid: float,
+                ask: float,
+                mid: float,
+                *,
+                timestamp_ns: int | None = None,
+            ) -> None:
+                if timestamp_ns is None:
+                    timestamp_ns = int(float(timestamp) * 1_000_000_000)
+                self.timestamp_ns = int(timestamp_ns)
+                self.timestamp = float(self.timestamp_ns) / 1_000_000_000.0
+                self.bid = float(bid)
+                self.ask = float(ask)
+                self.mid = float(mid)
+
+                seconds = self.timestamp_ns // 1_000_000_000
+                seconds_in_day = seconds % 86400
+                self.hour = seconds_in_day // 3600
+                self.minute = (seconds_in_day % 3600) // 60

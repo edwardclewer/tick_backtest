@@ -17,69 +17,81 @@ from __future__ import annotations
 import math
 from collections import deque
 from importlib import import_module
+from typing import TYPE_CHECKING, Protocol, cast
 
 from tick_backtest.data_feed.tick import Tick
 
 
-def _load_impl() -> type[object]:
+class SpreadMetricProtocol(Protocol):
+    name: str
+
+    def __init__(self, *, name: str, pip_size: float, window_seconds: float) -> None: ...
+    def update(self, tick: Tick) -> None: ...
+    def value(self) -> dict[str, float]: ...
+
+
+def _load_impl() -> type[SpreadMetricProtocol]:
     module = import_module("tick_backtest.metrics.indicators._spread_metric")
-    return module.SpreadMetric
+    return cast(type[SpreadMetricProtocol], module.SpreadMetric)
 
 
-try:  # pragma: no cover - exercised when Cython extension is available
-    SpreadMetric = _load_impl()
-except (ImportError, AttributeError):  # pragma: no cover - fallback during development
+if TYPE_CHECKING:
+    SpreadMetric = SpreadMetricProtocol
+else:
+    try:  # pragma: no cover - exercised when Cython extension is available
+        SpreadMetric = _load_impl()
+    except (ImportError, AttributeError):  # pragma: no cover - fallback during development
 
-    class SpreadMetric:
-        """Track raw spread, spread in pips, and percentile over a rolling window."""
+        class SpreadMetric:
+            """Track raw spread, spread in pips, and percentile over a rolling window."""
 
-        def __init__(
-            self,
-            *,
-            name: str,
-            pip_size: float,
-            window_seconds: float,
-        ) -> None:
-            if pip_size <= 0:
-                raise ValueError(f"pip_size must be positive, got {pip_size}")
-            if window_seconds <= 0:
-                raise ValueError(f"window_seconds must be positive, got {window_seconds}")
+            def __init__(
+                self,
+                *,
+                name: str,
+                pip_size: float,
+                window_seconds: float,
+            ) -> None:
+                if pip_size <= 0:
+                    raise ValueError(f"pip_size must be positive, got {pip_size}")
+                if window_seconds <= 0:
+                    raise ValueError(f"window_seconds must be positive, got {window_seconds}")
 
-            self.name = name
-            self.pip_size = float(pip_size)
-            self.window = float(window_seconds)
+                self.name = name
+                self.pip_size = float(pip_size)
+                self.window = float(window_seconds)
 
-            self._spread = math.nan
-            self._spread_pips = math.nan
-            self._percentile = math.nan
-            self._history: deque[tuple[float, float]] = deque()
-
-        def update(self, tick: Tick) -> None:
-            bid = float(getattr(tick, "bid", math.nan))
-            ask = float(getattr(tick, "ask", math.nan))
-            timestamp = float(getattr(tick, "timestamp", 0.0))
-
-            raw = max(0.0, ask - bid)
-            spread_pips = raw / self.pip_size if self.pip_size else math.nan
-
-            self._spread = raw
-            self._spread_pips = spread_pips
-
-            self._history.append((timestamp, spread_pips))
-            cutoff = timestamp - self.window
-            while self._history and self._history[0][0] < cutoff:
-                self._history.popleft()
-
-            if not self._history:
+                self._spread = math.nan
+                self._spread_pips = math.nan
                 self._percentile = math.nan
-                return
+                self._history: deque[tuple[float, float]] = deque()
 
-            count = sum(1 for _, value in self._history if value <= spread_pips)
-            self._percentile = count / len(self._history)
+            def update(self, tick: Tick) -> None:
+                bid = float(getattr(tick, "bid", math.nan))
+                ask = float(getattr(tick, "ask", math.nan))
+                timestamp = float(getattr(tick, "timestamp", 0.0))
 
-        def value(self) -> dict[str, float]:
-            return {
-                "spread": self._spread,
-                "spread_pips": self._spread_pips,
-                "spread_percentile": self._percentile,
-            }
+                raw = max(0.0, ask - bid)
+                spread_pips = raw / self.pip_size if self.pip_size else math.nan
+
+                self._spread = raw
+                self._spread_pips = spread_pips
+
+                self._history.append((timestamp, spread_pips))
+                cutoff = timestamp - self.window
+                while self._history and self._history[0][0] < cutoff:
+                    self._history.popleft()
+
+                if not self._history:
+                    self._percentile = math.nan
+                    return
+
+                count = sum(1 for _, value in self._history if value <= spread_pips)
+                self._percentile = count / len(self._history)
+
+            def value(self) -> dict[str, float]:
+                return {
+                    "spread": self._spread,
+                    "spread_pips": self._spread_pips,
+                    "spread_percentile": self._percentile,
+                }

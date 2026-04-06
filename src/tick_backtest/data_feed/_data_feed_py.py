@@ -17,9 +17,12 @@ from __future__ import annotations
 import logging
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Protocol, cast
 
 import numpy as np
+import pandas as pd
 import pyarrow.parquet as pq
+from numpy.typing import NDArray
 
 from tick_backtest.data_feed.tick import Tick
 from tick_backtest.exceptions import DataFeedError
@@ -27,6 +30,19 @@ from tick_backtest.exceptions import DataFeedError
 __all__ = ["DataFeed", "NoMoreTicks", "Tick", "get_data_months", "DataFeedError"]
 
 logger = logging.getLogger(__name__)
+
+
+class BatchColumnProtocol(Protocol):
+    def to_numpy(self, *, zero_copy_only: bool = False) -> NDArray[np.float64] | NDArray[np.int64]:
+        """Convert the column to a NumPy array."""
+
+    def to_pandas(self) -> object:
+        """Convert the column to a pandas series."""
+
+
+class RecordBatchProtocol(Protocol):
+    def column(self, name: str) -> BatchColumnProtocol:
+        """Return a named column."""
 
 
 class NoMoreTicks(Exception):
@@ -93,15 +109,15 @@ class DataFeed:
 
         self._file_paths = self._build_file_sequence()
         self._file_index = -1
-        self._batch_iterator: Iterator | None = None
-        self._current_batch = None
+        self._batch_iterator: Iterator[RecordBatchProtocol] | None = None
+        self._current_batch: RecordBatchProtocol | None = None
         self._batch_row_index = 0
 
-        self._bids: np.ndarray | None = None
-        self._asks: np.ndarray | None = None
-        self._mids: np.ndarray | None = None
-        self._timestamps: np.ndarray | None = None
-        self._timestamps_ns: np.ndarray | None = None
+        self._bids: NDArray[np.float64] | None = None
+        self._asks: NDArray[np.float64] | None = None
+        self._mids: NDArray[np.float64] | None = None
+        self._timestamps: NDArray[np.float64] | None = None
+        self._timestamps_ns: NDArray[np.int64] | None = None
         self.logger = logging.getLogger(__name__)
 
     def _build_file_sequence(self) -> list[Path]:
@@ -144,7 +160,10 @@ class DataFeed:
                 return False
 
             try:
-                batch = next(self._batch_iterator)
+                batch_iterator = self._batch_iterator
+                if batch_iterator is None:
+                    return False
+                batch = next(batch_iterator)
             except StopIteration:
                 self._batch_iterator = None
                 self._current_batch = None
@@ -159,11 +178,13 @@ class DataFeed:
             self._current_batch = batch
             self._batch_row_index = 0
 
-            self._bids = batch.column("bid").to_numpy(zero_copy_only=False)
-            self._asks = batch.column("ask").to_numpy(zero_copy_only=False)
+            bids = cast(NDArray[np.float64], batch.column("bid").to_numpy(zero_copy_only=False))
+            asks = cast(NDArray[np.float64], batch.column("ask").to_numpy(zero_copy_only=False))
+            self._bids = bids
+            self._asks = asks
             self._mids = 0.5 * (self._bids + self._asks)
 
-            ts_series = batch.column("timestamp").to_pandas()
+            ts_series = cast(pd.Series, batch.column("timestamp").to_pandas())
             if ts_series.dt.tz is None:
                 ts_series = ts_series.dt.tz_localize("UTC")
             else:
@@ -183,9 +204,17 @@ class DataFeed:
     def tick(self) -> Tick:
         if not self._ensure_row_loaded():
             raise NoMoreTicks("No more ticks available")
+        assert self._bids is not None
+        assert self._asks is not None
+        assert self._mids is not None
+        assert self._timestamps is not None
 
         i = self._batch_row_index
-        ts_ns = int(self._timestamps_ns[i]) if self._timestamps_ns is not None else int(self._timestamps[i] * 1e9)
+        ts_ns = (
+            int(self._timestamps_ns[i])
+            if self._timestamps_ns is not None
+            else int(self._timestamps[i] * 1e9)
+        )
         ts = float(self._timestamps[i])
         bid = float(self._bids[i])
         ask = float(self._asks[i])

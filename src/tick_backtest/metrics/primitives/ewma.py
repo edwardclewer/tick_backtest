@@ -17,16 +17,28 @@
 from __future__ import annotations
 
 from importlib import import_module
+from typing import TYPE_CHECKING, Protocol, cast
 
 __all__ = ["EWMA"]
 
 
-def _load_impl() -> type[object]:
+class EWMAProtocol(Protocol):
+    y: float
+
+    def __init__(self, tau_seconds: float, power: int = 1) -> None: ...
+    def reset(self) -> None: ...
+    def update(self, t: float, x: float) -> float: ...
+
+
+def _load_impl() -> type[EWMAProtocol]:
     module = import_module("tick_backtest.metrics.primitives._ewma")
-    return module.EWMA
+    return cast(type[EWMAProtocol], module.EWMA)
 
 
-try:
-    EWMA = _load_impl()
-except ImportError:  # pragma: no cover - fallback when extension unavailable
-    from ._ewma_py import PyEWMA as EWMA  # noqa: F401
+if TYPE_CHECKING:
+    from ._ewma_py import PyEWMA as EWMA
+else:
+    try:
+        EWMA = _load_impl()
+    except ImportError:  # pragma: no cover - fallback when extension unavailable
+        from ._ewma_py import PyEWMA as EWMA

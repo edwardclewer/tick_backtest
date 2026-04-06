@@ -17,13 +17,27 @@
 from __future__ import annotations
 
 from importlib import import_module
+from typing import TYPE_CHECKING, Protocol, cast
+
+from tick_backtest.data_feed.tick import Tick
 
 __all__ = ["SessionMetric"]
 
 
-def _load_impl() -> type[object]:
+class SessionMetricProtocol(Protocol):
+    name: str
+
+    def __init__(self, *, name: str) -> None: ...
+    def update(self, tick: Tick) -> None: ...
+    def value(self) -> dict[str, float]: ...
+
+
+def _load_impl() -> type[SessionMetricProtocol]:
     module = import_module("tick_backtest.metrics.indicators._session_metric")
-    return module.SessionMetric
+    return cast(type[SessionMetricProtocol], module.SessionMetric)
 
 
-SessionMetric = _load_impl()
+if TYPE_CHECKING:
+    SessionMetric = SessionMetricProtocol
+else:
+    SessionMetric = _load_impl()

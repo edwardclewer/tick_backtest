@@ -17,18 +17,35 @@
 from __future__ import annotations
 
 from importlib import import_module
+from typing import TYPE_CHECKING, Protocol, cast
+
+import numpy as np
+from numpy.typing import NDArray
 
 __all__ = ["TimeWeightedHistogram"]
 
 
-def _load_impl() -> type[object]:
+class TimeWeightedHistogramProtocol(Protocol):
+    edges: NDArray[np.float64]
+    horizon: float
+    n_bins: int
+    total: float
+
+    def __init__(self, edges: NDArray[np.float64], horizon_seconds: float) -> None: ...
+    def add(self, start: float, end: float, value: float) -> None: ...
+    def trim(self, now: float) -> None: ...
+    def percentile_rank(self, x: float) -> float: ...
+
+
+def _load_impl() -> type[TimeWeightedHistogramProtocol]:
     module = import_module("tick_backtest.metrics.primitives._time_weighted_histogram")
-    return module.TimeWeightedHistogram
+    return cast(type[TimeWeightedHistogramProtocol], module.TimeWeightedHistogram)
 
 
-try:
-    TimeWeightedHistogram = _load_impl()
-except ImportError:  # pragma: no cover - fallback when extension unavailable
-    from ._time_weighted_histogram_py import (
-        PyTimeWeightedHistogram as TimeWeightedHistogram,  # noqa: F401
-    )
+if TYPE_CHECKING:
+    from ._time_weighted_histogram_py import PyTimeWeightedHistogram as TimeWeightedHistogram
+else:
+    try:
+        TimeWeightedHistogram = _load_impl()
+    except ImportError:  # pragma: no cover - fallback when extension unavailable
+        from ._time_weighted_histogram_py import PyTimeWeightedHistogram as TimeWeightedHistogram

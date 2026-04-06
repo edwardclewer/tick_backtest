@@ -17,13 +17,27 @@
 from __future__ import annotations
 
 from importlib import import_module
+from typing import TYPE_CHECKING, Protocol, cast
+
+from tick_backtest.data_feed.tick import Tick
 
 __all__ = ["ZScoreMetric"]
 
 
-def _load_impl() -> type[object]:
+class ZScoreMetricProtocol(Protocol):
+    name: str
+
+    def __init__(self, *, name: str, window_seconds: float, price_field: str = "mid") -> None: ...
+    def update(self, tick: Tick) -> None: ...
+    def value(self) -> dict[str, float]: ...
+
+
+def _load_impl() -> type[ZScoreMetricProtocol]:
     module = import_module("tick_backtest.metrics.indicators._zscore_metric")
-    return module.ZScoreMetric
+    return cast(type[ZScoreMetricProtocol], module.ZScoreMetric)
 
 
-ZScoreMetric = _load_impl()
+if TYPE_CHECKING:
+    ZScoreMetric = ZScoreMetricProtocol
+else:
+    ZScoreMetric = _load_impl()
