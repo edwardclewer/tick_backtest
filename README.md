@@ -107,6 +107,50 @@ metrics_config_path: "./metrics.yaml"
 strategy_config_path: "./strategy.yaml"
 ```
 
+The companion `metrics.yaml` and `strategy.yaml` emitted by the shipped `minimal` template currently look like:
+
+```yaml
+# metrics.yaml
+schema_version: "1.0"
+metrics:
+  - name: z30m
+    type: zscore
+    enabled: true
+    params:
+      lookback_seconds: 1800
+
+  - name: tick_rate_30s
+    type: tick_rate
+    enabled: true
+    params:
+      window_seconds: 30
+```
+
+```yaml
+# strategy.yaml
+schema_version: "1.0"
+strategy:
+  name: threshold_reversion_strategy
+  entry:
+    name: threshold_reversion_entry
+    engine: threshold_reversion
+    params:
+      lookback_seconds: 1800
+      threshold_pips: 10
+      tp_pips: 10
+      sl_pips: 20
+      trade_timeout_seconds: 7200
+    predicates:
+      - metric: tick_rate_30s.tick_rate_per_min
+        operator: "<"
+        value: 200
+  exit:
+    name: default_exit
+    predicates: []
+```
+
+These examples are copied from the shipped `minimal` template surface under `src/tick_backtest/config/templates/minimal/`, not maintained as separate pseudo-examples.
+
 Expected data layout:
 
 - Tick shards are organised as `{data_root}/{PAIR}/{PAIR}_YYYY-MM.parquet`
@@ -172,6 +216,14 @@ After `tick-backtest report <trades.parquet>`, additional artefacts are written 
 After `tick-backtest analyze <trades.parquet>`, multivariate artefacts are written beside the trade file under `multivariate_analysis/`.
 This bundle includes `summary.md`, `coefficients.csv`, `correlations.csv`, and `dropped_predictors.csv`.
 
+To move from a completed run into post-processing, locate a concrete trade file first:
+
+```bash
+find ./demo/output -path '*/output/*/trades.parquet' | sort
+```
+
+Then pass one of those files to `report` or `analyze`.
+
 ---
 
 ## Public Commands
@@ -200,7 +252,8 @@ The API is intentionally filesystem-oriented. It writes artefacts to disk and do
 
 ## Architecture Snapshot
 
-- Packaged YAML templates and bundled demo data are exposed through `tick-backtest example-config`
+- Public packaged starter assets live under `src/tick_backtest/config/templates/` and `src/tick_backtest/demo_data/`, and are exposed through `tick-backtest example-config`
+- Checkout-only development fixtures live under `src/tick_backtest/config/` and support repo smoke/golden workflows rather than the installed-package surface
 - Backtest configs are parsed into validated dataclasses before runtime
 - Tick data is streamed from Parquet month by month and wrapped in a validator that skips invalid ticks
 - Per-pair execution remains sequential to avoid lookahead bias

@@ -36,10 +36,14 @@ def test_example_config_writes_template_set(tmp_path: Path) -> None:
     assert (tmp_path / "metrics.yaml").is_file()
     assert (tmp_path / "strategy.yaml").is_file()
     metrics_text = (tmp_path / "metrics.yaml").read_text(encoding="utf-8")
+    assert "name: z30m" in metrics_text
+    assert "name: tick_rate_30s" in metrics_text
     assert "window_seconds: 30" in metrics_text
     strategy_text = (tmp_path / "strategy.yaml").read_text(encoding="utf-8")
+    assert "name: threshold_reversion_strategy" in strategy_text
     assert "name: threshold_reversion_entry" in strategy_text
     assert "lookback_seconds: 1800" in strategy_text
+    assert "metric: tick_rate_30s.tick_rate_per_min" in strategy_text
 
 
 def test_example_config_writes_demo_project_with_demo_data(tmp_path: Path) -> None:

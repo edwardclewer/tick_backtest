@@ -58,6 +58,12 @@ tick-backtest report ./demo/output/<RUN_ID>/output/EURUSD/trades.parquet
 tick-backtest analyze ./demo/output/<RUN_ID>/output/EURUSD/trades.parquet
 ```
 
+If you want to locate the generated trade files first:
+
+```bash
+find ./demo/output -path '*/output/*/trades.parquet' | sort
+```
+
 The generated demo project contains:
 
 - `backtest.yaml`, `metrics.yaml`, and `strategy.yaml`

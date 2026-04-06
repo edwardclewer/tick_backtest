@@ -145,4 +145,8 @@ No API token, username, or password is used in the workflow.
    tick-backtest example-config --output ./demo --include-demo-data
    tick-backtest run ./demo/backtest.yaml
    ```
-3. Record any issues found before cutting the real PyPI tag.
+3. Verify the published package metadata matches the tagged source tree:
+   - version
+   - classifiers
+   - supported-platform claims
+4. Record any issues found before cutting the real PyPI tag.

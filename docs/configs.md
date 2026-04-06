@@ -18,7 +18,7 @@ limitations under the License.
 
 Backtests are driven entirely by YAML files. This guide explains each schema and how validation enforces correctness.
 
-Packaged starter templates are exposed through `tick-backtest example-config`. You can edit those emitted YAML files directly, or maintain your own equivalent config files anywhere on disk.
+Packaged starter templates are exposed through `tick-backtest example-config`. You can edit those emitted YAML files directly, or maintain your own equivalent config files anywhere on disk. Repository checkout fixtures under `src/tick_backtest/config/` are separate development assets and are not part of the installed-package template surface.
 
 ## Backtest Configuration (`backtest.yaml`)
 
@@ -61,14 +61,11 @@ metrics:
     enabled: true
     params:
       lookback_seconds: 1800
-  - name: ewma_vol_5m
-    type: ewma_vol
+  - name: tick_rate_30s
+    type: tick_rate
+    enabled: true
     params:
-      tau_seconds: 300
-      percentile_horizon_seconds: 300
-      bins: 256
-      base_vol: 0.0001
-      stddev_cap: 5.0
+      window_seconds: 30
 ```
 
 </details>
@@ -92,16 +89,11 @@ strategy:
       threshold_pips: 10
       tp_pips: 10
       sl_pips: 20
-      min_recency_seconds: 60
       trade_timeout_seconds: 7200
     predicates:
       - metric: tick_rate_30s.tick_rate_per_min
         operator: "<"
-        value: 200.0
-      - metric: ewma_mid_5m_slope.slope
-        operator: ">"
-        use_abs: true
-        value: 5e-7
+        value: 200
   exit:
     name: default_exit
     predicates: []

@@ -40,7 +40,7 @@ flowchart LR
     Manifest --> Analysis
 ```
 
-1. **Configuration Parsing** - User-supplied YAML files are validated and converted into immutable dataclasses (`BacktestConfigParser`, `MetricsConfigParser`, `StrategyConfigParser`).
+1. **Configuration Parsing** - User-supplied YAML files and packaged starter templates are validated and converted into immutable dataclasses (`BacktestConfigParser`, `MetricsConfigParser`, `StrategyConfigParser`). The public packaged templates live under `src/tick_backtest/config/templates/`; checkout-only fixtures under `src/tick_backtest/config/` remain a repository development surface.
 2. **Data Feed & Validation** - The compiled `DataFeed` streams ticks per month. Every feed is wrapped in a `TickValidator` that enforces monotonic timestamps, finite bid/ask/mid values, and non-negative spreads.
 3. **Metrics & Signals** - `MetricsManager` instantiates all enabled metrics and computes rolling indicators. `SignalGenerator` combines entry engines with predicate evaluation to produce open/close instructions. The built-in `threshold_reversion` entry engine is an intentional exception: it owns a private `ThresholdReversionMetric` instance inside the strategy layer instead of sourcing that state from `MetricsManager`.
 4. **Backtest Coordinator** - `BacktestCoordinator` iterates each configured pair, manages output directories, and records pair-level failures without aborting the entire batch.
