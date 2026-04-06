@@ -27,11 +27,9 @@ class SpreadConfig(MetricConfigBase):
     window_seconds: float
 
     def __post_init__(self) -> None:
-        # --- enabled ---
         if not isinstance(self.enabled, bool):
             raise TypeError(f"'enabled' must be a bool, got {type(self.enabled).__name__}")
 
-        # --- pip_size ---
         if isinstance(self.pip_size, bool):
             raise TypeError("'pip_size' must be numeric, not bool")
         if not isinstance(self.pip_size, (int, float)):
@@ -40,7 +38,6 @@ class SpreadConfig(MetricConfigBase):
             raise ValueError(f"'pip_size' must be positive and finite, got {self.pip_size}")
         self.pip_size = float(self.pip_size)
 
-        # --- window_seconds ---
         if isinstance(self.window_seconds, bool):
             raise TypeError("'window_seconds' must be numeric, not bool")
         if not isinstance(self.window_seconds, (int, float)):

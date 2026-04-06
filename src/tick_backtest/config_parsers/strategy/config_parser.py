@@ -109,7 +109,7 @@ class StrategyConfigParser:
                 f"Failed to instantiate params for entry engine '{engine}': {exc}"
             ) from exc
 
-    def _build_predicates(self, raw_list: Any, *, context: str) -> List[PredicateConfig]:
+    def _build_predicates(self, raw_list: Any, *, context: str) -> list[PredicateConfig]:
         if raw_list is None:
             return []
         if not isinstance(raw_list, list):

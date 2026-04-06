@@ -17,12 +17,11 @@
 from __future__ import annotations
 
 from importlib import import_module
-from typing import Type
 
 __all__ = ["TimeWeightedHistogram"]
 
 
-def _load_impl() -> Type[object]:
+def _load_impl() -> type[object]:
     module = import_module("tick_backtest.metrics.primitives._time_weighted_histogram")
     return getattr(module, "TimeWeightedHistogram")
 

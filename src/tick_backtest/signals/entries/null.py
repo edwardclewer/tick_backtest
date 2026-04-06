@@ -14,8 +14,6 @@
 
 from __future__ import annotations
 
-from typing import Dict
-
 from tick_backtest.config_parsers.strategy.config_dataclass import EntryConfig
 from tick_backtest.config_parsers.strategy.entry_configs import StubEntryParams
 from tick_backtest.data_feed.tick import Tick
@@ -33,5 +31,5 @@ class NullEntryEngine(BaseEntryEngine):
         if not isinstance(entry_config.params, StubEntryParams):
             raise TypeError("NullEntryEngine expects StubEntryParams")
 
-    def update(self, _tick: Tick, _metrics: Dict[str, float]) -> EntryResult:
+    def update(self, _tick: Tick, _metrics: dict[str, float]) -> EntryResult:
         return EntryResult(reason=self.entry_config.name)

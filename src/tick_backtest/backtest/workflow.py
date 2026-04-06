@@ -192,7 +192,7 @@ def _collect_input_shards(config) -> list[dict[str, object]]:
                 "path": str(file_path.resolve()),
             }
 
-            errors: List[str] = []
+            errors: list[str] = []
             row_count: int | None = None
 
             if file_path.exists() and pq is not None:
@@ -234,7 +234,7 @@ def run_backtest(
     log_level: str | int = "INFO",
     run_id: str | None = None,
     output_root: Path | str | None = None,
-) -> Dict[str, object]:
+) -> dict[str, object]:
     """
     Execute a backtest using the provided configuration path.
 
@@ -275,7 +275,7 @@ def run_backtest(
         },
     )
 
-    manifest: Dict[str, object] = {
+    manifest: dict[str, object] = {
         "run_id": run_identifier,
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "code_ref": get_git_hash(),
@@ -285,7 +285,7 @@ def run_backtest(
         "status": "pending",
     }
 
-    config_snapshots: Dict[str, Dict[str, object]] = {}
+    config_snapshots: dict[str, dict[str, object]] = {}
     for key, path in (
         ("backtest", Path(config_path)),
         ("metrics", config.metrics_config_path),
@@ -314,10 +314,10 @@ def run_backtest(
     config_for_run = replace(config, output_base_path=run_output_dir)
     coordinator = BacktestCoordinator(config_for_run, run_id=run_identifier)
 
-    input_shards_cache: Optional[List[Dict[str, object]]] = None
+    input_shards_cache: list[dict[str, object]] | None = None
     input_shards_logged = False
-    pair_failures: Dict[str, str] = {}
-    tick_validation_summary: Dict[str, Dict[str, object]] = {}
+    pair_failures: dict[str, str] = {}
+    tick_validation_summary: dict[str, dict[str, object]] = {}
 
     def _finalize_run(status: str) -> None:
         nonlocal input_shards_cache, input_shards_logged
@@ -387,7 +387,7 @@ def run_backtest(
 
     logger.info("run complete")
     manifest_path = run_root / "manifest.json"
-    result: Dict[str, object] = {
+    result: dict[str, object] = {
         "run_id": run_identifier,
         "run_root": run_root,
         "output_dir": run_output_dir,

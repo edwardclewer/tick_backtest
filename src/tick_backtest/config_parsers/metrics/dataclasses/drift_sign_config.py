@@ -13,37 +13,26 @@
 # limitations under the License.
 
 from dataclasses import dataclass
+
 from ..config_dataclass import MetricConfigBase
+
 
 @dataclass(kw_only=True)
 class DriftSignConfig(MetricConfigBase):
-    """
-    Configuration for the drift sign metric.
+    """Configuration for the drift sign metric."""
 
-    Parameters
-    ----------
-    enabled : bool
-        Whether to compute this metric during backtests.
-    lookback_seconds : int
-        Lookback window in seconds for computing drift direction.
-    """
     enabled: bool
     lookback_seconds: int
 
-    def __post_init__(self):
-        # --- enabled ---
+    def __post_init__(self) -> None:
         if not isinstance(self.enabled, bool):
             raise TypeError(f"'enabled' must be a bool, got {type(self.enabled).__name__}")
 
-        # --- lookback_seconds ---
-        # Allow floats that are whole numbers (e.g., 600.0)
         if isinstance(self.lookback_seconds, float):
             if not self.lookback_seconds.is_integer():
                 raise ValueError(f"'lookback_seconds' must be an integer number of seconds, got {self.lookback_seconds}")
             self.lookback_seconds = int(self.lookback_seconds)
-
         if not isinstance(self.lookback_seconds, int):
             raise TypeError(f"'lookback_seconds' must be an int, got {type(self.lookback_seconds).__name__}")
-
         if self.lookback_seconds <= 0:
             raise ValueError(f"'lookback_seconds' must be positive, got {self.lookback_seconds}")

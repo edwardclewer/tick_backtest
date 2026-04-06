@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Entry engine exports and registry."""
+
 from .base import BaseEntryEngine, EntryResult
 from .ewma_crossover import EWMACrossoverEntryEngine
 from .null import NullEntryEngine

@@ -31,11 +31,11 @@ from .workflow import (
 )
 
 __all__ = [
+    "DEFAULT_BINNING_MODES",
     "DEFAULT_METRICS",
     "DEFAULT_PREVIEW_COLUMNS",
-    "DEFAULT_BINNING_MODES",
-    "build_metric_section",
     "MetricStratificationOutputs",
+    "build_metric_section",
     "compile_report_for_mode",
     "compile_reports_for_modes",
     "derive_backtest_identifier",

@@ -14,8 +14,9 @@
 
 from dataclasses import dataclass
 import math
-import warnings
 import numpy as np
+import warnings
+
 from ..config_dataclass import MetricConfigBase
 
 
@@ -28,12 +29,10 @@ class EWMAVolConfig(MetricConfigBase):
     base_vol: float  # e.g., 1e-4 typical std of returns
     stddev_cap: float = 5.0  # how many σ to cover
 
-    def __post_init__(self):
-        # --- enabled ---
+    def __post_init__(self) -> None:
         if not isinstance(self.enabled, bool):
             raise TypeError(f"'enabled' must be a bool, got {type(self.enabled).__name__}")
 
-        # --- tau_seconds ---
         if isinstance(self.tau_seconds, bool):
             raise TypeError("'tau_seconds' must be numeric, not bool")
         if not isinstance(self.tau_seconds, (int, float)):
@@ -42,7 +41,6 @@ class EWMAVolConfig(MetricConfigBase):
             raise ValueError(f"'tau_seconds' must be positive and finite, got {self.tau_seconds}")
         self.tau_seconds = float(self.tau_seconds)
 
-        # --- percentile_horizon_seconds ---
         if isinstance(self.percentile_horizon_seconds, bool):
             raise TypeError("'percentile_horizon_seconds' must be numeric, not bool")
         if not isinstance(self.percentile_horizon_seconds, (int, float)):
@@ -51,7 +49,6 @@ class EWMAVolConfig(MetricConfigBase):
             raise ValueError(f"'percentile_horizon_seconds' must be positive and finite, got {self.percentile_horizon_seconds}")
         self.percentile_horizon_seconds = float(self.percentile_horizon_seconds)
 
-        # --- bins ---
         if isinstance(self.bins, bool):
             raise TypeError("'bins' must be an integer count, not bool")
         if isinstance(self.bins, float):
@@ -63,7 +60,6 @@ class EWMAVolConfig(MetricConfigBase):
         if not (2 <= self.bins <= 10_000):
             raise ValueError(f"'bins' must be between 2 and 10_000, got {self.bins}")
 
-        # --- base_vol ---
         if isinstance(self.base_vol, bool):
             raise TypeError("'base_vol' must be numeric, not bool")
         if not isinstance(self.base_vol, (int, float)):
@@ -72,7 +68,6 @@ class EWMAVolConfig(MetricConfigBase):
             raise ValueError(f"'base_vol' must be positive and finite, got {self.base_vol}")
         self.base_vol = float(self.base_vol)
 
-        # --- stddev_cap ---
         if isinstance(self.stddev_cap, bool):
             raise TypeError("'stddev_cap' must be numeric, not bool")
         if not isinstance(self.stddev_cap, (int, float)):
@@ -81,7 +76,6 @@ class EWMAVolConfig(MetricConfigBase):
             raise ValueError(f"'stddev_cap' must be positive and finite, got {self.stddev_cap}")
         self.stddev_cap = float(self.stddev_cap)
 
-        # --- derived variance range ---
         self.var_min = 0.0
         self.var_max = (self.stddev_cap * self.base_vol) ** 2
 

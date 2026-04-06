@@ -271,11 +271,11 @@ def analyse_trades(
     df: pd.DataFrame,
     trades_path: Path,
     *,
-    plot_path: Optional[Path] = None,
-    report_path: Optional[Path] = None,
+    plot_path: Path | None = None,
+    report_path: Path | None = None,
     generate_plot: bool = True,
     generate_report: bool = True,
-) -> Dict[str, object]:
+) -> dict[str, object]:
     df = df.copy()
     df["pnl_base"] = df["pnl_pips"]
     df["cumulative_pnl"] = df["pnl_base"].cumsum()
@@ -311,13 +311,13 @@ def run_trade_analysis(
     trades_path: Path | str,
     *,
     output_dir: Path | str | None = None,
-    plot_filename: Optional[str] = None,
-    report_filename: Optional[str] = None,
+    plot_filename: str | None = None,
+    report_filename: str | None = None,
     generate_plot: bool = True,
     generate_report: bool = True,
     configure_logs: bool = False,
-    run_id: Optional[str] = None,
-    log_dir: Optional[Path | str] = None,
+    run_id: str | None = None,
+    log_dir: Path | str | None = None,
 ) -> TradeAnalysisResult:
     """Execute trade analysis for a single trades parquet file."""
 
@@ -327,8 +327,8 @@ def run_trade_analysis(
     output_root = Path(output_dir).expanduser() if output_dir else trades_path.parent
     output_root.mkdir(parents=True, exist_ok=True)
 
-    resolved_plot_path: Optional[Path] = None
-    resolved_report_path: Optional[Path] = None
+    resolved_plot_path: Path | None = None
+    resolved_report_path: Path | None = None
 
     if generate_plot:
         filename = plot_filename or f"{trades_path.stem}_equity_curve.png"

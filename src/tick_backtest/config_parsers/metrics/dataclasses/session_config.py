@@ -13,13 +13,16 @@
 # limitations under the License.
 
 from dataclasses import dataclass
+
 from ..config_dataclass import MetricConfigBase
+
 
 @dataclass(kw_only=True)
 class SessionConfig(MetricConfigBase):
+    """Configuration for the session metric."""
+
     enabled: bool
 
-    def __post_init__(self):
-        # --- enabled ---
+    def __post_init__(self) -> None:
         if not isinstance(self.enabled, bool):
             raise TypeError(f"'enabled' must be a bool, got {type(self.enabled).__name__}")
