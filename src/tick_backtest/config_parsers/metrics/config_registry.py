@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# metrics/config_registry.py
-from typing import Dict, Type
+from __future__ import annotations
+
 from tick_backtest.config_parsers.metrics.dataclasses.drift_sign_config import DriftSignConfig
 from tick_backtest.config_parsers.metrics.dataclasses.ewma_vol_config import EWMAVolConfig
 from tick_backtest.config_parsers.metrics.dataclasses.session_config import SessionConfig
@@ -23,7 +23,7 @@ from tick_backtest.config_parsers.metrics.dataclasses.ewma_slope_config import E
 from tick_backtest.config_parsers.metrics.dataclasses.spread_config import SpreadConfig
 from tick_backtest.config_parsers.metrics.dataclasses.tick_rate_config import TickRateConfig
 
-CONFIG_REGISTRY: Dict[str, Type] = {
+CONFIG_REGISTRY: dict[str, type] = {
     "drift_sign": DriftSignConfig,
     "ewma_vol": EWMAVolConfig,
     "session": SessionConfig,

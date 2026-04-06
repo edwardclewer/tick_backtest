@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 from importlib import import_module
-from typing import List
 
 from tick_backtest.exceptions import DataFeedError
 
@@ -36,7 +35,7 @@ def _validate_month(value: int, label: str) -> int:
     return value
 
 
-def get_data_months(year_start: int, year_end: int, month_start: int, month_end: int) -> List[List[int]]:
+def get_data_months(year_start: int, year_end: int, month_start: int, month_end: int) -> list[list[int]]:
     """Return [[year, month], ...] pairs from a start to end date (inclusive)."""
     year_start = _validate_year(year_start, "year_start")
     year_end = _validate_year(year_end, "year_end")

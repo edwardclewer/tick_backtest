@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import yaml
 
@@ -54,8 +54,7 @@ class StrategyConfigParser:
         except (ValueError, TypeError) as exc:
             raise ConfigError(str(exc)) from exc
 
-    # ------------------------------------------------------------------
-    def _load_yaml(self) -> Dict[str, Any]:
+    def _load_yaml(self) -> dict[str, Any]:
         try:
             with self.config_path.open("r", encoding="utf-8") as handle:
                 data = yaml.safe_load(handle)
@@ -66,7 +65,7 @@ class StrategyConfigParser:
             raise ValueError("Strategy config root must be a mapping (YAML dict)")
         return data
 
-    def _extract_strategy(self, raw: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_strategy(self, raw: dict[str, Any]) -> dict[str, Any]:
         if "strategy" not in raw:
             raise ValueError("Strategy config must contain top-level key 'strategy'")
         strategy = raw["strategy"]
@@ -116,7 +115,7 @@ class StrategyConfigParser:
         if not isinstance(raw_list, list):
             raise ValueError(f"{context.capitalize()} 'predicates' must be a list")
 
-        predicates: List[PredicateConfig] = []
+        predicates: list[PredicateConfig] = []
         seen: set[tuple[Any, ...]] = set()
         for idx, item in enumerate(raw_list, start=1):
             if not isinstance(item, dict):

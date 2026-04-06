@@ -15,14 +15,13 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Optional
 
 
 @dataclass(kw_only=True)
 class EntryParamsBase:
     """Base class for entry engine parameter bundles."""
 
-    def to_kwargs(self) -> dict:
+    def to_kwargs(self) -> dict[str, object]:
         return asdict(self)
 
 
@@ -35,10 +34,10 @@ class StubEntryParams(EntryParamsBase):
 class ThresholdReversionEntryParams(EntryParamsBase):
     lookback_seconds: int
     threshold_pips: float
-    tp_pips: Optional[float] = None
-    sl_pips: Optional[float] = None
+    tp_pips: float | None = None
+    sl_pips: float | None = None
     min_recency_seconds: float = 0.0
-    trade_timeout_seconds: Optional[float] = None
+    trade_timeout_seconds: float | None = None
 
     def __post_init__(self) -> None:
         self.lookback_seconds = self._coerce_positive_int(self.lookback_seconds, "lookback_seconds")
@@ -64,7 +63,7 @@ class ThresholdReversionEntryParams(EntryParamsBase):
             )
 
     @staticmethod
-    def _coerce_positive_int(value, name: str) -> int:
+    def _coerce_positive_int(value: object, name: str) -> int:
         if isinstance(value, bool):
             raise TypeError(f"'{name}' must be an integer")
         if isinstance(value, float):
@@ -78,7 +77,7 @@ class ThresholdReversionEntryParams(EntryParamsBase):
         return value
 
     @staticmethod
-    def _coerce_positive_float(value, name: str) -> float:
+    def _coerce_positive_float(value: object, name: str) -> float:
         if isinstance(value, bool):
             raise TypeError(f"'{name}' must be numeric")
         try:
@@ -90,7 +89,7 @@ class ThresholdReversionEntryParams(EntryParamsBase):
         return numeric
 
     @staticmethod
-    def _coerce_nonnegative_float(value, name: str) -> float:
+    def _coerce_nonnegative_float(value: object, name: str) -> float:
         if isinstance(value, bool):
             raise TypeError(f"'{name}' must be numeric")
         try:
@@ -110,7 +109,7 @@ class EWMACrossoverEntryParams(EntryParamsBase):
     short_on_cross: bool = False
     tp_pips: float = 0.0
     sl_pips: float = 0.0
-    trade_timeout_seconds: Optional[float] = None
+    trade_timeout_seconds: float | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.fast_metric, str) or not self.fast_metric:
@@ -131,7 +130,7 @@ class EWMACrossoverEntryParams(EntryParamsBase):
             )
 
     @staticmethod
-    def _coerce_nonnegative_float(value, name: str) -> float:
+    def _coerce_nonnegative_float(value: object, name: str) -> float:
         if isinstance(value, bool):
             raise TypeError(f"'{name}' must be numeric")
         try:
@@ -143,7 +142,7 @@ class EWMACrossoverEntryParams(EntryParamsBase):
         return numeric
 
     @staticmethod
-    def _coerce_positive_float(value, name: str) -> float:
+    def _coerce_positive_float(value: object, name: str) -> float:
         if isinstance(value, bool):
             raise TypeError(f"'{name}' must be numeric")
         try:
@@ -161,4 +160,3 @@ __all__ = [
     "ThresholdReversionEntryParams",
     "EWMACrossoverEntryParams",
 ]
-

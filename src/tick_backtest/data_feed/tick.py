@@ -26,7 +26,15 @@ except ImportError:  # pragma: no cover - fallback when C extensions unavailable
 
         __slots__ = ("timestamp", "timestamp_ns", "bid", "ask", "mid", "hour", "minute")
 
-        def __init__(self, timestamp: float, bid: float, ask: float, mid: float, *, timestamp_ns: int | None = None):
+        def __init__(
+            self,
+            timestamp: float,
+            bid: float,
+            ask: float,
+            mid: float,
+            *,
+            timestamp_ns: int | None = None,
+        ) -> None:
             if timestamp_ns is None:
                 timestamp_ns = int(float(timestamp) * 1_000_000_000)
             self.timestamp_ns = int(timestamp_ns)

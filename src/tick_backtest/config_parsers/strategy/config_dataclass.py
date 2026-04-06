@@ -15,7 +15,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Optional
 
 from tick_backtest.config_parsers.strategy.entry_configs import EntryParamsBase
 
@@ -29,8 +28,8 @@ class PredicateConfig:
 
     metric: str
     operator: str
-    value: Optional[float] = None
-    other_metric: Optional[str] = None
+    value: float | None = None
+    other_metric: str | None = None
     use_abs: bool = False
 
     def __post_init__(self) -> None:
@@ -71,7 +70,7 @@ class EntryConfig:
     name: str
     engine: str
     params: EntryParamsBase
-    predicates: List[PredicateConfig] = field(default_factory=list)
+    predicates: list[PredicateConfig] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if not isinstance(self.name, str) or not self.name:
@@ -89,7 +88,7 @@ class ExitConfig:
     """Single exit definition governed by predicates."""
 
     name: str
-    predicates: List[PredicateConfig] = field(default_factory=list)
+    predicates: list[PredicateConfig] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if not isinstance(self.name, str) or not self.name:

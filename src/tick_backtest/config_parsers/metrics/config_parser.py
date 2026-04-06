@@ -14,8 +14,9 @@
 
 from __future__ import annotations
 
-from typing import Dict, Type, Any, List
 from pathlib import Path
+from typing import Any
+
 import yaml
 
 from tick_backtest.config_parsers.metrics.config_dataclass import MetricsConfigData, MetricConfigBase
@@ -25,33 +26,24 @@ from tick_backtest.exceptions import ConfigError
 
 
 class MetricsConfigParser:
-    """
-    Parses and validates the metrics YAML configuration file.
-
-    Produces validated MetricConfigBase-derived dataclasses
-    which describe how runtime metric objects should be
-    instantiated.
-    """
+    """Parse and validate the metrics YAML configuration."""
 
     def __init__(
         self,
         metrics_config_path: Path,
-        registry: Dict[str, Type[MetricConfigBase]] = CONFIG_REGISTRY,
-    ):
+        registry: dict[str, type[MetricConfigBase]] = CONFIG_REGISTRY,
+    ) -> None:
         self.registry = registry
         self.metrics_config_path = metrics_config_path
 
         if not self.metrics_config_path.exists():
             raise FileNotFoundError(f"Metrics config not found: {metrics_config_path}")
 
-    # ------------------------------------------------------------------
     def load_metrics_config(self) -> MetricsConfigData:
         """Load and validate the metrics YAML into config dataclasses."""
-
-        # --- Parse YAML ---
         try:
             with self.metrics_config_path.open("r", encoding="utf-8") as f:
-                raw: Dict[str, Any] = yaml.safe_load(f)
+                raw: dict[str, Any] = yaml.safe_load(f)
         except yaml.YAMLError as e:
             raise ConfigError(f"Error parsing YAML at {self.metrics_config_path}: {e}") from e
 
@@ -65,10 +57,9 @@ class MetricsConfigParser:
 
         metrics_raw = validated.get("metrics", [])
 
-        configs: List[MetricConfigBase] = []
+        configs: list[MetricConfigBase] = []
         seen_names: set[str] = set()
 
-        # --- Build config dataclasses ---
         for i, entry in enumerate(metrics_raw, start=1):
             if not isinstance(entry, dict):
                 raise ConfigError(f"Entry #{i} in 'metrics' list must be a mapping, got {type(entry).__name__}")

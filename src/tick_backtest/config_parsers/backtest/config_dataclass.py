@@ -12,16 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
-from typing import List, Optional
+from __future__ import annotations
+
 from dataclasses import dataclass
+from pathlib import Path
 
 from tick_backtest.config_parsers.strategy.config_dataclass import StrategyConfigData
+
 
 @dataclass
 class BacktestConfigData:
     schema_version: str
-    pairs: List[str]
+    pairs: list[str]
     year_start: int
     year_end: int
     month_start: int
@@ -32,4 +34,4 @@ class BacktestConfigData:
     output_base_path: Path
     metrics_config_path: Path
     strategy_config_path: Path
-    strategy_config: Optional[StrategyConfigData] = None
+    strategy_config: StrategyConfigData | None = None

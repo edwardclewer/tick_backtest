@@ -17,7 +17,8 @@ from __future__ import annotations
 import math
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from collections.abc import Iterator
+from typing import Any
 
 from tick_backtest.data_feed.data_feed import NoMoreTicks
 
@@ -29,13 +30,13 @@ class TickValidationStats:
     total_ticks: int = 0
     accepted_ticks: int = 0
     skipped_ticks: int = 0
-    issues: Counter = field(default_factory=Counter)
+    issues: Counter[str] = field(default_factory=Counter)
 
     def record_issue(self, issue: str) -> None:
         self.skipped_ticks += 1
         self.issues[issue] += 1
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         return {
             "total_ticks": self.total_ticks,
             "accepted_ticks": self.accepted_ticks,
@@ -50,8 +51,8 @@ class TickValidator:
     def __init__(self, *, pair: str) -> None:
         self.pair = pair
         self.stats = TickValidationStats()
-        self._last_timestamp: Optional[float] = None
-        self._last_timestamp_ns: Optional[int] = None
+        self._last_timestamp: float | None = None
+        self._last_timestamp_ns: int | None = None
 
     def _require_field(self, tick: Any, field: str) -> float:
         try:
@@ -123,23 +124,23 @@ class TickValidator:
 class ValidatingDataFeed:
     """Wraps a data feed, skipping invalid ticks while recording validation stats."""
 
-    def __init__(self, feed: Any, validator: TickValidator):
+    def __init__(self, feed: Any, validator: TickValidator) -> None:
         self._feed = feed
         self.validator = validator
         self.pair = getattr(feed, "pair", validator.pair)
 
-    def tick(self):
+    def tick(self) -> Any:
         while True:
             tick = self._feed.tick()
             if self.validator.validate(tick):
                 return tick
 
-    def __getattr__(self, item):
+    def __getattr__(self, item: str) -> Any:
         if item == "validator":
             return self.validator
         return getattr(self._feed, item)
 
-    def __iter__(self):  # pragma: no cover - convenience for potential streaming
+    def __iter__(self) -> Iterator[Any]:  # pragma: no cover - convenience for potential streaming
         try:
             while True:
                 yield self.tick()

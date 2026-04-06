@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict, Type
+from __future__ import annotations
 
 from tick_backtest.config_parsers.strategy.entry_configs import (
     EntryParamsBase,
@@ -21,11 +21,10 @@ from tick_backtest.config_parsers.strategy.entry_configs import (
     ThresholdReversionEntryParams,
 )
 
-ENTRY_PARAMS_REGISTRY: Dict[str, Type[EntryParamsBase]] = {
+ENTRY_PARAMS_REGISTRY: dict[str, type[EntryParamsBase]] = {
     "threshold_reversion": ThresholdReversionEntryParams,
     "ewma_crossover": EWMACrossoverEntryParams,
     "stub": StubEntryParams,
 }
 
 __all__ = ["ENTRY_PARAMS_REGISTRY"]
-

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from pathlib import Path
 
 import yaml
@@ -28,28 +30,17 @@ from tick_backtest.config_parsers.utils.utils import (
 from tick_backtest.config_validation import validate_backtest_config
 from tick_backtest.exceptions import ConfigError
 
-class BacktestConfigParser:
-    def __init__(
-        self,
-        ):
-        return
 
-    def parse_config(
-        self,
-        backtest_config_path: Path
-        ):
+class BacktestConfigParser:
+    def parse_config(self, backtest_config_path: Path) -> BacktestConfigData:
         cfg, config_path = self._validate_yaml(backtest_config_path)
         try:
             cfg = validate_backtest_config(cfg)
         except ValueError as exc:
             raise ConfigError(str(exc)) from exc
-        backtest_config = self._validate_and_build_backtest_coordinator(cfg, config_path.parent)
-        return backtest_config
+        return self._validate_and_build_backtest_config(cfg, config_path.parent)
 
-    def _validate_yaml(
-        self,
-        backtest_config_path: Path
-        ):
+    def _validate_yaml(self, backtest_config_path: Path) -> tuple[dict[str, object], Path]:
         try:
             path = backtest_config_path.resolve(strict=True)
         except FileNotFoundError:
@@ -66,12 +57,11 @@ class BacktestConfigParser:
 
         return cfg, path
 
-
-    def _validate_and_build_backtest_coordinator(
+    def _validate_and_build_backtest_config(
         self,
-        cfg,
+        cfg: dict[str, object],
         config_dir: Path,
-        ):
+    ) -> BacktestConfigData:
         required = [
             "pairs",
             "start",
@@ -81,9 +71,9 @@ class BacktestConfigParser:
             "pip_size",
             "warmup_seconds",
             "metrics_config_path",
-            "strategy_config_path"
+            "strategy_config_path",
             ]
-        
+
         for key in required:
             if key not in cfg:
                 raise ConfigError(f"missing required config key: {key}")
@@ -131,7 +121,6 @@ class BacktestConfigParser:
         pip_size = validate_positive_float(cfg["pip_size"], "pip_size")
         warmup_seconds = validate_nonnegative_int(cfg["warmup_seconds"], "warmup_seconds")
 
-
         strategy_parser = StrategyConfigParser(strategy_config_path)
         try:
             strategy_config = strategy_parser.load()
@@ -152,6 +141,6 @@ class BacktestConfigParser:
             metrics_config_path=metrics_config_path,
             strategy_config_path=strategy_config_path,
             strategy_config=strategy_config,
-            )
-        
+        )
+
         return backtest_config

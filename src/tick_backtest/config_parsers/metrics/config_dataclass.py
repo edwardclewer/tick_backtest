@@ -12,30 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass, field, asdict
-from typing import List
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass, field
+
 
 @dataclass(kw_only=True)
 class MetricConfigBase:
     name: str
     metric_type: str
-    enabled: bool = True  # moved to base for universal toggle support
+    enabled: bool = True
 
-    def to_kwargs(self) -> dict:
-        """
-        Convert config dataclass to kwargs for metric instantiation.
-        Strips out config-only fields not accepted by metric constructors.
-        """
+    def to_kwargs(self) -> dict[str, object]:
+        """Convert config dataclass to kwargs for metric instantiation."""
         d = asdict(self)
         for field in ("name", "metric_type", "enabled"):
             d.pop(field, None)
         return d
 
+
 @dataclass(kw_only=True)
 class MetricsConfigData:
-    """
-    Container for all validated metric configuration objects.
-    Created by MetricsConfigParser and passed downstream for instantiation.
-    """
+    """Container for all validated metric configuration objects."""
+
     schema_version: str
-    metrics: List[MetricConfigBase] = field(default_factory=list)
+    metrics: list[MetricConfigBase] = field(default_factory=list)

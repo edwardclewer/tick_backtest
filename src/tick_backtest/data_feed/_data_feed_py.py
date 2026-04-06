@@ -15,12 +15,10 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from pathlib import Path
-from typing import Iterator, Optional
+from collections.abc import Iterator
 
 import numpy as np
-import pandas as pd
 import pyarrow.parquet as pq
 
 from tick_backtest.data_feed.tick import Tick
@@ -29,6 +27,7 @@ from tick_backtest.exceptions import DataFeedError
 __all__ = ["DataFeed", "NoMoreTicks", "Tick", "get_data_months", "DataFeedError"]
 
 logger = logging.getLogger(__name__)
+
 
 class NoMoreTicks(Exception):
     """Raised when the feed runs out of rows."""
@@ -48,7 +47,12 @@ def _validate_month(value: int, label: str) -> int:
     return value
 
 
-def get_data_months(year_start: int, year_end: int, month_start: int, month_end: int):
+def get_data_months(
+    year_start: int,
+    year_end: int,
+    month_start: int,
+    month_end: int,
+) -> list[list[int]]:
     year_start = _validate_year(year_start, "year_start")
     year_end = _validate_year(year_end, "year_end")
     month_start = _validate_month(month_start, "month_start")
@@ -71,7 +75,7 @@ class DataFeed:
 
     def __init__(
         self,
-        base_path: str,
+        base_path: str | Path,
         pair: str,
         year_start: int,
         year_end: int,
@@ -89,20 +93,20 @@ class DataFeed:
 
         self._file_paths = self._build_file_sequence()
         self._file_index = -1
-        self._batch_iterator: Optional[Iterator] = None
+        self._batch_iterator: Iterator | None = None
         self._current_batch = None
         self._batch_row_index = 0
 
-        self._bids: Optional[np.ndarray] = None
-        self._asks: Optional[np.ndarray] = None
-        self._mids: Optional[np.ndarray] = None
-        self._timestamps: Optional[np.ndarray] = None
-        self._timestamps_ns: Optional[np.ndarray] = None
+        self._bids: np.ndarray | None = None
+        self._asks: np.ndarray | None = None
+        self._mids: np.ndarray | None = None
+        self._timestamps: np.ndarray | None = None
+        self._timestamps_ns: np.ndarray | None = None
         self.logger = logging.getLogger(__name__)
 
-    def _build_file_sequence(self):
+    def _build_file_sequence(self) -> list[Path]:
         month_pairs = get_data_months(self.year_start, self.year_end, self.month_start, self.month_end)
-        file_paths = []
+        file_paths: list[Path] = []
         for year, month in month_pairs:
             path = self.base_path / self.pair / f"{self.pair}_{year}-{month:02d}.parquet"
             if not path.exists():
@@ -123,7 +127,6 @@ class DataFeed:
         self._batch_iterator = parquet_file.iter_batches(batch_size=self.batch_size)
 
         ym = current_file.stem.split("_")[-1]
-        now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
         logger.info(
             "processing data file",
             extra={
@@ -150,10 +153,10 @@ class DataFeed:
             except Exception as exc:
                 self.logger.error(
                     "read_batch_failed",
-                    extra={"path": str(self._file_paths[self._file_index]), "error": repr(exc)}
+                    extra={"path": str(self._file_paths[self._file_index]), "error": repr(exc)},
                 )
                 raise DataFeedError(f"failed reading {self._file_paths[self._file_index]}") from exc
-            
+
             self._current_batch = batch
             self._batch_row_index = 0
 
@@ -167,15 +170,14 @@ class DataFeed:
             else:
                 ts_series = ts_series.dt.tz_convert("UTC")
 
-            # Keep ns precision
-            ts_int = ts_series.view("int64").to_numpy(copy=False)  # or .astype("int64")
+            ts_int = ts_series.view("int64").to_numpy(copy=False)
             self._timestamps_ns = ts_int
             self._timestamps = self._timestamps_ns.astype(np.float64) / 1e9
 
             return True
 
     def _ensure_row_loaded(self) -> bool:
-        if self._current_batch is None or self._batch_row_index >= len(self._bids):
+        if self._current_batch is None or self._bids is None or self._batch_row_index >= len(self._bids):
             return self._load_next_batch()
         return True
 
