@@ -19,17 +19,17 @@ import logging
 import subprocess
 import sys
 import uuid
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar, Token
 from dataclasses import asdict, is_dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterator, Mapping
+from typing import Any
 
-
-_CONTEXT: ContextVar[dict[str, Any]] = ContextVar(
+_CONTEXT: ContextVar[dict[str, Any] | None] = ContextVar(
     "tick_backtest_logging_context",
-    default={"run_id": None, "pair": None},
+    default=None,
 )
 
 _HANDLER_OWNERSHIP_ATTR = "_tick_backtest_owned_handler"
@@ -87,13 +87,20 @@ class StructuredFormatter(logging.Formatter):
         "process",
     }
 
+    @staticmethod
+    def _context() -> dict[str, Any]:
+        context = _CONTEXT.get()
+        if context is None:
+            return {"run_id": None, "pair": None}
+        return dict(context)
+
     def format(self, record: logging.LogRecord) -> str:
-        context = dict(_CONTEXT.get())
+        context = self._context()
         run_id = getattr(record, "run_id", context.get("run_id"))
         pair = getattr(record, "pair", context.get("pair"))
 
         payload: dict[str, Any] = {
-            "ts": datetime.fromtimestamp(record.created, tz=timezone.utc)
+            "ts": datetime.fromtimestamp(record.created, tz=UTC)
             .isoformat(timespec="milliseconds"),
             "level": record.levelname,
             "logger": record.name,
@@ -162,12 +169,12 @@ def generate_run_id() -> str:
 
 def set_run_context(**updates: Any) -> ContextVarToken:
     """Merge updates into the current logging context."""
-    ctx = dict(_CONTEXT.get())
+    ctx = StructuredFormatter._context()
     ctx.update(updates)
     return ContextVarToken(context_token=_CONTEXT.set(ctx))
 
 
-def reset_run_context(token: "ContextVarToken") -> None:
+def reset_run_context(token: ContextVarToken) -> None:
     """Restore the logging context using a previously captured token."""
     _CONTEXT.reset(token.value)
 
@@ -177,7 +184,7 @@ class ContextVarToken:
 
     __slots__ = ("value",)
 
-    def __init__(self, context_token: Token[dict[str, Any]]) -> None:
+    def __init__(self, context_token: Token[dict[str, Any] | None]) -> None:
         self.value = context_token
 
 

@@ -64,7 +64,7 @@ class BacktestConfigParser:
             if not isinstance(snapshot, dict):
                 continue
 
-            for field_name in snapshot.keys():
+            for field_name in snapshot:
                 if isinstance(field_name, str) and field_name:
                     references.add(f"{metric_cfg.name}.{field_name}")
 
@@ -81,8 +81,8 @@ class BacktestConfigParser:
     def _validate_yaml(self, backtest_config_path: Path) -> tuple[dict[str, object], Path]:
         try:
             path = backtest_config_path.resolve(strict=True)
-        except FileNotFoundError:
-            raise ConfigError(f"config file not found: {backtest_config_path}")
+        except FileNotFoundError as exc:
+            raise ConfigError(f"config file not found: {backtest_config_path}") from exc
 
         try:
             with path.open("r", encoding="utf-8") as f:

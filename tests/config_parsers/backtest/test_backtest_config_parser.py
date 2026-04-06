@@ -23,7 +23,6 @@ import pytest
 from tick_backtest.config_parsers.backtest.config_parser import BacktestConfigParser
 from tick_backtest.exceptions import ConfigError
 
-
 MIN_STRATEGY_YAML = "\n".join(
     [
         'schema_version: "1.0"',
