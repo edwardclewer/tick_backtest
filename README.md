@@ -116,6 +116,8 @@ Expected data layout:
 
 Tick Backtest does not download market data itself. If you need a source-to-parquet workflow, [`dukascopy-python`](https://github.com/fx-trader/dukascopy-python) is a suitable external option.
 
+If you source data from Dukascopy, treat Tick Backtest's Parquet layout as a separate ingestion target. Tick Backtest does not read Dukascopy raw exports directly. Convert the downloaded data into monthly Parquet shards, keep one directory per pair, and ensure each shard exposes `timestamp`, `bid`, and `ask` columns before pointing `data_base_path` at the archive.
+
 Tick Backtest does not impose a portfolio- or experiment-level directory scheme beyond writing each run to `output_base_path/<RUN_ID>/`. For repeatable research, it is often useful to group related runs under an experiment directory and point `output_base_path` at an experiment-specific `runs/` folder, for example:
 
 ```text
@@ -130,6 +132,20 @@ research/
 ```
 
 This keeps the package flexible while still giving you a clean place to organise sweeps, comparisons, and follow-up analysis.
+
+Starter strategy guidance:
+- the `minimal` template starts with `threshold_reversion_strategy`
+- the runnable demo template uses `ewma_crossover`
+
+These are packaged starters for validation and experimentation, not production recommendations. For a first run on your own archive, keep the emitted strategy unchanged until the data layout and run outputs look correct.
+
+Execution model limits:
+- no commissions or fees
+- no slippage model
+- no order book depth, queue position, or market impact model
+- no exchange-specific matching or partial-fill simulation
+
+The engine is intended for signal and strategy research with simplified fills, not full execution-cost simulation.
 
 ---
 

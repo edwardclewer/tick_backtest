@@ -32,6 +32,8 @@ If you want to run the bundled demo project, no external market data is required
 
 For your own data, Tick Backtest expects an existing archive of Parquet shards organised as `{data_root}/{PAIR}/{PAIR}_YYYY-MM.parquet` with `timestamp`, `bid`, and `ask` columns. Tick Backtest does not download market data itself; if you need a fetch pipeline, [`dukascopy-python`](https://github.com/fx-trader/dukascopy-python) is a suitable external option.
 
+If your upstream source is Dukascopy, convert the downloaded data into that Parquet layout before running the package. Tick Backtest does not consume Dukascopy raw exports directly. Preserve pair separation, keep one shard per month, and expose `timestamp`, `bid`, and `ask` in the converted files.
+
 Tick Backtest does not impose an experiment-level directory scheme beyond writing each run to `output_base_path/<RUN_ID>/`. If you are running related strategies or config sweeps, a simple pattern is to group runs under an experiment folder and point `output_base_path` at an experiment-specific `runs/` directory.
 
 ## Installed Package Quickstart
@@ -71,6 +73,33 @@ tick-backtest example-config --output ./tick-backtest-config
 Edit `backtest.yaml` to point at your parquet archive and output location, then run `tick-backtest run ./tick-backtest-config/backtest.yaml`.
 
 Path handling is config-relative: `data_base_path`, `output_base_path`, `metrics_config_path`, and `strategy_config_path` are resolved against the directory containing `backtest.yaml`.
+
+Expected archive shape:
+
+```text
+tick_data/
+  EURUSD/
+    EURUSD_2024-01.parquet
+    EURUSD_2024-02.parquet
+  GBPUSD/
+    GBPUSD_2024-01.parquet
+```
+
+Packaged starter strategies:
+
+- `minimal` emits `threshold_reversion_strategy`
+- `demo` emits `ewma_crossover`
+
+These are starter configurations for validating your data path and runtime setup. For a first pass on new market data, it is usually better to run one of them unchanged before tuning thresholds, predicates, or exits.
+
+Execution model limits:
+
+- no commissions or fees
+- no slippage model
+- no order book depth, queue position, or market impact model
+- no exchange-specific matching or partial-fill simulation
+
+The package is intended for deterministic signal and strategy research, not full execution-cost simulation.
 
 For example, you might use a layout like:
 

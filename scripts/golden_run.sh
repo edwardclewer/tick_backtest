@@ -100,7 +100,7 @@ for rd in (r1, r2):
 
 t1, t2 = sorted_trades(r1), sorted_trades(r2)
 if not t1 and not t2:
-    print("NOTE: no trades in either run (stable no-trade outcome).")
+    print("TRADES (counts): 0 vs 0")
 else:
     if not t1 or not t2:
         raise SystemExit("GOLDEN FAIL: one run has trades.parquet while the other does not.")
