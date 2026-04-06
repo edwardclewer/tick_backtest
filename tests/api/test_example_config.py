@@ -13,10 +13,12 @@
 # limitations under the License.
 
 from pathlib import Path
+import logging
 
 import pytest
 
 from tick_backtest.api import example_config
+from tick_backtest.backtest.workflow import run_backtest
 
 
 def test_example_config_prints_backtest_template(capsys: pytest.CaptureFixture[str]) -> None:
@@ -48,6 +50,19 @@ def test_example_config_writes_demo_project_with_demo_data(tmp_path: Path) -> No
     assert (tmp_path / "strategy.yaml").is_file()
     assert (tmp_path / "demo_data" / "EURUSD" / "EURUSD_2000-01.parquet").is_file()
     assert (tmp_path / "demo_data" / "GBPUSD" / "GBPUSD_2000-02.parquet").is_file()
+
+
+def test_example_config_demo_project_runs_end_to_end(tmp_path: Path) -> None:
+    example_config(tmp_path, include_demo_data=True)
+
+    result = run_backtest(tmp_path / "backtest.yaml", log_level=logging.WARNING)
+
+    run_root = Path(result["run_root"])
+    manifest_path = Path(result["manifest_path"])
+    assert run_root.is_dir()
+    assert manifest_path.is_file()
+    assert (run_root / "output" / "EURUSD" / "trades.parquet").is_file()
+    assert (run_root / "output" / "GBPUSD" / "trades.parquet").is_file()
 
 
 def test_example_config_requires_dest_when_demo_data_is_requested() -> None:

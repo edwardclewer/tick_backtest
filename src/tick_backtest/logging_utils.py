@@ -32,6 +32,8 @@ _CONTEXT: ContextVar[dict[str, Any]] = ContextVar(
     default={"run_id": None, "pair": None},
 )
 
+_HANDLER_OWNERSHIP_ATTR = "_tick_backtest_owned_handler"
+
 
 def _json_default(value: Any) -> Any:
     if isinstance(value, Path):
@@ -119,22 +121,26 @@ def configure_logging(
     run_id: str,
     log_dir: Path | None = None,
     level: int | str = logging.INFO,
+    replace_handlers: bool = False,
 ) -> None:
     """Set up root logging with structured JSON output."""
 
     root = logging.getLogger()
     root.setLevel(level if isinstance(level, int) else logging.getLevelName(level))
 
-    # Avoid duplicate handlers when re-configuring
+    # Avoid duplicate handlers when re-configuring while preserving host
+    # application logging unless explicit replacement is requested.
     for handler in list(root.handlers):
-        root.removeHandler(handler)
-        handler.close()
+        if replace_handlers or getattr(handler, _HANDLER_OWNERSHIP_ATTR, False):
+            root.removeHandler(handler)
+            handler.close()
 
     formatter = StructuredFormatter()
 
     stream_handler = logging.StreamHandler(sys.stderr)
     stream_handler.setFormatter(formatter)
     stream_handler.setLevel(root.level)
+    setattr(stream_handler, _HANDLER_OWNERSHIP_ATTR, True)
     root.addHandler(stream_handler)
 
     if log_dir is not None:
@@ -143,6 +149,7 @@ def configure_logging(
         file_handler = logging.FileHandler(log_dir / f"{run_id}.log")
         file_handler.setFormatter(formatter)
         file_handler.setLevel(root.level)
+        setattr(file_handler, _HANDLER_OWNERSHIP_ATTR, True)
         root.addHandler(file_handler)
 
     set_run_context(run_id=run_id)

@@ -30,9 +30,46 @@ from tick_backtest.config_parsers.utils.utils import (
 )
 from tick_backtest.config_validation import validate_backtest_config
 from tick_backtest.exceptions import ConfigError
+from tick_backtest.metrics.manager.metric_registry import METRIC_CLASS_REGISTRY
 
 
 class BacktestConfigParser:
+    @staticmethod
+    def _enabled_metric_references(metrics_config) -> set[str]:
+        references: set[str] = set()
+
+        for metric_cfg in metrics_config.metrics:
+            if not getattr(metric_cfg, "enabled", True):
+                continue
+
+            references.add(metric_cfg.name)
+
+            metric_cls = METRIC_CLASS_REGISTRY.get(metric_cfg.metric_type)
+            if metric_cls is None:
+                raise ConfigError(f"Unrecognized metric type '{metric_cfg.metric_type}'")
+
+            try:
+                metric = metric_cls(name=metric_cfg.name, **metric_cfg.to_kwargs())
+            except Exception as exc:
+                raise ConfigError(
+                    f"Failed to instantiate metric '{metric_cfg.name}' of type "
+                    f"'{metric_cfg.metric_type}' for strategy validation: {exc}"
+                ) from exc
+
+            value_method = getattr(metric, "value", None)
+            if not callable(value_method):
+                continue
+
+            snapshot = value_method()
+            if not isinstance(snapshot, dict):
+                continue
+
+            for field_name in snapshot.keys():
+                if isinstance(field_name, str) and field_name:
+                    references.add(f"{metric_cfg.name}.{field_name}")
+
+        return references
+
     def parse_config(self, backtest_config_path: Path) -> BacktestConfigData:
         cfg, config_path = self._validate_yaml(backtest_config_path)
         try:
@@ -128,11 +165,7 @@ class BacktestConfigParser:
         except ConfigError as exc:
             raise ConfigError(f"invalid metrics configuration: {exc}") from exc
 
-        enabled_metric_names = {
-            metric.name
-            for metric in metrics_config.metrics
-            if getattr(metric, "enabled", True)
-        }
+        enabled_metric_names = self._enabled_metric_references(metrics_config)
 
         strategy_parser = StrategyConfigParser(strategy_config_path)
         try:

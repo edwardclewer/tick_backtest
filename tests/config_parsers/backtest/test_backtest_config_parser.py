@@ -234,6 +234,83 @@ strategy_config_path: {strategy_path}
     assert "start date must be on or before end date" in str(excinfo.value)
 
 
+def test_parse_config_accepts_strategy_references_to_metric_output_fields(tmp_path: Path) -> None:
+    data_dir = tmp_path / "data"
+    output_dir = tmp_path / "output"
+    data_dir.mkdir()
+    output_dir.mkdir()
+
+    metrics_path = tmp_path / "metrics.yaml"
+    metrics_path.write_text(
+        "\n".join(
+            [
+                'schema_version: "1.0"',
+                "metrics:",
+                "  - name: ewma_mid_5m",
+                "    type: ewma",
+                "    enabled: true",
+                "    params:",
+                "      tau_seconds: 300",
+                "      price_field: mid",
+                "  - name: ewma_mid_30m",
+                "    type: ewma",
+                "    enabled: true",
+                "    params:",
+                "      tau_seconds: 1800",
+                "      price_field: mid",
+                "",
+            ]
+        )
+    )
+
+    strategy_path = tmp_path / "strategy.yaml"
+    strategy_path.write_text(
+        "\n".join(
+            [
+                'schema_version: "1.0"',
+                "strategy:",
+                "  name: crossover_strategy",
+                "  entry:",
+                "    name: entry",
+                "    engine: ewma_crossover",
+                "    params:",
+                "      fast_metric: ewma_mid_5m.ewma",
+                "      slow_metric: ewma_mid_30m.ewma",
+                "    predicates: []",
+                "  exit:",
+                "    name: exit",
+                "    predicates:",
+                "      - metric: ewma_mid_5m.ewma",
+                "        operator: '<'",
+                "        other_metric: ewma_mid_30m.ewma",
+                "",
+            ]
+        )
+    )
+
+    config_path = _write_config(
+        tmp_path,
+        f"""
+schema_version: "1.0"
+pairs: [EURUSD]
+start: 2015-01
+end: 2015-02
+pip_size: 0.0001
+warmup_seconds: 600
+data_base_path: {data_dir}
+output_base_path: {output_dir}
+metrics_config_path: {metrics_path}
+strategy_config_path: {strategy_path}
+        """,
+    )
+
+    parser = BacktestConfigParser()
+    cfg = parser.parse_config(config_path)
+
+    assert cfg.strategy_config.entry.params.fast_metric == "ewma_mid_5m.ewma"
+    assert cfg.strategy_config.exit.predicates[0].other_metric == "ewma_mid_30m.ewma"
+
+
 def test_parse_config_rejects_invalid_date_format(tmp_path: Path):
     """Detect malformed start/end date strings and report a ConfigError."""
 
