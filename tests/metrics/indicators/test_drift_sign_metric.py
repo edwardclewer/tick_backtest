@@ -17,13 +17,13 @@
 from __future__ import annotations
 
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import pytest
 
-from tick_backtest.metrics.indicators.drift_sign_metric import DriftSignMetric
 from tests.helpers.metrics_reference import drift_expected
+from tick_backtest.metrics.indicators.drift_sign_metric import DriftSignMetric
 
 
 def test_drift_sign_returns_zero_without_history(tick_series_factory):
@@ -56,7 +56,7 @@ def test_drift_sign_follows_mid_price_deviation(tick_series_factory, tick_factor
 
     assert metric.value()["drift_sign"] == 1
 
-    last_timestamp = datetime.fromtimestamp(ticks[-1].timestamp, tz=timezone.utc) + timedelta(seconds=1)
+    last_timestamp = datetime.fromtimestamp(ticks[-1].timestamp, tz=UTC) + timedelta(seconds=1)
     reversal = tick_factory(bid=0.9990, ask=0.9992, timestamp=last_timestamp)
     metric.update(reversal)
 
@@ -70,13 +70,13 @@ def test_drift_sign_random_sequence_matches_reference(tick_factory):
     lookback = 30.0
     metric = DriftSignMetric(name="drift_sign", lookback_seconds=lookback)
 
-    base = datetime(2023, 6, 1, tzinfo=timezone.utc)
+    base = datetime(2023, 6, 1, tzinfo=UTC)
     offsets = np.cumsum(rng.uniform(0.2, 1.5, size=50))
     mids = rng.normal(loc=1.0500, scale=0.0005, size=50)
 
     reference = drift_expected(offsets.tolist(), mids.tolist(), lookback)
 
-    for offset, mid, (expected_drift, expected_sign) in zip(offsets, mids, reference):
+    for offset, mid, (expected_drift, expected_sign) in zip(offsets, mids, reference, strict=False):
         tick = tick_factory(
             bid=float(mid) - 0.00005,
             ask=float(mid) + 0.00005,

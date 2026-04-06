@@ -24,7 +24,7 @@ import shutil
 import subprocess
 import sys
 from dataclasses import asdict, replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import yaml
@@ -277,7 +277,7 @@ def run_backtest(
 
     manifest: dict[str, object] = {
         "run_id": run_identifier,
-        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "timestamp_utc": datetime.now(UTC).isoformat(),
         "code_ref": get_git_hash(),
         "cli": {"config": str(Path(config_path).resolve())},
         "output_root": str(run_output_dir.resolve()),

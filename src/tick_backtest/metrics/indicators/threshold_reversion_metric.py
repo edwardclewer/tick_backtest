@@ -23,7 +23,7 @@ __all__ = ["ThresholdReversionMetric"]
 
 def _load_impl() -> type[object]:
     module = import_module("tick_backtest.metrics.indicators._threshold_reversion_metric")
-    return getattr(module, "ThresholdReversionMetric")
+    return module.ThresholdReversionMetric
 
 
 ThresholdReversionMetric = _load_impl()

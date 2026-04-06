@@ -16,8 +16,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tick_backtest.exceptions import ConfigError
 from tick_backtest.config_validation.schema_registry import validate_schema_version
+from tick_backtest.exceptions import ConfigError
+
+
 def validate_backtest_config(raw: dict) -> dict:
     """Validate a raw backtest configuration mapping."""
     if not isinstance(raw, dict):

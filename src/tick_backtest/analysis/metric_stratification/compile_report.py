@@ -15,10 +15,10 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
 import os
+from collections.abc import Iterable, Mapping, Sequence
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable, Mapping, Sequence
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +84,7 @@ def compile_report_for_mode(
     filename = report_filename or f"metric_report_{mode}.md"
     report_path = report_root / filename
 
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
+    timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%SZ")
     resolved_title = title or f"Metric Stratification Report – {mode}"
 
     header = [

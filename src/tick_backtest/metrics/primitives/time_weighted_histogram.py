@@ -23,10 +23,12 @@ __all__ = ["TimeWeightedHistogram"]
 
 def _load_impl() -> type[object]:
     module = import_module("tick_backtest.metrics.primitives._time_weighted_histogram")
-    return getattr(module, "TimeWeightedHistogram")
+    return module.TimeWeightedHistogram
 
 
 try:
     TimeWeightedHistogram = _load_impl()
 except ImportError:  # pragma: no cover - fallback when extension unavailable
-    from ._time_weighted_histogram_py import PyTimeWeightedHistogram as TimeWeightedHistogram  # noqa: F401
+    from ._time_weighted_histogram_py import (
+        PyTimeWeightedHistogram as TimeWeightedHistogram,  # noqa: F401
+    )

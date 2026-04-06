@@ -19,7 +19,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pandas as pd
-import pytest
 
 from tick_backtest.analysis.backtest_analysis import run_backtest_analysis
 

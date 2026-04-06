@@ -14,8 +14,8 @@
 
 """Strategy configuration parsing utilities."""
 
-from .config_parser import StrategyConfigParser
 from .config_dataclass import StrategyConfigData
+from .config_parser import StrategyConfigParser
 
 __all__ = ["StrategyConfigParser", "StrategyConfigData"]
 

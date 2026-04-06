@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import pytest
 
-from tick_backtest.metrics.indicators.spread_metric import SpreadMetric
 from tests.helpers.metrics_reference import spread_percentile_reference
+from tick_backtest.metrics.indicators.spread_metric import SpreadMetric
 
 
 def test_spread_metric_basic_values(tick_factory):
     metric = SpreadMetric(name="spread", pip_size=0.0001, window_seconds=60.0)
-    tick = tick_factory(bid=1.0000, ask=1.0001, timestamp=datetime(2020, 1, 1, tzinfo=timezone.utc))
+    tick = tick_factory(bid=1.0000, ask=1.0001, timestamp=datetime(2020, 1, 1, tzinfo=UTC))
 
     metric.update(tick)
     values = metric.value()
@@ -35,7 +35,7 @@ def test_spread_metric_basic_values(tick_factory):
 
 def test_spread_metric_percentile_rank(tick_factory):
     metric = SpreadMetric(name="spread", pip_size=0.0001, window_seconds=60.0)
-    base = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2020, 1, 1, tzinfo=UTC)
 
     ticks = [
         tick_factory(bid=1.0000, ask=1.0001, timestamp=base),  # 1 pip
@@ -54,7 +54,7 @@ def test_spread_metric_percentile_rank(tick_factory):
 
 def test_spread_metric_window_trimming(tick_factory):
     metric = SpreadMetric(name="spread", pip_size=0.0001, window_seconds=30.0)
-    base = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2020, 1, 1, tzinfo=UTC)
 
     metric.update(tick_factory(bid=1.0, ask=1.0002, timestamp=base))  # older tick
     metric.update(tick_factory(bid=1.0, ask=1.0001, timestamp=base + timedelta(seconds=40)))
@@ -71,13 +71,13 @@ def test_spread_metric_random_sequence_matches_reference(tick_factory):
     window = 25.0
     metric = SpreadMetric(name="spread", pip_size=0.0001, window_seconds=window)
 
-    base = datetime(2023, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2023, 1, 1, tzinfo=UTC)
     offsets = np.cumsum(rng.uniform(0.5, 3.0, size=30))
     spreads_pips = rng.uniform(0.1, 3.0, size=30)
 
     history: list[tuple[float, float]] = []
 
-    for offset, spread in zip(offsets, spreads_pips):
+    for offset, spread in zip(offsets, spreads_pips, strict=False):
         spread_raw = spread * 0.0001
         ts = base + timedelta(seconds=float(offset))
         tick = tick_factory(

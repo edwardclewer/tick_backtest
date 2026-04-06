@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -41,7 +41,7 @@ def _make_metric(**overrides) -> ThresholdReversionMetric:
 
 def test_threshold_reversion_goes_short_on_upward_breach(tick_factory):
     metric = _make_metric()
-    base_time = datetime(2015, 1, 1, tzinfo=timezone.utc)
+    base_time = datetime(2015, 1, 1, tzinfo=UTC)
 
     # Seed prices within threshold – no position yet.
     for idx, mid in enumerate((1.2000, 1.2003)):
@@ -71,7 +71,7 @@ def test_threshold_reversion_goes_short_on_upward_breach(tick_factory):
 
 def test_threshold_reversion_min_recency_blocks_recent_reference(tick_factory):
     metric = _make_metric(min_recency_seconds=30.0)
-    base_time = datetime(2015, 1, 1, tzinfo=timezone.utc)
+    base_time = datetime(2015, 1, 1, tzinfo=UTC)
 
     metric.update(tick_factory(mid=1.2000, timestamp=base_time))
     metric.update(
@@ -100,7 +100,7 @@ def test_threshold_reversion_min_recency_blocks_recent_reference(tick_factory):
 
 def test_threshold_reversion_flattens_on_return(tick_factory):
     metric = _make_metric()
-    base_time = datetime(2015, 1, 1, tzinfo=timezone.utc)
+    base_time = datetime(2015, 1, 1, tzinfo=UTC)
 
     metric.update(tick_factory(mid=1.2000, timestamp=base_time))
     metric.update(

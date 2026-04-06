@@ -25,7 +25,6 @@ from tick_backtest.config_parsers.strategy.entry_configs import (
     EWMACrossoverEntryParams,
     ThresholdReversionEntryParams,
 )
-from tick_backtest.signals.entries.base import EntryResult
 from tick_backtest.signals.entries.ewma_crossover import EWMACrossoverEntryEngine
 from tick_backtest.signals.entries.threshold_reversion import ThresholdReversionEntryEngine
 

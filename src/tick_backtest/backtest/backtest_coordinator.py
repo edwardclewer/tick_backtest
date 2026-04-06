@@ -23,7 +23,6 @@ from tick_backtest.logging_utils import run_context
 from tick_backtest.metrics.manager.metrics_manager import MetricsManager
 from tick_backtest.signals.signal_generator import SignalGenerator
 
-
 logger = logging.getLogger(__name__)
 
 

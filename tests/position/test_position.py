@@ -16,7 +16,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -26,8 +26,8 @@ from tick_backtest.position.position import Position
 def test_position_close_computes_pnl_pips():
     """Closing a trade should compute PnL in pips respecting direction."""
 
-    entry_time = datetime(2015, 1, 1, tzinfo=timezone.utc)
-    exit_time = datetime(2015, 1, 1, 0, 10, tzinfo=timezone.utc)
+    entry_time = datetime(2015, 1, 1, tzinfo=UTC)
+    exit_time = datetime(2015, 1, 1, 0, 10, tzinfo=UTC)
     position = Position(entry_time=entry_time, entry_price=1.1000, direction=1, tp=1.1010, sl=1.0990)
 
     position.close(exit_price=1.1010, exit_time=exit_time, pip_size=0.0001, exit_reason="")
@@ -41,11 +41,11 @@ def test_position_outcome_label_tp_vs_sl():
     """Outcome label should reflect whether TP or SL triggered."""
 
     pos_long = Position(entry_price=1.1000, tp=1.1010, sl=1.0990, direction=1)
-    pos_long.close(exit_price=1.1010, exit_time=datetime.now(timezone.utc), pip_size=0.0001, exit_reason="")
+    pos_long.close(exit_price=1.1010, exit_time=datetime.now(UTC), pip_size=0.0001, exit_reason="")
     assert pos_long.outcome_label == "TP"
 
     pos_short = Position(entry_price=1.1000, tp=1.0990, sl=1.1010, direction=-1)
-    pos_short.close(exit_price=1.1010, exit_time=datetime.now(timezone.utc), pip_size=0.0001, exit_reason="")
+    pos_short.close(exit_price=1.1010, exit_time=datetime.now(UTC), pip_size=0.0001, exit_reason="")
     assert pos_short.outcome_label == "SL"
 
 
@@ -55,7 +55,7 @@ def test_position_is_open_property():
     pos = Position()
     assert pos.is_open
 
-    pos.close(exit_price=1.0, exit_time=datetime.now(timezone.utc), pip_size=0.0001, exit_reason="")
+    pos.close(exit_price=1.0, exit_time=datetime.now(UTC), pip_size=0.0001, exit_reason="")
     assert not pos.is_open
 
 
@@ -65,7 +65,7 @@ def test_position_close_respects_exit_reason_override():
     position = Position(entry_price=1.1000, tp=1.2000, sl=1.0500, direction=1)
     position.close(
         exit_price=1.1500,
-        exit_time=datetime.now(timezone.utc),
+        exit_time=datetime.now(UTC),
         pip_size=0.0001,
         exit_reason="manual_exit",
     )

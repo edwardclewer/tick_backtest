@@ -14,9 +14,9 @@
 
 from __future__ import annotations
 
-from importlib import import_module
 import math
-from typing import Callable
+from collections.abc import Callable
+from importlib import import_module
 
 from tick_backtest.data_feed.tick import Tick
 
@@ -25,7 +25,7 @@ MIN_DT = 1e-6
 
 def _load_impl() -> type[object]:
     module = import_module("tick_backtest.metrics.indicators._ewma_metric")
-    return getattr(module, "EWMAMetric")
+    return module.EWMAMetric
 
 
 try:  # pragma: no cover - exercised when Cython extension is available

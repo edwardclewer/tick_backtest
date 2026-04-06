@@ -73,8 +73,8 @@ def parse_year_month(value: str) -> tuple[int, int]:
         if not (1 <= month <= 12):
             raise ValueError
         return year, month
-    except Exception:
-        raise ConfigError(f"invalid date format for '{value}', expected YYYY-MM")
+    except Exception as exc:
+        raise ConfigError(f"invalid date format for '{value}', expected YYYY-MM") from exc
 
 
 def validate_pairs(value: Any) -> list[str]:
@@ -89,8 +89,8 @@ def validate_pairs(value: Any) -> list[str]:
 def validate_positive_float(value: Any, name: str) -> float:
     try:
         parsed_value = float(value)
-    except Exception:
-        raise ConfigError(f"'{name}' must be numeric")
+    except Exception as exc:
+        raise ConfigError(f"'{name}' must be numeric") from exc
     if not math.isfinite(parsed_value) or parsed_value <= 0:
         raise ConfigError(f"'{name}' must be finite and positive")
     return parsed_value
@@ -99,8 +99,8 @@ def validate_positive_float(value: Any, name: str) -> float:
 def validate_nonnegative_int(value: Any, name: str) -> int:
     try:
         parsed_value = int(value)
-    except Exception:
-        raise ConfigError(f"'{name}' must be an integer")
+    except Exception as exc:
+        raise ConfigError(f"'{name}' must be an integer") from exc
     if parsed_value < 0:
         raise ConfigError(f"'{name}' must be nonnegative")
     return parsed_value

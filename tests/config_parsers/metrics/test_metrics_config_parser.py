@@ -22,10 +22,9 @@ from typing import Any
 
 import pytest
 
-from tick_backtest.config_parsers.metrics.config_parser import MetricsConfigParser
 from tick_backtest.config_parsers.metrics.config_dataclass import MetricConfigBase
+from tick_backtest.config_parsers.metrics.config_parser import MetricsConfigParser
 from tick_backtest.exceptions import ConfigError
-
 
 SCHEMA_HEADER = 'schema_version: "1.0"'
 

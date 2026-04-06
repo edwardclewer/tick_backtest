@@ -15,13 +15,13 @@
 from __future__ import annotations
 
 from tick_backtest.config_parsers.metrics.dataclasses.drift_sign_config import DriftSignConfig
-from tick_backtest.config_parsers.metrics.dataclasses.ewma_vol_config import EWMAVolConfig
-from tick_backtest.config_parsers.metrics.dataclasses.session_config import SessionConfig
-from tick_backtest.config_parsers.metrics.dataclasses.zscore_config import ZScoreConfig
 from tick_backtest.config_parsers.metrics.dataclasses.ewma_config import EWMAConfig
 from tick_backtest.config_parsers.metrics.dataclasses.ewma_slope_config import EWMASlopeConfig
+from tick_backtest.config_parsers.metrics.dataclasses.ewma_vol_config import EWMAVolConfig
+from tick_backtest.config_parsers.metrics.dataclasses.session_config import SessionConfig
 from tick_backtest.config_parsers.metrics.dataclasses.spread_config import SpreadConfig
 from tick_backtest.config_parsers.metrics.dataclasses.tick_rate_config import TickRateConfig
+from tick_backtest.config_parsers.metrics.dataclasses.zscore_config import ZScoreConfig
 
 CONFIG_REGISTRY: dict[str, type] = {
     "drift_sign": DriftSignConfig,

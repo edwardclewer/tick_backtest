@@ -23,7 +23,7 @@ __all__ = ["ZScoreMetric"]
 
 def _load_impl() -> type[object]:
     module = import_module("tick_backtest.metrics.indicators._zscore_metric")
-    return getattr(module, "ZScoreMetric")
+    return module.ZScoreMetric
 
 
 ZScoreMetric = _load_impl()

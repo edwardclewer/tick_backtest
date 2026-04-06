@@ -15,8 +15,8 @@
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 from collections.abc import Mapping, Sequence
+from pathlib import Path
 
 from tick_backtest.analysis.metric_stratification import (
     MetricStratificationOutputs,

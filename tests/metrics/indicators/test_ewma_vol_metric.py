@@ -17,13 +17,13 @@
 from __future__ import annotations
 
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import pytest
 
-from tick_backtest.metrics.indicators.ewma_vol_metric import EWMAVolMetric
 from tests.helpers.metrics_reference import ewma_vol_expected
+from tick_backtest.metrics.indicators.ewma_vol_metric import EWMAVolMetric
 
 
 def test_ewma_vol_requires_previous_mid(tick_factory):
@@ -118,16 +118,16 @@ def test_ewma_vol_random_sequence_matches_reference(tick_factory):
     """Cross-check EWMA variance and percentile against Python primitives."""
 
     rng = np.random.default_rng(77)
-    params = dict(
-        tau_seconds=45.0,
-        percentile_horizon_seconds=90.0,
-        bins=64,
-        base_vol=1e-4,
-        stddev_cap=3.0,
-    )
+    params = {
+        "tau_seconds": 45.0,
+        "percentile_horizon_seconds": 90.0,
+        "bins": 64,
+        "base_vol": 1e-4,
+        "stddev_cap": 3.0,
+    }
 
     metric = EWMAVolMetric(name="vol", **params)
-    base =  datetime(2022, 7, 1, tzinfo=timezone.utc)
+    base = datetime(2022, 7, 1, tzinfo=UTC)
     offsets = np.cumsum(rng.uniform(0.1, 0.8, size=50))
     mids = np.exp(rng.normal(loc=0.0, scale=0.0005, size=50))  # ensure positive
 
@@ -137,7 +137,7 @@ def test_ewma_vol_random_sequence_matches_reference(tick_factory):
         **params,
     )
 
-    for offset, mid, (expected_ewma, expected_pct) in zip(offsets, mids, reference):
+    for offset, mid, (expected_ewma, expected_pct) in zip(offsets, mids, reference, strict=False):
         tick = tick_factory(
             bid=float(mid) - 0.00005,
             ask=float(mid) + 0.00005,

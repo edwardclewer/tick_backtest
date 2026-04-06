@@ -101,7 +101,7 @@ def main(argv: list[str] | None = None) -> int:
             output_dir,
             run_id=run_id,
         )
-    except Exception as exc:
+    except Exception:
         logger.exception("automated trade analysis failed")
         return 1
 
@@ -125,7 +125,7 @@ def main(argv: list[str] | None = None) -> int:
             metrics_config_path=metrics_cfg_copy,
             run_id=run_id,
         )
-    except Exception as exc:
+    except Exception:
         logger.exception("metric stratification failed")
         return 1
 

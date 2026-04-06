@@ -16,7 +16,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -38,7 +38,7 @@ def test_session_metric_labels_minutes(tick_factory, hour, expected):
     """The session label follows the predefined UTC session table."""
 
     metric = SessionMetric(name="session")
-    ts = datetime(2015, 1, 1, hour=hour, tzinfo=timezone.utc)
+    ts = datetime(2015, 1, 1, hour=hour, tzinfo=UTC)
     tick = tick_factory(timestamp=ts)
 
     metric.update(tick)
@@ -51,10 +51,10 @@ def test_session_metric_handles_midnight_wrap(tick_factory):
 
     metric = SessionMetric(name="session")
 
-    before_midnight = tick_factory(timestamp=datetime(2015, 1, 1, 23, 59, tzinfo=timezone.utc))
+    before_midnight = tick_factory(timestamp=datetime(2015, 1, 1, 23, 59, tzinfo=UTC))
     metric.update(before_midnight)
     assert metric.value()["session_label"] == "Asia"
 
-    after_midnight = tick_factory(timestamp=datetime(2015, 1, 2, 0, 1, tzinfo=timezone.utc))
+    after_midnight = tick_factory(timestamp=datetime(2015, 1, 2, 0, 1, tzinfo=UTC))
     metric.update(after_midnight)
     assert metric.value()["session_label"] == "Asia"

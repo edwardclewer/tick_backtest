@@ -23,7 +23,7 @@ __all__ = ["EWMA"]
 
 def _load_impl() -> type[object]:
     module = import_module("tick_backtest.metrics.primitives._ewma")
-    return getattr(module, "EWMA")
+    return module.EWMA
 
 
 try:

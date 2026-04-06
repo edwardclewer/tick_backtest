@@ -361,7 +361,7 @@ def run_trade_analysis(
         generate_report=generate_report,
     )
 
-    formatted_summary = {label: value for label, value in format_metrics(metrics)}
+    formatted_summary = dict(format_metrics(metrics))
     logger.info("analysis complete", extra={"metrics": formatted_summary})
     return TradeAnalysisResult(
         trades_path=trades_path,

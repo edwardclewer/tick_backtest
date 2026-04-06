@@ -15,8 +15,8 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -36,7 +36,7 @@ class RollingWindowReference:
     def __post_init__(self) -> None:
         self.window = PyTimeRollingWindow(lookback_seconds=self.lookback_seconds)
 
-    def update(self, timestamp: float, value: float) -> Tuple[float, float]:
+    def update(self, timestamp: float, value: float) -> tuple[float, float]:
         if self.last_timestamp is None:
             dt = 0.0
         else:
@@ -54,13 +54,13 @@ def ewma_sequence(
     tau_seconds: float,
     *,
     power: int = 1,
-) -> List[float]:
+) -> list[float]:
     """Generate EWMA values matching the primitive implementation."""
 
     smoother = PyEWMA(tau_seconds=tau_seconds, power=power)
     output: list[float] = []
     last_val = 0.0
-    for idx, (ts, value) in enumerate(zip(timestamps, values)):
+    for idx, (ts, value) in enumerate(zip(timestamps, values, strict=False)):
         last_val = smoother.update(ts, value)
         if idx == 0:
             # Primitive returns zero until warmed up; align with metric expectations.
@@ -74,13 +74,13 @@ def ewma_metric_expected(
     timestamps: Sequence[float],
     prices: Sequence[float],
     tau_seconds: float,
-) -> List[float]:
+) -> list[float]:
     """Replicate EWMAMetric behaviour (initial seed = first price)."""
 
     results: list[float] = []
     last_value = math.nan
     last_ts = math.nan
-    for ts, price in zip(timestamps, prices):
+    for ts, price in zip(timestamps, prices, strict=False):
         if math.isnan(last_value):
             last_value = price
             last_ts = ts
@@ -100,14 +100,14 @@ def ewma_slope_expected(
     prices: Sequence[float],
     tau_seconds: float,
     window_seconds: float,
-) -> List[Tuple[float, float]]:
+) -> list[tuple[float, float]]:
     """Return (ewma, slope) pairs mirroring EWMASlopeMetric fallback."""
 
     history: list[tuple[float, float]] = []
     ewma_values = ewma_metric_expected(timestamps, prices, tau_seconds)
     slopes: list[tuple[float, float]] = []
 
-    for ts, ewma in zip(timestamps, ewma_values):
+    for ts, ewma in zip(timestamps, ewma_values, strict=False):
         history.append((ts, ewma))
         cutoff = ts - window_seconds
         while len(history) > 1 and history[0][0] < cutoff:
@@ -128,14 +128,14 @@ def drift_expected(
     timestamps: Sequence[float],
     mids: Sequence[float],
     lookback_seconds: float,
-) -> List[Tuple[float, int]]:
+) -> list[tuple[float, int]]:
     """Replicate DriftSignMetric behaviour using the Python rolling window."""
 
     window = PyTimeRollingWindow(lookback_seconds=lookback_seconds)
     results: list[tuple[float, int]] = []
     last_ts = None
 
-    for ts, mid in zip(timestamps, mids):
+    for ts, mid in zip(timestamps, mids, strict=False):
         if last_ts is None:
             dt = 0.0
         else:
@@ -166,7 +166,7 @@ def ewma_vol_expected(
     bins: int,
     base_vol: float,
     stddev_cap: float,
-) -> List[Tuple[float, float]]:
+) -> list[tuple[float, float]]:
     """Replicate EWMAVolMetric outputs using Python primitives."""
 
     edges = np.linspace(
@@ -182,7 +182,7 @@ def ewma_vol_expected(
     last_t = None
     last_mid = None
 
-    for ts, mid in zip(timestamps, mids):
+    for ts, mid in zip(timestamps, mids, strict=False):
         if last_t is None or last_mid is None:
             last_t = ts
             last_mid = mid

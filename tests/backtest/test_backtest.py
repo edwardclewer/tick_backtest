@@ -17,9 +17,9 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
 import math
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 
 import pandas as pd
 import pytest
@@ -106,7 +106,7 @@ def test_backtest_warmup_handles_insufficient_data(tick_factory, caplog, tmp_pat
 def test_warmup_feeds_signal_generator(tick_factory, tmp_path):
     """Warmup should seed signal engines without emitting live entries."""
 
-    start_dt = datetime(2015, 1, 1, tzinfo=timezone.utc)
+    start_dt = datetime(2015, 1, 1, tzinfo=UTC)
     initial_tick = tick_factory(timestamp=start_dt)
     warmup_tick_1 = tick_factory(timestamp=start_dt + timedelta(seconds=20))
     warmup_tick_2 = tick_factory(timestamp=start_dt + timedelta(seconds=40))
@@ -250,7 +250,7 @@ def test_metrics_snapshot_persisted_into_trade_log(tick_factory, metrics_snapsho
     assert len(backtest.trades) == 1
     trade = backtest.trades[0]
     assert trade["entry_time"] == Backtest._to_datetime(exit_tick.timestamp)
-    for key in metrics_snapshot.keys():
+    for key in metrics_snapshot:
         assert key in trade, f"missing metric {key} in trade record"
 
 
@@ -279,7 +279,7 @@ def test_open_position_applies_timeout(tick_factory, metrics_snapshot, tmp_path)
 def test_open_signal_ignored_when_trade_active(tick_factory, tmp_path, caplog):
     """Second open intent while a trade is live should be rejected and logged."""
 
-    start = datetime(2015, 1, 1, tzinfo=timezone.utc)
+    start = datetime(2015, 1, 1, tzinfo=UTC)
     first_tick = tick_factory(mid=1.2000, timestamp=start)
     second_tick = tick_factory(mid=1.2005, timestamp=start + timedelta(seconds=1))
 
@@ -323,7 +323,7 @@ def test_close_position_handles_tp_sl_collisions(tick_factory, tmp_path):
     backtest, _ = make_backtest(tmp_path)
     backtest.is_trade_open = True
     backtest.trade = Position(
-        entry_time=datetime(2015, 1, 1, tzinfo=timezone.utc),
+        entry_time=datetime(2015, 1, 1, tzinfo=UTC),
         entry_price=1.2335,
         tp=1.2345,
         sl=1.2345,
@@ -343,7 +343,7 @@ def test_close_position_tolerates_missing_stops(tick_factory, tmp_path):
 
     backtest, _ = make_backtest(tmp_path)
     backtest.is_trade_open = True
-    entry_time = datetime(2015, 1, 1, tzinfo=timezone.utc)
+    entry_time = datetime(2015, 1, 1, tzinfo=UTC)
     backtest.trade = Position(
         entry_time=entry_time,
         entry_price=1.2000,
@@ -363,7 +363,7 @@ def test_close_position_honours_exit_signal(tick_factory, tmp_path):
 
     backtest, _ = make_backtest(tmp_path)
     backtest.is_trade_open = True
-    entry_time = datetime(2015, 1, 1, tzinfo=timezone.utc)
+    entry_time = datetime(2015, 1, 1, tzinfo=UTC)
     backtest.trade = Position(
         entry_time=entry_time,
         entry_price=1.2000,
@@ -388,7 +388,7 @@ def test_close_position_honours_exit_signal(tick_factory, tmp_path):
 def test_close_position_times_out(tick_factory, tmp_path):
     """Verify positions close when timeout elapses without TP/SL."""
 
-    entry_time = datetime(2015, 1, 1, tzinfo=timezone.utc)
+    entry_time = datetime(2015, 1, 1, tzinfo=UTC)
     backtest, _ = make_backtest(tmp_path)
     backtest.is_trade_open = True
     backtest.trade = Position(
@@ -453,8 +453,8 @@ def test_finish_persists_trades_to_parquet(tmp_path):
     backtest, _ = make_backtest(tmp_path)
     backtest.trades = [
         {
-            "entry_time": datetime(2015, 1, 1, tzinfo=timezone.utc),
-            "exit_time": datetime(2015, 1, 1, 0, 5, tzinfo=timezone.utc),
+            "entry_time": datetime(2015, 1, 1, tzinfo=UTC),
+            "exit_time": datetime(2015, 1, 1, 0, 5, tzinfo=UTC),
             "direction": 1,
             "entry_price": 1.1000,
             "exit_price": 1.1010,
@@ -468,5 +468,13 @@ def test_finish_persists_trades_to_parquet(tmp_path):
     trades_path = backtest.output_base_path
     assert trades_path.exists()
     df = pd.read_parquet(trades_path)
-    assert set(["entry_time", "exit_time", "direction", "entry_price", "exit_price", "pnl_pips", "outcome_label"]).issubset(df.columns)
+    assert {
+        "entry_time",
+        "exit_time",
+        "direction",
+        "entry_price",
+        "exit_price",
+        "pnl_pips",
+        "outcome_label",
+    }.issubset(df.columns)
     assert len(df) == 1

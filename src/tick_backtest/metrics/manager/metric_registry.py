@@ -14,14 +14,14 @@
 
 from __future__ import annotations
 
-from tick_backtest.metrics.indicators.ewma_vol_metric import EWMAVolMetric
 from tick_backtest.metrics.indicators.drift_sign_metric import DriftSignMetric
-from tick_backtest.metrics.indicators.zscore_metric import ZScoreMetric
-from tick_backtest.metrics.indicators.session_metric import SessionMetric
 from tick_backtest.metrics.indicators.ewma_metric import EWMAMetric
 from tick_backtest.metrics.indicators.ewma_slope_metric import EWMASlopeMetric
+from tick_backtest.metrics.indicators.ewma_vol_metric import EWMAVolMetric
+from tick_backtest.metrics.indicators.session_metric import SessionMetric
 from tick_backtest.metrics.indicators.spread_metric import SpreadMetric
 from tick_backtest.metrics.indicators.tick_rate_metric import TickRateMetric
+from tick_backtest.metrics.indicators.zscore_metric import ZScoreMetric
 
 METRIC_CLASS_REGISTRY: dict[str, type] = {
     "ewma_vol": EWMAVolMetric,

@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import deque
 import math
+from collections import deque
+
 import numpy as np
 
 

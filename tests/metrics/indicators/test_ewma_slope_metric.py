@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timezone, timedelta
 import math
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import pytest
 
-from tick_backtest.metrics.indicators.ewma_slope_metric import EWMASlopeMetric
 from tests.helpers.metrics_reference import ewma_slope_expected
+from tick_backtest.metrics.indicators.ewma_slope_metric import EWMASlopeMetric
 
 
 def test_ewma_slope_nan_until_history_available(tick_factory):
@@ -29,7 +29,7 @@ def test_ewma_slope_nan_until_history_available(tick_factory):
         window_seconds=30.0,
     )
 
-    tick = tick_factory(mid=1.0, timestamp=datetime(2020, 1, 1, tzinfo=timezone.utc))
+    tick = tick_factory(mid=1.0, timestamp=datetime(2020, 1, 1, tzinfo=UTC))
     metric.update(tick)
 
     assert math.isnan(metric.value()["slope"])
@@ -43,7 +43,7 @@ def test_ewma_slope_matches_linear_change(tick_factory):
         window_seconds=30.0,
     )
 
-    base = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2020, 1, 1, tzinfo=UTC)
     tick1 = tick_factory(mid=1.0, timestamp=base)
     tick2 = tick_factory(mid=2.0, timestamp=base + timedelta(seconds=15))
 
@@ -66,7 +66,7 @@ def test_ewma_slope_trims_history(tick_factory):
         window_seconds=20.0,
     )
 
-    base = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2020, 1, 1, tzinfo=UTC)
     ticks = [
         tick_factory(mid=1.0, timestamp=base),
         tick_factory(mid=1.5, timestamp=base + timedelta(seconds=10)),
@@ -93,13 +93,13 @@ def test_ewma_slope_random_sequence_matches_reference(tick_factory):
         window_seconds=window,
     )
 
-    base = datetime(2022, 6, 1, tzinfo=timezone.utc)
+    base = datetime(2022, 6, 1, tzinfo=UTC)
     offsets = np.cumsum(rng.uniform(0.2, 1.5, size=40))
     mids = rng.normal(loc=1.1000, scale=0.0007, size=40)
 
     reference = ewma_slope_expected(offsets.tolist(), mids.tolist(), tau, window)
 
-    for offset, mid, (expected_ewma, expected_slope) in zip(offsets, mids, reference):
+    for offset, mid, (expected_ewma, expected_slope) in zip(offsets, mids, reference, strict=False):
         tick = tick_factory(mid=float(mid), timestamp=base + timedelta(seconds=float(offset)))
         metric.update(tick)
         values = metric.value()

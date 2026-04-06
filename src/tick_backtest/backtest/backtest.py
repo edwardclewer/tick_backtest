@@ -14,9 +14,9 @@
 
 from __future__ import annotations
 
-import math
 import logging
-from datetime import datetime, timezone
+import math
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -270,15 +270,15 @@ class Backtest:
         else:
             raise ValueError(f"Invalid direction: {self.trade.direction}")
 
-        if not (hit_tp or hit_sl):
-            if (
-                self.trade.timeout_seconds
-                and self.trade.timeout_seconds > 0
-                and self.trade.entry_time is not None
-            ):
-                elapsed = (current_time - self.trade.entry_time).total_seconds()
-                if elapsed >= self.trade.timeout_seconds:
-                    timeout_hit = True
+        if (
+            not (hit_tp or hit_sl)
+            and self.trade.timeout_seconds
+            and self.trade.timeout_seconds > 0
+            and self.trade.entry_time is not None
+        ):
+            elapsed = (current_time - self.trade.entry_time).total_seconds()
+            if elapsed >= self.trade.timeout_seconds:
+                timeout_hit = True
 
         if not (hit_tp or hit_sl or timeout_hit):
             return
@@ -340,4 +340,4 @@ class Backtest:
             return ts
         if hasattr(ts, "to_pydatetime"):
             return ts.to_pydatetime()
-        return datetime.fromtimestamp(float(ts), tz=timezone.utc)
+        return datetime.fromtimestamp(float(ts), tz=UTC)

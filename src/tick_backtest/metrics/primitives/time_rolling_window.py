@@ -27,7 +27,7 @@ __all__ = ["TimeRollingWindow"]
 
 def _load_impl() -> type[object]:
     module = import_module("tick_backtest.metrics.primitives._time_rolling_window")
-    return getattr(module, "TimeRollingWindow")
+    return module.TimeRollingWindow
 
 
 try:

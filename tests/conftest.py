@@ -16,13 +16,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any
-
 import importlib.util
 import sys
+from collections.abc import Callable, Iterable
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 signal_init = PROJECT_ROOT / "signal" / "__init__.py"
@@ -36,10 +35,10 @@ if signal_init.exists():
     sys.modules["signal"] = module
     spec.loader.exec_module(module)
 
-import pandas as pd
-import pytest
+import pandas as pd  # noqa: E402
+import pytest  # noqa: E402
 
-from tick_backtest.data_feed.tick import Tick
+from tick_backtest.data_feed.tick import Tick  # noqa: E402
 
 
 @pytest.fixture
@@ -52,9 +51,9 @@ def tick_factory() -> Callable[[float, float, float, datetime | None], Tick]:
         mid: float | None = None,
         timestamp: datetime | None = None,
     ) -> Tick:
-        ts = timestamp or datetime(2015, 1, 1, tzinfo=timezone.utc)
+        ts = timestamp or datetime(2015, 1, 1, tzinfo=UTC)
         if ts.tzinfo is None:
-            ts = ts.replace(tzinfo=timezone.utc)
+            ts = ts.replace(tzinfo=UTC)
         ts_seconds = ts.timestamp()
         actual_mid = mid if mid is not None else (bid + ask) * 0.5
         return Tick(ts_seconds, bid, ask, actual_mid)
@@ -67,7 +66,7 @@ def tick_series_factory(tick_factory: Callable[..., Tick]) -> Callable[[Iterable
     """Return a helper that creates a list of ticks from bid/ask pairs."""
 
     def _series(pairs: Iterable[tuple[float, float]]) -> list[Tick]:
-        base_time = datetime(2015, 1, 1, tzinfo=timezone.utc)
+        base_time = datetime(2015, 1, 1, tzinfo=UTC)
         ticks: list[Tick] = []
         for idx, (bid, ask) in enumerate(pairs):
             ticks.append(

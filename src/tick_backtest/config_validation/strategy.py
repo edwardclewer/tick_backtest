@@ -14,12 +14,13 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any
 
 from tick_backtest.config_validation.schema_registry import validate_schema_version
 from tick_backtest.exceptions import ConfigError
 
-def _validate_predicates(items: Any, context: str) -> List[Dict[str, Any]]:
+
+def _validate_predicates(items: Any, context: str) -> list[dict[str, Any]]:
     if items is None:
         return []
     if not isinstance(items, list):
@@ -27,7 +28,7 @@ def _validate_predicates(items: Any, context: str) -> List[Dict[str, Any]]:
             f"Invalid strategy configuration: {context} 'predicates' must be a list"
         )
 
-    normalized: List[Dict[str, Any]] = []
+    normalized: list[dict[str, Any]] = []
     allowed_keys = {"metric", "operator", "value", "other_metric", "use_abs"}
 
     for idx, item in enumerate(items, start=1):
@@ -55,7 +56,7 @@ def _validate_predicates(items: Any, context: str) -> List[Dict[str, Any]]:
     return normalized
 
 
-def _require_mapping(value: Any, *, label: str) -> Dict[str, Any]:
+def _require_mapping(value: Any, *, label: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError(f"Invalid strategy configuration: {label} must be a mapping")
     return value

@@ -28,13 +28,13 @@ from __future__ import annotations
 import argparse
 import csv
 import itertools
+import logging
+from collections.abc import Iterable
 from copy import deepcopy
 from pathlib import Path
-from typing import Iterable
 
 import yaml
 
-import logging
 from tick_backtest.logging_utils import configure_logging, generate_run_id
 
 logger = logging.getLogger(__name__)

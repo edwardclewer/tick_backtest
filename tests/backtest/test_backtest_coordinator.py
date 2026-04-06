@@ -17,21 +17,20 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
-from datetime import datetime, timezone
+from collections.abc import Iterator
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 import pandas as pd
-import pytest
 
 from tick_backtest.backtest.backtest_coordinator import BacktestCoordinator
 from tick_backtest.config_parsers.backtest.config_dataclass import BacktestConfigData
 from tick_backtest.config_parsers.strategy.config_parser import StrategyConfigParser
 from tick_backtest.data_feed.data_feed import NoMoreTicks
-from tick_backtest.exceptions import DataFeedError
-from tick_backtest.data_feed.validation import ValidatingDataFeed
 from tick_backtest.data_feed.tick import Tick
+from tick_backtest.data_feed.validation import ValidatingDataFeed
+from tick_backtest.exceptions import DataFeedError
 from tick_backtest.signals.signal_data import SignalData
 
 
@@ -155,7 +154,7 @@ def test_run_backtest_wires_dependencies_and_runs(monkeypatch, tmp_path):
             self.calls = 0
             self.pair = kwargs["pair"]
             self.config = kwargs
-            ts = pd.Timestamp(datetime(2015, 1, 1, tzinfo=timezone.utc))
+            ts = pd.Timestamp(datetime(2015, 1, 1, tzinfo=UTC))
             ts_seconds = ts.timestamp()
             self._ticks: Iterator[Tick] = iter(
                 [
@@ -185,7 +184,7 @@ def test_run_backtest_wires_dependencies_and_runs(monkeypatch, tmp_path):
             return SignalData()
 
     class RecordingBacktest:
-        instances: list["RecordingBacktest"] = []
+        instances: list[RecordingBacktest] = []
 
         def __init__(self, *, data_feed, signal_generator, metrics_manager, output_base_path, pip_size):
             self.data_feed = data_feed

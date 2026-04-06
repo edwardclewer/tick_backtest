@@ -16,8 +16,6 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import pytest
-
 from tick_backtest.data_feed.data_feed import NoMoreTicks
 from tick_backtest.data_feed.validation import TickValidator, ValidatingDataFeed
 
@@ -32,8 +30,8 @@ class DummyFeed:
     def tick(self):
         try:
             return next(self._ticks)
-        except StopIteration:
-            raise NoMoreTicks
+        except StopIteration as exc:
+            raise NoMoreTicks from exc
 
 
 def _tick(timestamp: float, bid: float, ask: float) -> SimpleNamespace:

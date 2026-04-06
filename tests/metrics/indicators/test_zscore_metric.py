@@ -17,13 +17,13 @@
 from __future__ import annotations
 
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import pytest
 
-from tick_backtest.metrics.indicators.zscore_metric import ZScoreMetric
 from tests.helpers.metrics_reference import RollingWindowReference
+from tick_backtest.metrics.indicators.zscore_metric import ZScoreMetric
 
 
 def _make_metric(lookback_seconds: float = 1800.0) -> ZScoreMetric:
@@ -74,7 +74,7 @@ def test_zscore_matches_time_weighted_reference(tick_factory):
     metric = _make_metric(lookback_seconds=lookback)
     reference = RollingWindowReference(lookback_seconds=lookback)
 
-    base = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2020, 1, 1, tzinfo=UTC)
     points = [
         (0.0, 1.3300),
         (1.5, 1.3315),
@@ -117,11 +117,11 @@ def test_zscore_random_sequence_matches_reference(tick_factory):
     metric = _make_metric(lookback_seconds=lookback)
     reference = RollingWindowReference(lookback_seconds=lookback)
 
-    base = datetime(2021, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2021, 1, 1, tzinfo=UTC)
     offsets = np.cumsum(rng.uniform(0.3, 1.2, size=60))
     mids = rng.normal(loc=1.2500, scale=0.0008, size=60)
 
-    for offset, mid in zip(offsets, mids):
+    for offset, mid in zip(offsets, mids, strict=False):
         ts = base + timedelta(seconds=float(offset))
         tick = tick_factory(
             bid=float(mid) - 0.00005,

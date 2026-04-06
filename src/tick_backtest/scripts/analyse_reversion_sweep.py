@@ -28,14 +28,14 @@ from __future__ import annotations
 
 import argparse
 import csv
+import logging
 import math
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Dict, Iterable, List
 
 import numpy as np
 import pandas as pd
 import yaml
-import logging
 
 from tick_backtest.analysis.metric_stratification import nice_graphs
 from tick_backtest.logging_utils import configure_logging, generate_run_id
@@ -96,7 +96,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def read_manifest(manifest_path: Path) -> List[Dict[str, str]]:
+def read_manifest(manifest_path: Path) -> list[dict[str, str]]:
     if not manifest_path.exists():
         raise FileNotFoundError(f"Manifest not found: {manifest_path}")
     with manifest_path.open("r", encoding="utf-8") as handle:
@@ -112,7 +112,7 @@ def load_yaml(path: Path) -> dict:
         return yaml.safe_load(handle)
 
 
-def find_metric_params(config: dict, metric_name: str) -> Dict[str, float]:
+def find_metric_params(config: dict, metric_name: str) -> dict[str, float]:
     for metric in config.get("metrics", []):
         if metric.get("name") == metric_name:
             params = metric.get("params", {})
@@ -147,7 +147,7 @@ def stratify_metric(trades: pd.DataFrame, metric: str, save_prefix: Path) -> Non
     min_val, max_val = float(series.min()), float(series.max())
     bin_width = (max_val - min_val) / 300 if max_val > min_val else 1.0
     bins = np.arange(min_val, max_val + bin_width, bin_width)
-    labels = [round((a + b) / 2, 10) for a, b in zip(bins[:-1], bins[1:])]
+    labels = [round((a + b) / 2, 10) for a, b in zip(bins[:-1], bins[1:], strict=False)]
     df = trades[[metric, "pnl_pips", "is_win"]].dropna()
     df = df.assign(bin=pd.cut(df[metric], bins=bins, labels=labels, include_lowest=True))
 
@@ -215,8 +215,8 @@ def generate_summary_row(
     label: str,
     pair: str,
     trades: pd.DataFrame,
-    params: Dict[str, float],
-) -> Dict[str, float | str]:
+    params: dict[str, float],
+) -> dict[str, float | str]:
     avg_pnl = float(trades["pnl_pips"].mean()) if not trades.empty else float("nan")
     trade_count = int(len(trades))
     return {
@@ -247,7 +247,7 @@ def main() -> None:
     configure_logging(run_id=generate_run_id(), log_dir=args.analysis_root / "logs")
     manifest_rows = read_manifest(args.manifest)
 
-    summary_rows: List[Dict[str, float | str]] = []
+    summary_rows: list[dict[str, float | str]] = []
     for row in manifest_rows:
         label = row["label"]
         backtest_config_path = (args.backtest_config_dir / f"{label}.yaml").resolve()

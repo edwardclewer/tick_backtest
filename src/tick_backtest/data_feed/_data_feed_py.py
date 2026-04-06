@@ -15,8 +15,8 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from collections.abc import Iterator
+from pathlib import Path
 
 import numpy as np
 import pyarrow.parquet as pq
@@ -140,9 +140,8 @@ class DataFeed:
 
     def _load_next_batch(self) -> bool:
         while True:
-            if self._batch_iterator is None:
-                if not self._prepare_next_file():
-                    return False
+            if self._batch_iterator is None and not self._prepare_next_file():
+                return False
 
             try:
                 batch = next(self._batch_iterator)

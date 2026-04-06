@@ -56,9 +56,9 @@ def get_data_months(year_start: int, year_end: int, month_start: int, month_end:
 
 try:
     _compiled = import_module("tick_backtest.data_feed._data_feed")
-    DataFeed = getattr(_compiled, "DataFeed")
-    NoMoreTicks = getattr(_compiled, "NoMoreTicks")
-    Tick = getattr(_compiled, "TickRecord")
+    DataFeed = _compiled.DataFeed
+    NoMoreTicks = _compiled.NoMoreTicks
+    Tick = _compiled.TickRecord
     DataFeedError = getattr(_compiled, "DataFeedError", DataFeedError)
 except ImportError:  # pragma: no cover - fallback when extension unavailable
     from ._data_feed_py import DataFeed, NoMoreTicks  # type: ignore

@@ -14,16 +14,16 @@
 
 from __future__ import annotations
 
+import math
 from collections import deque
 from importlib import import_module
-import math
 
 from tick_backtest.data_feed.tick import Tick
 
 
 def _load_impl() -> type[object]:
     module = import_module("tick_backtest.metrics.indicators._spread_metric")
-    return getattr(module, "SpreadMetric")
+    return module.SpreadMetric
 
 
 try:  # pragma: no cover - exercised when Cython extension is available

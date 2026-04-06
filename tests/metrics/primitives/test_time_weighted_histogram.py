@@ -22,7 +22,9 @@ import pytest
 from tick_backtest.metrics.primitives._time_weighted_histogram_py import PyTimeWeightedHistogram
 
 try:
-    from tick_backtest.metrics.primitives._time_weighted_histogram import TimeWeightedHistogram as CTimeWeightedHistogram
+    from tick_backtest.metrics.primitives._time_weighted_histogram import (
+        TimeWeightedHistogram as CTimeWeightedHistogram,
+    )
 except ImportError:  # pragma: no cover - optional extension
     CTimeWeightedHistogram = None
 

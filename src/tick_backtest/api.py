@@ -14,11 +14,11 @@
 
 from __future__ import annotations
 
+import shutil
 from contextlib import ExitStack
 from importlib.resources import as_file, files
 from importlib.resources.abc import Traversable
 from pathlib import Path
-import shutil
 
 __all__ = ["analyze", "example_config", "report", "run"]
 
@@ -32,7 +32,8 @@ def _template_dir(template: str) -> Traversable:
 
 def _yaml_templates(template_dir: Traversable) -> list[Traversable]:
     return sorted(
-        child for child in template_dir.iterdir() if child.is_file() and child.name.endswith(".yaml")
+        (child for child in template_dir.iterdir() if child.is_file() and child.name.endswith(".yaml")),
+        key=lambda child: child.name,
     )
 
 
@@ -102,7 +103,10 @@ def run(config_path: str | Path, *, output_root: str | Path | None = None) -> No
 
 def report(trades_path: str | Path) -> None:
     """Generate report artefacts alongside the trades parquet."""
-    from tick_backtest.analysis.metric_stratification import derive_backtest_identifier, run_metric_stratification
+    from tick_backtest.analysis.metric_stratification import (
+        derive_backtest_identifier,
+        run_metric_stratification,
+    )
     from tick_backtest.analysis.trade_analysis import run_trade_analysis
 
     resolved_trades_path = Path(trades_path).expanduser()

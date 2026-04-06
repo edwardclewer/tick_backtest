@@ -26,8 +26,8 @@ class MetricConfigBase:
     def to_kwargs(self) -> dict[str, object]:
         """Convert config dataclass to kwargs for metric instantiation."""
         d = asdict(self)
-        for field in ("name", "metric_type", "enabled"):
-            d.pop(field, None)
+        for field_name in ("name", "metric_type", "enabled"):
+            d.pop(field_name, None)
         return d
 
 

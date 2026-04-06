@@ -16,8 +16,8 @@ from __future__ import annotations
 
 import math
 from collections import Counter
-from dataclasses import dataclass, field
 from collections.abc import Iterator
+from dataclasses import dataclass, field
 from typing import Any
 
 from tick_backtest.data_feed.data_feed import NoMoreTicks

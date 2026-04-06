@@ -73,10 +73,10 @@ def __getattr__(name: str) -> object:
         from tick_backtest.analysis import (
             BacktestAnalysisSummary,
             MetricStratificationSummary,
+            TradeAnalysisResult,
             run_backtest_analysis,
             run_metric_stratification_analysis,
             run_trade_analysis,
-            TradeAnalysisResult,
         )
 
         globals().update(

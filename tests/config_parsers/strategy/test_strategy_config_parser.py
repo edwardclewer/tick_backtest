@@ -23,7 +23,6 @@ import pytest
 from tick_backtest.config_parsers.strategy.config_parser import StrategyConfigParser
 from tick_backtest.exceptions import ConfigError
 
-
 SCHEMA_HEADER = 'schema_version: "1.0"'
 
 

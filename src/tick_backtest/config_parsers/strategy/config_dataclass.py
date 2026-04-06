@@ -18,7 +18,6 @@ from dataclasses import dataclass, field
 
 from tick_backtest.config_parsers.strategy.entry_configs import EntryParamsBase
 
-
 VALID_OPERATORS = {"<", "<=", ">", ">=", "==", "!="}
 
 
@@ -55,9 +54,10 @@ class PredicateConfig:
             except Exception as exc:
                 raise TypeError("Predicate 'value' must be numeric") from exc
 
-        if self.other_metric is not None:
-            if not isinstance(self.other_metric, str) or not self.other_metric:
-                raise ValueError("Predicate 'other_metric' must be a non-empty string")
+        if self.other_metric is not None and (
+            not isinstance(self.other_metric, str) or not self.other_metric
+        ):
+            raise ValueError("Predicate 'other_metric' must be a non-empty string")
 
         if not isinstance(self.use_abs, bool):
             raise TypeError("Predicate 'use_abs' must be a boolean")

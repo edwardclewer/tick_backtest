@@ -25,7 +25,7 @@ SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from tick_backtest._build import BuildExt, get_extensions
+from tick_backtest._build import BuildExt, get_extensions  # noqa: E402
 
 setup(
     zip_safe=False,

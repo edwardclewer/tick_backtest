@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import pytest
 
-from tick_backtest.metrics.indicators.tick_rate_metric import TickRateMetric
 from tests.helpers.metrics_reference import tick_rate_expected
+from tick_backtest.metrics.indicators.tick_rate_metric import TickRateMetric
 
 
 def test_tick_rate_counts_within_window(tick_factory):
     metric = TickRateMetric(name="tick_rate", window_seconds=10.0)
-    base = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2020, 1, 1, tzinfo=UTC)
 
     for i in range(5):
         metric.update(tick_factory(timestamp=base + timedelta(seconds=i)))
@@ -36,7 +36,7 @@ def test_tick_rate_counts_within_window(tick_factory):
 
 def test_tick_rate_trims_old_ticks(tick_factory):
     metric = TickRateMetric(name="tick_rate", window_seconds=5.0)
-    base = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2020, 1, 1, tzinfo=UTC)
 
     for i in range(6):
         metric.update(tick_factory(timestamp=base + timedelta(seconds=i)))
@@ -53,11 +53,11 @@ def test_tick_rate_random_sequence_matches_reference(tick_factory):
     window = 12.0
     metric = TickRateMetric(name="tick_rate", window_seconds=window)
 
-    base = datetime(2022, 3, 1, tzinfo=timezone.utc)
+    base = datetime(2022, 3, 1, tzinfo=UTC)
     offsets = np.cumsum(rng.uniform(0.1, 4.0, size=50))
     reference = tick_rate_expected(offsets.tolist(), window)
 
-    for offset, (count, per_sec, per_min) in zip(offsets, reference):
+    for offset, (count, per_sec, per_min) in zip(offsets, reference, strict=False):
         tick = tick_factory(timestamp=base + timedelta(seconds=float(offset)))
         metric.update(tick)
 

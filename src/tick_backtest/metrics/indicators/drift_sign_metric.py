@@ -23,7 +23,7 @@ __all__ = ["DriftSignMetric"]
 
 def _load_impl() -> type[object]:
     module = import_module("tick_backtest.metrics.indicators._drift_sign_metric")
-    return getattr(module, "DriftSignMetric")
+    return module.DriftSignMetric
 
 
 DriftSignMetric = _load_impl()

@@ -17,26 +17,26 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
 import pytest
 
+from tests.helpers.parquet import write_tick_parquet
 from tick_backtest.analysis.trade_analysis import analyse_trades, load_trades
 from tick_backtest.backtest.backtest_coordinator import BacktestCoordinator
+from tick_backtest.backtest.workflow import run_backtest
 from tick_backtest.config_parsers.backtest.config_dataclass import BacktestConfigData
 from tick_backtest.config_parsers.strategy.config_parser import StrategyConfigParser
-from tick_backtest.backtest.workflow import run_backtest
-from tick_backtest.signals.signal_data import SignalData
-from tests.helpers.parquet import write_tick_parquet
 from tick_backtest.data_feed.validation import TickValidator
+from tick_backtest.signals.signal_data import SignalData
 
 
 class CoordinatorMetricsStub:
     """Collect ticks and emit deterministic metric snapshots."""
 
-    instances: list["CoordinatorMetricsStub"] = []
+    instances: list[CoordinatorMetricsStub] = []
 
     def __init__(self, *_args, **_kwargs) -> None:
         self.ticks = []
@@ -56,7 +56,7 @@ class CoordinatorMetricsStub:
 class CoordinatorSignalStub:
     """Open a single long trade on the first tick."""
 
-    instances: list["CoordinatorSignalStub"] = []
+    instances: list[CoordinatorSignalStub] = []
 
     def __init__(self, *, pip_size: float, **_kwargs) -> None:
         self.pip_size = pip_size
@@ -102,22 +102,22 @@ def _prepare_tick_dataset(base_path: Path) -> None:
         pair_dir / "EURUSD_2015-01.parquet",
         [
             {
-                "timestamp": datetime(2015, 1, 1, 0, 0, tzinfo=timezone.utc),
+                "timestamp": datetime(2015, 1, 1, 0, 0, tzinfo=UTC),
                 "bid": 1.1000,
                 "ask": 1.1002,
             },
             {
-                "timestamp": datetime(2015, 1, 1, 0, 0, 1, tzinfo=timezone.utc),
+                "timestamp": datetime(2015, 1, 1, 0, 0, 1, tzinfo=UTC),
                 "bid": 1.1010,
                 "ask": 1.1012,
             },
             {
-                "timestamp": datetime(2015, 1, 1, 0, 0, 2, tzinfo=timezone.utc),
+                "timestamp": datetime(2015, 1, 1, 0, 0, 2, tzinfo=UTC),
                 "bid": 1.0995,
                 "ask": 1.0997,
             },
             {
-                "timestamp": datetime(2015, 1, 1, 0, 0, 3, tzinfo=timezone.utc),
+                "timestamp": datetime(2015, 1, 1, 0, 0, 3, tzinfo=UTC),
                 "bid": 1.0994,
                 "ask": 1.0996,
             },
@@ -254,8 +254,8 @@ def test_run_backtests_emits_manifest_and_run_directory(monkeypatch, tmp_path: P
             [
                 'schema_version: "1.0"',
                 "pairs: [EURUSD]",
-                f"start: 2015-01",
-                f"end: 2015-01",
+                "start: 2015-01",
+                "end: 2015-01",
                 "pip_size: 0.0001",
                 "warmup_seconds: 0",
                 f"data_base_path: \"{data_dir}\"",

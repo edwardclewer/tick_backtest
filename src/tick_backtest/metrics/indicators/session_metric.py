@@ -23,7 +23,7 @@ __all__ = ["SessionMetric"]
 
 def _load_impl() -> type[object]:
     module = import_module("tick_backtest.metrics.indicators._session_metric")
-    return getattr(module, "SessionMetric")
+    return module.SessionMetric
 
 
 SessionMetric = _load_impl()

@@ -26,7 +26,10 @@ from tick_backtest.config_parsers.strategy.config_dataclass import (
     StrategyConfigData,
 )
 from tick_backtest.config_parsers.strategy.config_registry import ENTRY_PARAMS_REGISTRY
-from tick_backtest.config_parsers.strategy.entry_configs import EWMACrossoverEntryParams, EntryParamsBase
+from tick_backtest.config_parsers.strategy.entry_configs import (
+    EntryParamsBase,
+    EWMACrossoverEntryParams,
+)
 from tick_backtest.config_validation import validate_strategy_config
 from tick_backtest.exceptions import ConfigError
 
@@ -76,7 +79,7 @@ class StrategyConfigParser:
         strategy = raw["strategy"]
         if not isinstance(strategy, dict):
             raise ValueError("Top-level 'strategy' entry must be a mapping")
-        unexpected = [key for key in raw.keys() if key not in ("strategy", "schema_version")]
+        unexpected = [key for key in raw if key not in ("strategy", "schema_version")]
         if unexpected:
             raise ValueError(f"Unexpected top-level keys in strategy config: {unexpected}")
         return strategy

@@ -19,7 +19,10 @@ from typing import Any
 
 import yaml
 
-from tick_backtest.config_parsers.metrics.config_dataclass import MetricsConfigData, MetricConfigBase
+from tick_backtest.config_parsers.metrics.config_dataclass import (
+    MetricConfigBase,
+    MetricsConfigData,
+)
 from tick_backtest.config_parsers.metrics.config_registry import CONFIG_REGISTRY
 from tick_backtest.config_validation import validate_metrics_config
 from tick_backtest.exceptions import ConfigError

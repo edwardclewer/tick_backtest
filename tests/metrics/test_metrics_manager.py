@@ -16,11 +16,11 @@
 
 from __future__ import annotations
 
+import textwrap
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from collections.abc import Iterable
 from typing import Any
-import textwrap
 
 import pytest
 
@@ -181,7 +181,7 @@ def test_metrics_manager_with_real_config(tmp_path, tick_series_factory):
         ]
     )
 
-    snapshot: Dict[str, Any] = {}
+    snapshot: dict[str, Any] = {}
     for tick in ticks:
         snapshot = manager.update(tick)
 

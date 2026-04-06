@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
 
 from ..config_dataclass import MetricConfigBase
 

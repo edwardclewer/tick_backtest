@@ -21,9 +21,9 @@ from .compile_report import (
     discover_metrics_for_mode,
 )
 from .workflow import (
+    DEFAULT_BINNING_MODES,
     DEFAULT_METRICS,
     DEFAULT_PREVIEW_COLUMNS,
-    DEFAULT_BINNING_MODES,
     MetricStratificationOutputs,
     derive_backtest_identifier,
     load_trades,

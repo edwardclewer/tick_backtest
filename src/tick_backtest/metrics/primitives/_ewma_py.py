@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import math
-from typing import Optional
 
 
 class PyEWMA:
@@ -25,7 +24,7 @@ class PyEWMA:
         self.tau = float(tau_seconds)
         self.power = int(power)
         self.y = 0.0
-        self._last_t: Optional[float] = None
+        self._last_t: float | None = None
 
     def reset(self) -> None:
         self.y = 0.0

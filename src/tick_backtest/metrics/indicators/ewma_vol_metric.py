@@ -23,7 +23,7 @@ __all__ = ["EWMAVolMetric"]
 
 def _load_impl() -> type[object]:
     module = import_module("tick_backtest.metrics.indicators._ewma_vol_metric")
-    return getattr(module, "EWMAVolMetric")
+    return module.EWMAVolMetric
 
 
 EWMAVolMetric = _load_impl()

@@ -16,7 +16,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from tick_backtest.config_parsers.strategy.config_dataclass import EntryConfig, ExitConfig, StrategyConfigData
+from tick_backtest.config_parsers.strategy.config_dataclass import (
+    EntryConfig,
+    ExitConfig,
+    StrategyConfigData,
+)
 from tick_backtest.config_parsers.strategy.entry_configs import ThresholdReversionEntryParams
 from tick_backtest.data_feed.tick import Tick
 from tick_backtest.signals.entries import ENTRY_ENGINE_REGISTRY, EntryResult

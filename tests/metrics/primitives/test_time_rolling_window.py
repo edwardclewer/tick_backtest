@@ -20,10 +20,13 @@ import math
 
 import numpy as np
 import pytest
+
 from tick_backtest.metrics.primitives._time_rolling_window_py import PyTimeRollingWindow
 
 try:
-    from tick_backtest.metrics.primitives._time_rolling_window import TimeRollingWindow as CTimeRollingWindow
+    from tick_backtest.metrics.primitives._time_rolling_window import (
+        TimeRollingWindow as CTimeRollingWindow,
+    )
 except ImportError:  # pragma: no cover - compiled extension optional
     CTimeRollingWindow = None
 
@@ -137,7 +140,7 @@ def test_stats_matches_python_reference(impl):
     window = impl(lookback_seconds=lookback)
     reference = PyTimeRollingWindow(lookback_seconds=lookback)
 
-    for ts, value, dt in zip(times, values, durations):
+    for ts, value, dt in zip(times, values, durations, strict=False):
         window.append(ts=float(ts), value=float(value), dt=float(dt))
         reference.append(ts=float(ts), value=float(value), dt=float(dt))
 

@@ -223,7 +223,7 @@ def plot_trade(
         transform=ax.transAxes,
         verticalalignment="top",
         fontsize=10,
-        bbox=dict(facecolor="white", alpha=0.7, edgecolor="none"),
+        bbox={"facecolor": "white", "alpha": 0.7, "edgecolor": "none"},
     )
 
     direction = "Long" if trade.direction == 1 else "Short" if trade.direction == -1 else "Flat"

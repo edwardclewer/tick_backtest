@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 def _load_impl() -> type[object]:
     module = import_module("tick_backtest.metrics.manager._metrics_manager")
-    return getattr(module, "MetricsManager")
+    return module.MetricsManager
 
 
 _CompiledManager = _load_impl()

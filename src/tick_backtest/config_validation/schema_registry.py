@@ -14,8 +14,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from typing import Callable, Dict, Mapping, Optional
 
 from tick_backtest.exceptions import ConfigError
 
@@ -27,10 +27,10 @@ class SchemaSpec:
     """Describes how to handle a declared schema version."""
 
     canonical: str
-    migration: Optional[Migration] = None
+    migration: Migration | None = None
 
 
-SUPPORTED_SCHEMAS: Dict[str, Dict[str, SchemaSpec]] = {
+SUPPORTED_SCHEMAS: dict[str, dict[str, SchemaSpec]] = {
     "backtest": {
         "1.0": SchemaSpec(canonical="1.0"),
     },
@@ -43,7 +43,7 @@ SUPPORTED_SCHEMAS: Dict[str, Dict[str, SchemaSpec]] = {
 }
 
 
-def validate_schema_version(config_name: str, version: Optional[str]) -> SchemaSpec:
+def validate_schema_version(config_name: str, version: str | None) -> SchemaSpec:
     """Ensure the supplied schema version is recognised and return its handler."""
     if config_name not in SUPPORTED_SCHEMAS:
         raise ConfigError(f"Unsupported configuration type '{config_name}'")

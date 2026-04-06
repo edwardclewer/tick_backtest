@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
 import math
-import numpy as np
 import warnings
+from dataclasses import dataclass
+
+import numpy as np
 
 from ..config_dataclass import MetricConfigBase
 
@@ -82,7 +83,7 @@ class EWMAVolConfig(MetricConfigBase):
         if self.var_max / (self.base_vol**2) > 1e4:
             warnings.warn(
                 f"EWMAVolConfig variance range very wide (var_max={self.var_max:.2e}); "
-                "check base_vol/stddev_cap settings."
+                "check base_vol/stddev_cap settings.", stacklevel=2
             )
 
     @property

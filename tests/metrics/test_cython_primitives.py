@@ -17,7 +17,6 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
 
 import numpy as np
 import pytest
@@ -35,7 +34,7 @@ def test_ewma_smoke_matches_reference():
     values = [10.0, 12.0, 11.0, 13.0, 15.0]
 
     outputs = []
-    for t, x in zip(timestamps, values):
+    for t, x in zip(timestamps, values, strict=False):
         outputs.append(ewma.update(t, x))
 
     assert outputs[0] == pytest.approx(0.0)

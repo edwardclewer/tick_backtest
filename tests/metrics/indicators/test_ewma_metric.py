@@ -12,20 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timezone, timedelta
-
 import math
-import numpy as np
+from datetime import UTC, datetime, timedelta
 
+import numpy as np
 import pytest
 
-from tick_backtest.metrics.indicators.ewma_metric import EWMAMetric
 from tests.helpers.metrics_reference import ewma_metric_expected
+from tick_backtest.metrics.indicators.ewma_metric import EWMAMetric
 
 
 def test_ewma_seeds_to_first_price(tick_factory):
     metric = EWMAMetric(name="ewma_mid", tau_seconds=60.0)
-    tick = tick_factory(mid=1.2345, timestamp=datetime(2020, 1, 1, tzinfo=timezone.utc))
+    tick = tick_factory(mid=1.2345, timestamp=datetime(2020, 1, 1, tzinfo=UTC))
 
     metric.update(tick)
     result = metric.value()
@@ -37,7 +36,7 @@ def test_ewma_exponential_response(tick_factory):
     tau = 60.0
     metric = EWMAMetric(name="ewma_mid", tau_seconds=tau)
 
-    base = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2020, 1, 1, tzinfo=UTC)
     tick1 = tick_factory(mid=1.0, timestamp=base)
     tick2 = tick_factory(mid=2.0, timestamp=base + timedelta(seconds=30))
 
@@ -52,7 +51,7 @@ def test_ewma_exponential_response(tick_factory):
 
 def test_ewma_custom_price_field(tick_factory):
     metric = EWMAMetric(name="ewma_bid", tau_seconds=10.0, price_field="bid")
-    ts = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    ts = datetime(2020, 1, 1, tzinfo=UTC)
 
     metric.update(tick_factory(bid=1.0, ask=1.1, timestamp=ts))
     metric.update(tick_factory(bid=1.2, ask=1.3, timestamp=ts + timedelta(seconds=5)))
@@ -66,7 +65,7 @@ def test_ewma_metric_handles_identical_timestamps(tick_factory):
 
     tau = 15.0
     metric = EWMAMetric(name="ewma_mid", tau_seconds=tau)
-    ts = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    ts = datetime(2020, 1, 1, tzinfo=UTC)
 
     metric.update(tick_factory(mid=1.0, timestamp=ts))
     metric.update(tick_factory(mid=3.0, timestamp=ts))
@@ -79,7 +78,7 @@ def test_ewma_metric_handles_identical_timestamps(tick_factory):
 def test_ewma_metric_converges_after_large_gap(tick_factory):
     tau = 5.0
     metric = EWMAMetric(name="ewma_mid", tau_seconds=tau)
-    ts = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    ts = datetime(2020, 1, 1, tzinfo=UTC)
 
     metric.update(tick_factory(mid=0.0, timestamp=ts))
     metric.update(tick_factory(mid=5.0, timestamp=ts + timedelta(seconds=60)))
@@ -94,13 +93,13 @@ def test_ewma_metric_random_sequence_matches_reference(tick_factory):
     tau = 25.0
     metric = EWMAMetric(name="ewma_mid", tau_seconds=tau)
 
-    base = datetime(2021, 1, 1, tzinfo=timezone.utc)
+    base = datetime(2021, 1, 1, tzinfo=UTC)
     offsets = np.cumsum(rng.uniform(0.2, 1.0, size=50))
     mids = rng.normal(loc=1.2000, scale=0.0006, size=50)
 
     expected_values = ewma_metric_expected(offsets.tolist(), mids.tolist(), tau)
 
-    for offset, mid, expected in zip(offsets, mids, expected_values):
+    for offset, mid, expected in zip(offsets, mids, expected_values, strict=False):
         tick = tick_factory(mid=float(mid), timestamp=base + timedelta(seconds=float(offset)))
         metric.update(tick)
         assert metric.value()["ewma"] == pytest.approx(expected, rel=1e-9, abs=1e-9)

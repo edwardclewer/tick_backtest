@@ -23,7 +23,7 @@ __all__ = ["BaseMetric"]
 
 def _load_impl() -> type[object]:
     module = import_module("tick_backtest.metrics.primitives._base_metric")
-    return getattr(module, "BaseMetric")
+    return module.BaseMetric
 
 
 BaseMetric = _load_impl()

@@ -145,6 +145,6 @@ class BuildExt(_build_ext):
         for ext in self.extensions:
             if np_inc not in getattr(ext, "include_dirs", []):
                 ext.include_dirs.append(np_inc)
-            setattr(ext, "_needs_stub", False)
+            ext._needs_stub = False
 
         super().build_extensions()

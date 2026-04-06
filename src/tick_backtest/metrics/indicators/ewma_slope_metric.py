@@ -14,9 +14,9 @@
 
 from __future__ import annotations
 
+import math
 from collections import deque
 from importlib import import_module
-import math
 
 from tick_backtest.data_feed.tick import Tick
 from tick_backtest.metrics.indicators.ewma_metric import EWMAMetric
@@ -26,7 +26,7 @@ MIN_DT = 1e-6
 
 def _load_impl() -> type[object]:
     module = import_module("tick_backtest.metrics.indicators._ewma_slope_metric")
-    return getattr(module, "EWMASlopeMetric")
+    return module.EWMASlopeMetric
 
 
 try:  # pragma: no cover - exercised when Cython extension is available
