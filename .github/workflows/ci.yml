@@ -189,6 +189,20 @@ jobs:
           test -f "$(dirname "$TRADES_PATH")/metric_stratification/reports/metric_report_fixed.md"
           test -f "$(dirname "$TRADES_PATH")/multivariate_analysis/summary.md"
 
+      - name: Smoke test script
+        env:
+          TB_REQUIRE_COMPILED: "1"
+        run: |
+          . .venv_ci/bin/activate
+          SMOKE_VENV=.venv_ci SKIP_SMOKE_INSTALL=1 ./scripts/smoke_test.sh
+
+      - name: Golden deterministic run
+        env:
+          TB_REQUIRE_COMPILED: "1"
+        run: |
+          . .venv_ci/bin/activate
+          ./scripts/golden_run.sh src/tick_backtest/config/backtest/test_backtest.yaml
+
       - name: Run tests against installed wheel
         env:
           TB_REQUIRE_COMPILED: "1"
@@ -219,20 +233,6 @@ jobs:
           tick-backtest run /tmp/tick-backtest-sdist-demo/backtest.yaml
           SDIST_TRADES_PATH="$(find /tmp/tick-backtest-sdist-demo/output -path '*/output/*/trades.parquet' | sort | head -n 1)"
           test -n "$SDIST_TRADES_PATH"
-
-      - name: Smoke test script
-        env:
-          TB_REQUIRE_COMPILED: "1"
-        run: |
-          . .venv_ci/bin/activate
-          SMOKE_VENV=.venv_ci SKIP_SMOKE_INSTALL=1 ./scripts/smoke_test.sh
-
-      - name: Golden deterministic run
-        env:
-          TB_REQUIRE_COMPILED: "1"
-        run: |
-          . .venv_ci/bin/activate
-          ./scripts/golden_run.sh src/tick_backtest/config/backtest/test_backtest.yaml
 
 
       - name: Upload build artefacts on failure
