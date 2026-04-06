@@ -17,43 +17,28 @@ from __future__ import annotations
 import argparse
 import logging
 import random
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Optional
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import pyarrow.parquet as pq
 
 
-"""
-USAGE
-
-python analysis/trade_visualizer.py \
-  --trades output/backtests/EURUSD/trades.parquet \
-  --ticks-root /path/to/dukascopy_data/EURUSD \
-  [--trade-index 123] \
-  [--seed 42] \
-  [--output plots/example.png] \
-  [--padding-seconds 300] \
-  [--log-file run.log]
-"""
-
-
 @dataclass
 class TradeRecord:
-    index: int                      # NEW: the row index used
+    index: int
     pair: str
     entry_time: pd.Timestamp
     exit_time: pd.Timestamp
     direction: int
     entry_price: float
     exit_price: float
-    tp: Optional[float]
-    sl: Optional[float]
-    reference_price: Optional[float]
-    threshold: Optional[float]
-    reference_age: Optional[float]
+    tp: float | None
+    sl: float | None
+    reference_price: float | None
+    threshold: float | None
+    reference_age: float | None
     pnl_pips: float
 
 
@@ -123,9 +108,9 @@ def load_trades(trades_path: Path) -> pd.DataFrame:
 
 def choose_trade(
     df: pd.DataFrame,
-    trade_index: Optional[int],
-    seed: Optional[int],
-    trades_path: Optional[Path] = None,
+    trade_index: int | None,
+    seed: int | None,
+    trades_path: Path | None = None,
 ) -> TradeRecord:
     if trade_index is None:
         rng = random.Random(seed)
@@ -146,7 +131,7 @@ def choose_trade(
         pair = trades_path.parent.name
 
     return TradeRecord(
-        index=int(idx),  # NEW
+        index=int(idx),
         pair=pair,
         entry_time=row["entry_time"],
         exit_time=row["exit_time"],
@@ -198,7 +183,12 @@ def load_tick_slice(ticks_root: Path, trade: TradeRecord, start: pd.Timestamp, e
     return ticks
 
 
-def plot_trade(trade: TradeRecord, ticks: pd.DataFrame, output: Optional[Path], seed: Optional[int] = None) -> None:
+def plot_trade(
+    trade: TradeRecord,
+    ticks: pd.DataFrame,
+    output: Path | None,
+    seed: int | None = None,
+) -> None:
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.plot(ticks["timestamp"], ticks["mid"], label="Mid price", linewidth=1.2)
 
@@ -223,7 +213,6 @@ def plot_trade(trade: TradeRecord, ticks: pd.DataFrame, output: Optional[Path], 
         info_lines.append(f"Reference age: {trade.reference_age:.1f}s")
     if trade.threshold is not None:
         info_lines.append(f"Threshold: {trade.threshold:.5f}")
-    # NEW: include seed and trade index in the annotation
     info_lines.append(f"Seed: {seed if seed is not None else '—'}")
     info_lines.append(f"Trade idx: {trade.index}")
 
@@ -256,9 +245,7 @@ def plot_trade(trade: TradeRecord, ticks: pd.DataFrame, output: Optional[Path], 
     plt.close(fig)
 
 
-# --- NEW: logging helpers -----------------------------------------------------
-
-def _default_log_path(trades_path: Path, output: Optional[Path]) -> Path:
+def _default_log_path(trades_path: Path, output: Path | None) -> Path:
     if output:
         return output.with_suffix(".log")
     return (trades_path.parent / "trade_visualizer.log").resolve()
@@ -282,14 +269,14 @@ def _log_run_context(
     logger: logging.Logger,
     trades_path: Path,
     ticks_root: Path,
-    seed: Optional[int],
-    requested_index: Optional[int],
+    seed: int | None,
+    requested_index: int | None,
     trade: TradeRecord,
     padding_seconds: int,
     window_start: pd.Timestamp,
     window_end: pd.Timestamp,
     ticks: pd.DataFrame,
-    output: Optional[Path],
+    output: Path | None,
     log_path: Path,
 ) -> None:
     logger.info("=== Trade visualizer run ===")
@@ -301,11 +288,9 @@ def _log_run_context(
     logger.info(f"Padding seconds: {padding_seconds}")
     logger.info(f"Window UTC: {window_start.isoformat()} → {window_end.isoformat()}")
 
-    # Log trade metrics (everything relevant to the plot from the record)
     for k, v in asdict(trade).items():
         logger.info(f"TRADE.{k} = {v}")
 
-    # Log tick slice metadata
     if not ticks.empty:
         tmin = ticks["timestamp"].min()
         tmax = ticks["timestamp"].max()
@@ -319,14 +304,11 @@ def _log_run_context(
             )
 
 
-# --- main ---------------------------------------------------------------------
-
 def main() -> None:
     args = parse_args()
     trades_path = args.trades.resolve()
     ticks_root = args.ticks_root.resolve()
 
-    # Decide log file path and setup logger
     log_path = (args.log_file.resolve() if args.log_file else _default_log_path(trades_path, args.output))
     logger = _setup_logger(log_path)
 
@@ -344,7 +326,6 @@ def main() -> None:
     if ticks.empty:
         raise ValueError("No tick data found in the sampled window.")
 
-    # NEW: log everything relevant
     _log_run_context(
         logger=logger,
         trades_path=trades_path,

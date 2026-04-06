@@ -214,11 +214,11 @@ def run_metric_stratification(
                     **call_kwargs,
                 )
             except ValueError as exc:
-                    run_logger.warning(
-                        "metric stratification failed",
-                        extra={"metric": metric, "mode": mode, "error": str(exc)},
-                    )
-                    continue
+                run_logger.warning(
+                    "metric stratification failed",
+                    extra={"metric": metric, "mode": mode, "error": str(exc)},
+                )
+                continue
 
             if metric not in results:
                 results[metric] = summary

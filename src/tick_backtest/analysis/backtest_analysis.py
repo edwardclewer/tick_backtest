@@ -17,9 +17,9 @@ from __future__ import annotations
 import logging
 import json
 import shutil
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Mapping, Optional, Sequence
 
 import pandas as pd
 
@@ -43,8 +43,8 @@ class BacktestAnalysisSummary:
     failures: Mapping[str, str] = field(default_factory=dict)
 
 
-def _iter_trades(output_dir: Path) -> Dict[str, Path]:
-    trades: Dict[str, Path] = {}
+def _iter_trades(output_dir: Path) -> dict[str, Path]:
+    trades: dict[str, Path] = {}
     for child in sorted(output_dir.iterdir()):
         if not child.is_dir():
             continue
@@ -60,7 +60,7 @@ def run_backtest_analysis(
     run_output_dir: Path | str,
     *,
     analysis_root: Path | str | None = None,
-    run_id: Optional[str] = None,
+    run_id: str | None = None,
     generate_plot: bool = True,
     generate_report: bool = True,
 ) -> BacktestAnalysisSummary:
@@ -95,8 +95,8 @@ def run_backtest_analysis(
         },
     )
 
-    per_pair_results: Dict[str, TradeAnalysisResult] = {}
-    failures: Dict[str, str] = {}
+    per_pair_results: dict[str, TradeAnalysisResult] = {}
+    failures: dict[str, str] = {}
     trades_map = _iter_trades(output_dir)
 
     for pair, trades_path in trades_map.items():
@@ -179,9 +179,9 @@ def _resolve_metrics_config(run_root: Path) -> Path:
     return Path(metrics_cfg)
 
 
-def _enabled_metric_names(parser: MetricsConfigParser) -> List[str]:
+def _enabled_metric_names(parser: MetricsConfigParser) -> list[str]:
     config = parser.load_metrics_config()
-    names: List[str] = []
+    names: list[str] = []
     for metric in config.metrics:
         enabled = getattr(metric, "enabled", True)
         if enabled:
@@ -189,8 +189,8 @@ def _enabled_metric_names(parser: MetricsConfigParser) -> List[str]:
     return names
 
 
-def _columns_for_metrics(df: pd.DataFrame, metric_names: Sequence[str]) -> List[str]:
-    columns: Dict[str, None] = {}
+def _columns_for_metrics(df: pd.DataFrame, metric_names: Sequence[str]) -> list[str]:
+    columns: dict[str, None] = {}
     for name in metric_names:
         if name in df.columns and pd.api.types.is_numeric_dtype(df[name]):
             columns[name] = None
@@ -206,7 +206,7 @@ def run_metric_stratification_analysis(
     *,
     metrics_config_path: Path | str | None = None,
     analysis_root: Path | str | None = None,
-    run_id: Optional[str] = None,
+    run_id: str | None = None,
     plot: bool = True,
     save_outputs: bool = True,
 ) -> MetricStratificationSummary:
@@ -236,8 +236,8 @@ def run_metric_stratification_analysis(
         },
     )
 
-    per_pair_outputs: Dict[str, Path] = {}
-    failures: Dict[str, str] = {}
+    per_pair_outputs: dict[str, Path] = {}
+    failures: dict[str, str] = {}
 
     trades_map = _iter_trades(output_dir)
     for pair, trades_path in trades_map.items():

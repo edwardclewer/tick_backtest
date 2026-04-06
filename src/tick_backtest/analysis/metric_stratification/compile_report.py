@@ -48,8 +48,7 @@ def build_metric_section(
     report_base = Path(report_root).expanduser() if report_root else root
     lines: list[str] = [f"## `{metric}` ({mode})", ""]
 
-    graph_rel = Path("graphs") / mode / f"{metric}.png"
-    graph_path = root / graph_rel
+    graph_path = root / "graphs" / mode / f"{metric}.png"
     if graph_path.exists():
         rel_path = Path(os.path.relpath(graph_path, report_base))
         lines.append(f"![{metric} – {mode}]({rel_path.as_posix()})")
