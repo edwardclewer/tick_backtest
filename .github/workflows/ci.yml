@@ -199,6 +199,27 @@ jobs:
           # Run repository test suite against installed package
           pytest -q --import-mode=importlib tests
 
+      - name: Smoke test installed sdist surface
+        env:
+          TB_REQUIRE_COMPILED: "1"
+        run: |
+          python -m venv .venv_sdist
+          . .venv_sdist/bin/activate
+          python -m pip install -U pip
+          python -m pip install dist/*.tar.gz
+
+          tick-backtest --help
+          tick-backtest example-config --output /tmp/tick-backtest-sdist-demo --include-demo-data
+          test -f /tmp/tick-backtest-sdist-demo/backtest.yaml
+          test -f /tmp/tick-backtest-sdist-demo/metrics.yaml
+          test -f /tmp/tick-backtest-sdist-demo/strategy.yaml
+          test -f /tmp/tick-backtest-sdist-demo/demo_data/EURUSD/EURUSD_2000-01.parquet
+          test -f /tmp/tick-backtest-sdist-demo/demo_data/GBPUSD/GBPUSD_2000-02.parquet
+
+          tick-backtest run /tmp/tick-backtest-sdist-demo/backtest.yaml
+          SDIST_TRADES_PATH="$(find /tmp/tick-backtest-sdist-demo/output -path '*/output/*/trades.parquet' | sort | head -n 1)"
+          test -n "$SDIST_TRADES_PATH"
+
       - name: Smoke test script
         env:
           TB_REQUIRE_COMPILED: "1"

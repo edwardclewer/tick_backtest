@@ -222,9 +222,10 @@ def test_open_position_sanitizes_non_finite_stops(tick_factory, tmp_path):
 def test_metrics_snapshot_persisted_into_trade_log(tick_factory, metrics_snapshot, tmp_path):
     """Ensure entry metrics are present on the saved trade record for post-hoc analysis."""
 
-    entry_tick = tick_factory(mid=1.2000)
-    fill_tick = tick_factory(mid=1.2005)
-    exit_tick = tick_factory(mid=1.2020)
+    start = datetime(2015, 1, 1, tzinfo=UTC)
+    entry_tick = tick_factory(mid=1.2000, timestamp=start)
+    fill_tick = tick_factory(mid=1.2005, timestamp=start + timedelta(seconds=1))
+    exit_tick = tick_factory(mid=1.2020, timestamp=start + timedelta(seconds=2))
     signal = SignalData(
         should_open=True,
         direction=1,
@@ -253,9 +254,82 @@ def test_metrics_snapshot_persisted_into_trade_log(tick_factory, metrics_snapsho
 
     assert len(backtest.trades) == 1
     trade = backtest.trades[0]
-    assert trade["entry_time"] == Backtest._to_datetime(exit_tick.timestamp)
+    assert trade["entry_time"] == Backtest._to_datetime(fill_tick.timestamp)
     for key in metrics_snapshot:
         assert key in trade, f"missing metric {key} in trade record"
+
+
+def test_threshold_based_stops_anchor_to_fill_price_after_gap(tick_factory, tmp_path):
+    """Threshold-based executed stops should be re-anchored to the realized fill."""
+
+    start = datetime(2015, 1, 1, tzinfo=UTC)
+    signal_tick = tick_factory(mid=1.2000, timestamp=start)
+    fill_tick = tick_factory(mid=1.2015, timestamp=start + timedelta(seconds=1))
+
+    signal = SignalData(
+        should_open=True,
+        direction=1,
+        tp=1.2010,
+        sl=1.1980,
+        reason="threshold-gap",
+        entry_metadata={
+            "threshold": 0.0010,
+            "signal_price": 1.2000,
+            "tp_price": 1.2010,
+            "sl_price": 1.1980,
+        },
+    )
+    backtest, _ = make_backtest(
+        tmp_path,
+        metrics_snapshots=[{}, {}],
+        signals=[signal, SignalData()],
+    )
+
+    backtest._handle_tick(signal_tick)
+    assert backtest.is_trade_open
+    assert backtest.trade.entry_time is None
+
+    backtest._handle_tick(fill_tick)
+
+    assert backtest.trade.entry_price == pytest.approx(fill_tick.mid)
+    assert backtest.trade.entry_time == Backtest._to_datetime(fill_tick.timestamp)
+    assert backtest.trade.tp == pytest.approx(fill_tick.mid + 0.0010)
+    assert backtest.trade.sl == pytest.approx(fill_tick.mid - 0.0010)
+    entry_meta = backtest.trade.meta["entry_metadata"]
+    assert entry_meta["signal_price"] == pytest.approx(signal_tick.mid)
+    assert entry_meta["signal_tp_price"] == pytest.approx(1.2010)
+    assert entry_meta["signal_sl_price"] == pytest.approx(1.1980)
+    assert entry_meta["tp_price"] == pytest.approx(fill_tick.mid + 0.0010)
+    assert entry_meta["sl_price"] == pytest.approx(fill_tick.mid - 0.0010)
+
+
+def test_non_threshold_stops_remain_explicit_after_fill(tick_factory, tmp_path):
+    """Strategies without threshold metadata should keep their explicit absolute stops."""
+
+    start = datetime(2015, 1, 1, tzinfo=UTC)
+    signal_tick = tick_factory(mid=1.2000, timestamp=start)
+    fill_tick = tick_factory(mid=1.2015, timestamp=start + timedelta(seconds=1))
+
+    signal = SignalData(
+        should_open=True,
+        direction=1,
+        tp=1.2025,
+        sl=1.1990,
+        reason="explicit-stops",
+        entry_metadata={"signal_price": 1.2000},
+    )
+    backtest, _ = make_backtest(
+        tmp_path,
+        metrics_snapshots=[{}, {}],
+        signals=[signal, SignalData()],
+    )
+
+    backtest._handle_tick(signal_tick)
+    backtest._handle_tick(fill_tick)
+
+    assert backtest.trade.entry_price == pytest.approx(fill_tick.mid)
+    assert backtest.trade.tp == pytest.approx(1.2025)
+    assert backtest.trade.sl == pytest.approx(1.1990)
 
 
 def test_open_position_applies_timeout(tick_factory, metrics_snapshot, tmp_path):

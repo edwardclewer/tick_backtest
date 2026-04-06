@@ -26,6 +26,7 @@ import pytest
 from tick_backtest.analysis.trade_analysis import (
     compute_performance_metrics,
     load_trades,
+    plot_equity_curve,
     run_trade_analysis,
     write_report,
 )
@@ -74,6 +75,8 @@ def test_compute_performance_metrics_aggregates_results():
     assert metrics["win_rate"] == pytest.approx(1 / 3)
     assert cast(float, metrics["max_drawdown_pips"]) <= 0.0
     assert metrics["avg_holding_minutes"] == pytest.approx(2.0)
+    assert "daily_pnl_pips_mean" in metrics
+    assert "daily_pnl_pips_std" in metrics
 
 
 def test_write_report_formats_markdown(tmp_path: Path):
@@ -100,8 +103,8 @@ def test_write_report_formats_markdown(tmp_path: Path):
         "avg_holding_minutes": 3.0,
         "per_trade_sharpe": 1.0,
         "daily_sharpe": 1.5,
-        "daily_return_mean": 0.2,
-        "daily_return_std": 0.1,
+        "daily_pnl_pips_mean": 0.2,
+        "daily_pnl_pips_std": 0.1,
         "sampled_days": 1,
         "max_drawdown_pips": -2.0,
         "max_drawdown_duration": pd.Timedelta(minutes=5),
@@ -118,6 +121,41 @@ def test_write_report_formats_markdown(tmp_path: Path):
     assert "# Trade Performance Report" in text
     assert "**Total trades:** 2" in text
     assert "**Win rate:** 50.00%" in text
+    assert "Daily PnL mean (pips)" in text
+    assert "daily pip PnL" in text
+    assert "Daily return mean" not in text
+    assert "Base Currency Units" not in text
+
+
+def test_plot_equity_curve_uses_pip_labels(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """The equity curve plot should describe pip PnL rather than cash returns."""
+
+    captured: dict[str, str] = {}
+
+    def fake_savefig(_path, dpi=200) -> None:
+        import matplotlib.pyplot as plt
+
+        ax = plt.gca()
+        captured["title"] = ax.get_title()
+        captured["xlabel"] = ax.get_xlabel()
+        captured["ylabel"] = ax.get_ylabel()
+
+    monkeypatch.setattr("matplotlib.pyplot.savefig", fake_savefig)
+
+    df = pd.DataFrame(
+        {
+            "exit_time": pd.to_datetime(["2024-01-01T00:01:00Z", "2024-01-01T00:06:00Z"]),
+            "cumulative_pnl": [10.0, 7.0],
+        }
+    )
+
+    plot_equity_curve(df, tmp_path / "equity.png")
+
+    assert captured == {
+        "title": "Cumulative PnL (Pips)",
+        "xlabel": "Exit Time (UTC)",
+        "ylabel": "Cumulative PnL (pips)",
+    }
 
 
 def test_run_trade_analysis_creates_artifacts(tmp_path: Path):

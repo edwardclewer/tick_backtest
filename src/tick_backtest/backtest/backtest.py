@@ -129,7 +129,8 @@ class Backtest:
         entry_price = float(tick.mid)
         self.trade.set_entry_fill(entry_price, fill_time)
 
-        # Recompute TP/SL based on filled entry price to ensure they are anchored to the trade fill.
+        # Recompute threshold-based TP/SL from the filled entry so executed stops reflect
+        # realized trade economics rather than the earlier signal-time price.
         entry_meta = self.trade.meta.get("entry_metadata") or {}
         if not isinstance(entry_meta, dict):
             entry_meta = {}
@@ -153,12 +154,19 @@ class Backtest:
             tp_offset = threshold * tp_mult
             sl_offset = threshold * sl_mult
 
+            signal_tp = entry_meta.get("tp_price")
+            signal_sl = entry_meta.get("sl_price")
+            if isinstance(signal_tp, (int, float)) and math.isfinite(float(signal_tp)):
+                entry_meta["signal_tp_price"] = float(signal_tp)
+            if isinstance(signal_sl, (int, float)) and math.isfinite(float(signal_sl)):
+                entry_meta["signal_sl_price"] = float(signal_sl)
+
             if self.trade.direction == 1:
-                self.trade.tp = signal_price + tp_offset
-                self.trade.sl = signal_price - sl_offset
+                self.trade.tp = entry_price + tp_offset
+                self.trade.sl = entry_price - sl_offset
             elif self.trade.direction == -1:
-                self.trade.tp = signal_price - tp_offset
-                self.trade.sl = signal_price + sl_offset
+                self.trade.tp = entry_price - tp_offset
+                self.trade.sl = entry_price + sl_offset
 
             entry_meta["threshold"] = threshold
             entry_meta["tp_price"] = self.trade.tp

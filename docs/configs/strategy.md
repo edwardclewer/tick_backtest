@@ -89,7 +89,8 @@ Mean-reversion entry engine driven by the compiled `ThresholdReversionMetric`. T
 
 **Behavioural notes**
 - The engine prevents back-to-back entries in the same direction until the metric reverts.
-- TP/SL are re-derived from the filled entry price if the metric does not supply valid levels.
+- `signal_price` records the market mid when the signal fired.
+- In the backtest loop, executed TP/SL are re-anchored from the realized fill price for threshold-based entries, so configured pip distances match the actual filled trade rather than the earlier signal tick.
 - Pair-specific `pip_size` (from the backtest config) determines the conversion of pip distances into absolute prices.
 
 Example:

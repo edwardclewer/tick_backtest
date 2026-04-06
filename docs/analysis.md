@@ -137,7 +137,8 @@ You can create pandas notebooks to recompute KPIs or feed trades into downstream
 
 - Trade counts (win/loss/breakeven)
 - Net/Gross PnL in pips, expectancy, profit factor
-- Sharpe ratios (per-trade and daily)
+- Sharpe ratios (per-trade and daily, computed from pip PnL)
+- Daily pip PnL mean and standard deviation
 - Max drawdown and duration
 - Link or inline image to `trades_equity_curve.png`
 

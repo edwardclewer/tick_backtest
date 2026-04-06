@@ -47,10 +47,10 @@ class TradeAnalysisResult:
     plot_path: Path | None
 
 
-def compute_per_trade_sharpe(returns: pd.Series) -> float:
-    if returns.empty:
+def compute_per_trade_sharpe(pnl_series: pd.Series) -> float:
+    if pnl_series.empty:
         return float("nan")
-    clean = returns.dropna()
+    clean = pnl_series.dropna()
     if clean.empty:
         return float("nan")
     mean = clean.mean()
@@ -65,15 +65,15 @@ def compute_daily_sharpe(df: pd.DataFrame) -> tuple[float, pd.Series]:
         return float("nan"), pd.Series(dtype=float)
     equity = df.set_index("exit_time")["cumulative_pnl"].sort_index()
     daily_equity = equity.resample("1D").last().ffill()
-    daily_returns = daily_equity.diff().dropna()
-    if daily_returns.empty:
-        return float("nan"), daily_returns
-    mean = daily_returns.mean()
-    std = daily_returns.std(ddof=1)
+    daily_pnl_deltas = daily_equity.diff().dropna()
+    if daily_pnl_deltas.empty:
+        return float("nan"), daily_pnl_deltas
+    mean = daily_pnl_deltas.mean()
+    std = daily_pnl_deltas.std(ddof=1)
     if std == 0 or np.isnan(std):
-        return float("nan"), daily_returns
+        return float("nan"), daily_pnl_deltas
     sharpe = float(mean / std * math.sqrt(TRADING_DAYS_PER_YEAR))
-    return sharpe, daily_returns
+    return sharpe, daily_pnl_deltas
 
 
 def load_trades(path: Path) -> pd.DataFrame:
@@ -159,11 +159,15 @@ def compute_performance_metrics(df: pd.DataFrame) -> dict[str, object]:
     metrics["max_drawdown_pips"] = max_dd
     metrics["max_drawdown_duration"] = dd_duration
 
-    daily_sharpe, daily_returns = compute_daily_sharpe(df)
+    daily_sharpe, daily_pnl_deltas = compute_daily_sharpe(df)
     metrics["daily_sharpe"] = daily_sharpe
-    metrics["daily_return_std"] = daily_returns.std(ddof=1) if not daily_returns.empty else float("nan")
-    metrics["daily_return_mean"] = daily_returns.mean() if not daily_returns.empty else float("nan")
-    metrics["sampled_days"] = len(daily_returns)
+    metrics["daily_pnl_pips_std"] = (
+        daily_pnl_deltas.std(ddof=1) if not daily_pnl_deltas.empty else float("nan")
+    )
+    metrics["daily_pnl_pips_mean"] = (
+        daily_pnl_deltas.mean() if not daily_pnl_deltas.empty else float("nan")
+    )
+    metrics["sampled_days"] = len(daily_pnl_deltas)
 
     return metrics
 
@@ -200,8 +204,8 @@ def format_metrics(metrics: dict[str, object]) -> list[tuple[str, str]]:
         ("Avg holding time", fmt(metrics["avg_holding_minutes"], 2) + " min" if not math.isnan(_as_float(metrics["avg_holding_minutes"])) else "NaN"),
         ("Per-trade Sharpe", fmt(metrics["per_trade_sharpe"], 3)),
         ("Daily Sharpe (annualised)", fmt(metrics["daily_sharpe"], 3)),
-        ("Daily return mean", fmt(metrics["daily_return_mean"], 3)),
-        ("Daily return stdev", fmt(metrics["daily_return_std"], 3)),
+        ("Daily PnL mean (pips)", fmt(metrics["daily_pnl_pips_mean"], 3)),
+        ("Daily PnL stdev (pips)", fmt(metrics["daily_pnl_pips_std"], 3)),
         ("Sampled trading days", f"{metrics['sampled_days']:,}"),
         ("Max drawdown (pips)", fmt(metrics["max_drawdown_pips"], 3)),
         ("Max drawdown duration", fmt(metrics["max_drawdown_duration"])),
@@ -214,9 +218,9 @@ def plot_equity_curve(df: pd.DataFrame, plot_path: Path) -> Path | None:
 
     plt.figure(figsize=(10, 6))
     plt.plot(df["exit_time"], df["cumulative_pnl"], marker="o", linewidth=1.5)
-    plt.title("Cumulative PnL (Base Currency Units)")
+    plt.title("Cumulative PnL (Pips)")
     plt.xlabel("Exit Time (UTC)")
-    plt.ylabel("Cumulative Profit")
+    plt.ylabel("Cumulative PnL (pips)")
     plt.grid(True, linestyle="--", alpha=0.4)
     plt.tight_layout()
 
@@ -261,7 +265,7 @@ def write_report(
             "",
             "- `Per-trade Sharpe` treats each trade PnL as an observation."
             " For institutional reporting, the `Daily Sharpe (annualised)` is preferred",
-            " as it aggregates PnL by exit day and annualises using 252 trading days.",
+            " as it aggregates daily pip PnL by exit day and annualises using 252 trading days.",
         ]
     )
 

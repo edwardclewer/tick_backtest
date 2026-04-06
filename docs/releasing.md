@@ -22,7 +22,7 @@ This repository is prepared to publish Python packages via GitHub Actions using 
 
 - Public releases follow semantic versioning.
 - The first intentional public release line is `0.1.x`.
-- `main` should stay releasable: CI green, `python -m build` green, and installed-wheel smoke tests passing.
+- `main` should stay releasable: CI green, `python -m build` green, and both installed-wheel and installed-sdist smoke tests passing.
 
 ## Config surfaces
 
@@ -32,6 +32,7 @@ This repository is prepared to publish Python packages via GitHub Actions using 
 
 The CI workflow validates both sides:
 - installed-package smoke tests exercise the public packaged templates and demo data
+- installed-sdist smoke tests verify the published source-distribution install path
 - repo smoke/golden scripts exercise the checkout-only configs
 
 ## Before tagging

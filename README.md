@@ -294,7 +294,7 @@ Coverage highlights:
 - `tests/metrics` - primitives plus indicator mathematics with reference helpers
 - `tests/integration/test_backtest_run.py` - end-to-end pipeline regression
 
-GitHub Actions builds wheels, runs tests, validates distribution metadata, and publishes docs via `.github/workflows/`.
+GitHub Actions builds wheels and sdists, smoke-tests installed wheel and sdist paths, runs tests, validates distribution metadata, and publishes docs via `.github/workflows/`.
 
 ---
 
