@@ -25,6 +25,8 @@ from tick_backtest.config_parsers.backtest.config_parser import BacktestConfigPa
 def test_checkout_backtest_fixture_resolves_repo_paths() -> None:
     repo_root = Path(__file__).resolve().parents[3]
     fixture_path = repo_root / "src" / "tick_backtest" / "config" / "backtest" / "test_backtest.yaml"
+    if not fixture_path.exists():
+        pytest.skip("checkout-only fixture is not present in installed-package test environments")
 
     cfg = BacktestConfigParser().parse_config(fixture_path)
 

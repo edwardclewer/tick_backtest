@@ -37,9 +37,20 @@ fi
 python -c "import tick_backtest; print('import OK')"
 pytest -q  # or: pytest -q -k 'not slow'
 
-# Tiny backtest (adjust config path as needed)
-python - <<'PY'
+# Tiny backtest
+if [ -d "src" ]; then
+  python - <<'PY'
 from tick_backtest.backtest.workflow import run_backtest
 meta = run_backtest("src/tick_backtest/config/backtest/test_backtest.yaml")
 print("run OK:", meta.get("run_id"))
 PY
+else
+  TMP_DEMO_DIR="$(mktemp -d -t tick-backtest-smoke.XXXXXX)"
+  tick-backtest example-config --output "$TMP_DEMO_DIR" --include-demo-data
+  python - <<'PY' "$TMP_DEMO_DIR/backtest.yaml"
+import sys
+from tick_backtest.backtest.workflow import run_backtest
+meta = run_backtest(sys.argv[1])
+print("run OK:", meta.get("run_id"))
+PY
+fi
