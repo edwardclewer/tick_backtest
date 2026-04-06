@@ -16,9 +16,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from tick_backtest.config_parsers.backtest.config_parser import BacktestConfigParser
 
 
+@pytest.mark.checkout_only
 def test_checkout_backtest_fixture_resolves_repo_paths() -> None:
     repo_root = Path(__file__).resolve().parents[3]
     fixture_path = repo_root / "src" / "tick_backtest" / "config" / "backtest" / "test_backtest.yaml"

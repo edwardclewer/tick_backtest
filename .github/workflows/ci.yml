@@ -197,7 +197,7 @@ jobs:
           # Remove source tree so only installed package is importable
           rm -rf "$GITHUB_WORKSPACE/src"
           # Run repository test suite against installed package
-          pytest -q --import-mode=importlib tests
+          pytest -q --import-mode=importlib -m "not checkout_only" tests
 
       - name: Smoke test installed sdist surface
         env:
