@@ -14,15 +14,14 @@
 
 from __future__ import annotations
 
-from importlib import import_module
 from collections import deque
+from importlib import import_module
 import math
-from typing import Deque
 
 from tick_backtest.data_feed.tick import Tick
 
 
-def _load_impl():
+def _load_impl() -> type[object]:
     module = import_module("tick_backtest.metrics.indicators._tick_rate_metric")
     return getattr(module, "TickRateMetric")
 
@@ -40,7 +39,7 @@ except (ImportError, AttributeError):  # pragma: no cover - fallback during deve
 
             self.name = name
             self.window = float(window_seconds)
-            self._timestamps: Deque[float] = deque()
+            self._timestamps: deque[float] = deque()
             self._count = 0
 
         def update(self, tick: Tick) -> None:

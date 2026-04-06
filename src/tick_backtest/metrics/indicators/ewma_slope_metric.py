@@ -14,10 +14,9 @@
 
 from __future__ import annotations
 
-from importlib import import_module
 from collections import deque
+from importlib import import_module
 import math
-from typing import Deque, Tuple
 
 from tick_backtest.data_feed.tick import Tick
 from tick_backtest.metrics.indicators.ewma_metric import EWMAMetric
@@ -25,7 +24,7 @@ from tick_backtest.metrics.indicators.ewma_metric import EWMAMetric
 MIN_DT = 1e-6
 
 
-def _load_impl():
+def _load_impl() -> type[object]:
     module = import_module("tick_backtest.metrics.indicators._ewma_slope_metric")
     return getattr(module, "EWMASlopeMetric")
 
@@ -57,7 +56,7 @@ except (ImportError, AttributeError):  # pragma: no cover - fallback during deve
                 initial_value=initial_value,
                 price_field=price_field,
             )
-            self._history: Deque[Tuple[float, float]] = deque()
+            self._history: deque[tuple[float, float]] = deque()
             self._slope = math.nan
 
         def update(self, tick: Tick) -> None:

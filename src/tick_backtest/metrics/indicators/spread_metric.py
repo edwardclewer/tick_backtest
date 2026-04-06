@@ -14,15 +14,14 @@
 
 from __future__ import annotations
 
-from importlib import import_module
 from collections import deque
+from importlib import import_module
 import math
-from typing import Deque, Tuple
 
 from tick_backtest.data_feed.tick import Tick
 
 
-def _load_impl():
+def _load_impl() -> type[object]:
     module = import_module("tick_backtest.metrics.indicators._spread_metric")
     return getattr(module, "SpreadMetric")
 
@@ -53,7 +52,7 @@ except (ImportError, AttributeError):  # pragma: no cover - fallback during deve
             self._spread = math.nan
             self._spread_pips = math.nan
             self._percentile = math.nan
-            self._history: Deque[Tuple[float, float]] = deque()
+            self._history: deque[tuple[float, float]] = deque()
 
         def update(self, tick: Tick) -> None:
             bid = float(getattr(tick, "bid", math.nan))

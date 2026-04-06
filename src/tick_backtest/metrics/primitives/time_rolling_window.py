@@ -33,5 +33,5 @@ def _load_impl() -> Type[object]:
 
 try:
     TimeRollingWindow = _load_impl()
-except ImportError:
+except ImportError:  # pragma: no cover - fallback when extension unavailable
     from ._time_rolling_window_py import PyTimeRollingWindow as TimeRollingWindow  # noqa: F401

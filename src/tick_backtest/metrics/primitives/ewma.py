@@ -29,5 +29,5 @@ def _load_impl() -> Type[object]:
 
 try:
     EWMA = _load_impl()
-except ImportError:
+except ImportError:  # pragma: no cover - fallback when extension unavailable
     from ._ewma_py import PyEWMA as EWMA  # noqa: F401

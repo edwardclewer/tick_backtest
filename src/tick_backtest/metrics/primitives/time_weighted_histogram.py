@@ -29,5 +29,5 @@ def _load_impl() -> Type[object]:
 
 try:
     TimeWeightedHistogram = _load_impl()
-except ImportError:
+except ImportError:  # pragma: no cover - fallback when extension unavailable
     from ._time_weighted_histogram_py import PyTimeWeightedHistogram as TimeWeightedHistogram  # noqa: F401

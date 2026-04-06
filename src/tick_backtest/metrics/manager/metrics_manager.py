@@ -19,7 +19,6 @@ from __future__ import annotations
 import logging
 from importlib import import_module
 from pathlib import Path
-from typing import Dict, List
 
 from tick_backtest.config_parsers.metrics.config_dataclass import MetricsConfigData
 from tick_backtest.config_parsers.metrics.config_parser import MetricsConfigParser
@@ -27,8 +26,10 @@ from tick_backtest.data_feed.tick import Tick
 from tick_backtest.metrics.manager.metric_registry import METRIC_CLASS_REGISTRY
 from tick_backtest.metrics.primitives.base_metric import BaseMetric
 
+logger = logging.getLogger(__name__)
 
-def _load_impl():
+
+def _load_impl() -> type[object]:
     module = import_module("tick_backtest.metrics.manager._metrics_manager")
     return getattr(module, "MetricsManager")
 
@@ -41,7 +42,7 @@ class MetricsManager:
         parser = MetricsConfigParser(metrics_config_path)
         config_data: MetricsConfigData = parser.load_metrics_config()
 
-        metrics: List[BaseMetric] = []
+        metrics: list[BaseMetric] = []
         for cfg in config_data.metrics:
             if hasattr(cfg, "enabled") and not getattr(cfg, "enabled", True):
                 logger.info("metric disabled via config", extra={"metric_name": cfg.name})
@@ -63,9 +64,8 @@ class MetricsManager:
         self.metrics = metrics
         self._impl = _CompiledManager(metrics)
 
-    def update(self, tick: Tick) -> Dict[str, float]:
+    def update(self, tick: Tick) -> dict[str, float]:
         return self._impl.update_all(tick)
 
-    def current(self) -> Dict[str, float]:
+    def current(self) -> dict[str, float]:
         return self._impl.current()
-logger = logging.getLogger(__name__)

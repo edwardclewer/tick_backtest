@@ -23,7 +23,7 @@ from tick_backtest.data_feed.tick import Tick
 MIN_DT = 1e-6
 
 
-def _load_impl():
+def _load_impl() -> type[object]:
     module = import_module("tick_backtest.metrics.indicators._ewma_metric")
     return getattr(module, "EWMAMetric")
 

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
 from tick_backtest.metrics.indicators.ewma_vol_metric import EWMAVolMetric
 from tick_backtest.metrics.indicators.drift_sign_metric import DriftSignMetric
 from tick_backtest.metrics.indicators.zscore_metric import ZScoreMetric
@@ -21,7 +23,7 @@ from tick_backtest.metrics.indicators.ewma_slope_metric import EWMASlopeMetric
 from tick_backtest.metrics.indicators.spread_metric import SpreadMetric
 from tick_backtest.metrics.indicators.tick_rate_metric import TickRateMetric
 
-METRIC_CLASS_REGISTRY = {
+METRIC_CLASS_REGISTRY: dict[str, type] = {
     "ewma_vol": EWMAVolMetric,
     "drift_sign": DriftSignMetric,
     "zscore": ZScoreMetric,
