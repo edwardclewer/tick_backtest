@@ -47,7 +47,20 @@ def _load_impl() -> type[EWMASlopeMetricProtocol]:
 
 
 if TYPE_CHECKING:
-    EWMASlopeMetric = EWMASlopeMetricProtocol
+    class EWMASlopeMetric:
+        name: str
+
+        def __init__(
+            self,
+            *,
+            name: str,
+            tau_seconds: float,
+            window_seconds: float,
+            initial_value: float | None = None,
+            price_field: str = "mid",
+        ) -> None: ...
+        def update(self, tick: Tick) -> None: ...
+        def value(self) -> dict[str, float]: ...
 else:
     try:  # pragma: no cover - exercised when Cython extension is available
         EWMASlopeMetric = _load_impl()

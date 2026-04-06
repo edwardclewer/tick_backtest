@@ -38,6 +38,11 @@ def _load_impl() -> type[ZScoreMetricProtocol]:
 
 
 if TYPE_CHECKING:
-    ZScoreMetric = ZScoreMetricProtocol
+    class ZScoreMetric:
+        name: str
+
+        def __init__(self, *, name: str, lookback_seconds: float) -> None: ...
+        def update(self, tick: Tick) -> None: ...
+        def value(self) -> dict[str, float]: ...
 else:
     ZScoreMetric = _load_impl()

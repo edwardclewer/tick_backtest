@@ -22,6 +22,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from numpy.typing import NDArray
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +63,11 @@ def _numeric_feature_columns(df: pd.DataFrame, *, target_column: str) -> list[st
     return numeric_columns
 
 
-def _standardized_coefficients(design_matrix: np.ndarray, target: np.ndarray, coefficients: np.ndarray) -> np.ndarray:
+def _standardized_coefficients(
+    design_matrix: NDArray[np.float64],
+    target: NDArray[np.float64],
+    coefficients: NDArray[np.float64],
+) -> NDArray[np.float64]:
     standardized = np.full(coefficients.shape, np.nan, dtype=float)
     target_std = float(np.std(target, ddof=0))
     if target_std == 0.0 or np.isnan(target_std):

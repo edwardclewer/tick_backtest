@@ -17,6 +17,7 @@ from __future__ import annotations
 import logging
 
 from tick_backtest.backtest.backtest import Backtest
+from tick_backtest.config_parsers.backtest.config_dataclass import BacktestConfigData
 from tick_backtest.data_feed.data_feed import DataFeed, DataFeedError, NoMoreTicks
 from tick_backtest.data_feed.validation import TickValidator, ValidatingDataFeed
 from tick_backtest.logging_utils import run_context
@@ -29,7 +30,7 @@ logger = logging.getLogger(__name__)
 class BacktestCoordinator:
     def __init__(
         self,
-        backtest_config,
+        backtest_config: BacktestConfigData,
         *,
         run_id: str,
     ) -> None:

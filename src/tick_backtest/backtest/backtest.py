@@ -18,16 +18,40 @@ import logging
 import math
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol, cast
 
 import pandas as pd
 
-from tick_backtest.data_feed.data_feed import DataFeed, NoMoreTicks
+from tick_backtest.data_feed.data_feed import NoMoreTicks
 from tick_backtest.data_feed.tick import Tick
-from tick_backtest.metrics.manager.metrics_manager import MetricsManager
 from tick_backtest.position.position import Position
 from tick_backtest.signals.signal_data import SignalData
-from tick_backtest.signals.signal_generator import SignalGenerator
+
+
+class TickFeed(Protocol):
+    pair: str
+
+    def tick(self) -> Tick:
+        """Return the next tick or raise NoMoreTicks."""
+
+
+class SignalGeneratorLike(Protocol):
+    tp_multiple: float
+    sl_multiple: float
+
+    def update(
+        self,
+        metrics: dict[str, float],
+        tick: Tick,
+        *,
+        is_warmup: bool = False,
+    ) -> SignalData:
+        """Return the latest signal decision."""
+
+
+class MetricsManagerLike(Protocol):
+    def update(self, tick: Tick) -> dict[str, float]:
+        """Update metrics and return the latest snapshot."""
 
 
 class Backtest:
@@ -35,9 +59,9 @@ class Backtest:
 
     def __init__(
         self,
-        data_feed: DataFeed,
-        signal_generator: SignalGenerator,
-        metrics_manager: MetricsManager,
+        data_feed: TickFeed,
+        signal_generator: SignalGeneratorLike,
+        metrics_manager: MetricsManagerLike,
         output_base_path: Path,
         pip_size: float,
     ) -> None:
@@ -287,13 +311,14 @@ class Backtest:
             hit_sl = True
             hit_tp = False
 
+        exit_price: float
         if timeout_hit:
             exit_price = price
             exit_reason = "TIMEOUT"
         else:
             exit_reason = "SL" if hit_sl else "TP"
-            exit_price = tp if hit_tp else sl
-            if exit_price is None:
+            candidate_exit_price = tp if hit_tp else sl
+            if candidate_exit_price is None:
                 self.logger.error(
                     "stop triggered but no exit price derived; defaulting to mid",
                     extra={
@@ -305,6 +330,8 @@ class Backtest:
                     },
                 )
                 exit_price = price
+            else:
+                exit_price = candidate_exit_price
 
         self._finalize_trade(float(exit_price), current_time, exit_reason)
 
@@ -339,5 +366,5 @@ class Backtest:
         if isinstance(ts, datetime):
             return ts
         if hasattr(ts, "to_pydatetime"):
-            return ts.to_pydatetime()
+            return cast(datetime, ts.to_pydatetime())
         return datetime.fromtimestamp(float(ts), tz=UTC)

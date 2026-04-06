@@ -38,6 +38,11 @@ def _load_impl() -> type[SessionMetricProtocol]:
 
 
 if TYPE_CHECKING:
-    SessionMetric = SessionMetricProtocol
+    class SessionMetric:
+        name: str
+
+        def __init__(self, *, name: str) -> None: ...
+        def update(self, tick: Tick) -> None: ...
+        def value(self) -> dict[str, float]: ...
 else:
     SessionMetric = _load_impl()

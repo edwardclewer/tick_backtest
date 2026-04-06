@@ -30,6 +30,7 @@ from pathlib import Path
 import yaml
 
 from tick_backtest.backtest.backtest_coordinator import BacktestCoordinator
+from tick_backtest.config_parsers.backtest.config_dataclass import BacktestConfigData
 from tick_backtest.config_parsers.backtest.config_parser import BacktestConfigParser
 from tick_backtest.config_parsers.metrics.config_parser import MetricsConfigParser
 from tick_backtest.data_feed.data_feed import get_data_months
@@ -44,7 +45,7 @@ __all__ = [
 ]
 
 
-def load_config(config_path: Path | str):
+def load_config(config_path: Path | str) -> BacktestConfigData:
     """Parse a backtest configuration file."""
     parser = BacktestConfigParser()
     return parser.parse_config(Path(config_path))
@@ -101,7 +102,7 @@ def _summarize_metrics_config(metrics_config_path: Path) -> list[dict[str, objec
 
 def _count_parquet_rows(path: Path) -> int | None:
     try:
-        import pyarrow.parquet as pq  # type: ignore
+        import pyarrow.parquet as pq
     except Exception:
         return None
 
@@ -169,7 +170,7 @@ def _hash_file(path: Path, chunk_size: int = 1024 * 1024) -> str | None:
     return hasher.hexdigest()
 
 
-def _collect_input_shards(config) -> list[dict[str, object]]:
+def _collect_input_shards(config: BacktestConfigData) -> list[dict[str, object]]:
     shards: list[dict[str, object]] = []
     months = get_data_months(
         config.year_start,
@@ -179,9 +180,9 @@ def _collect_input_shards(config) -> list[dict[str, object]]:
     )
 
     try:
-        import pyarrow.parquet as pq  # type: ignore
+        import pyarrow.parquet as pq
     except Exception:
-        pq = None  # type: ignore
+        pq = None
 
     for pair in config.pairs:
         for year, month in months:

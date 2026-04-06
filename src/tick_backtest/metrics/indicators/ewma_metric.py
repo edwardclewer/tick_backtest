@@ -47,7 +47,22 @@ def _load_impl() -> type[EWMAMetricProtocol]:
 
 
 if TYPE_CHECKING:
-    EWMAMetric = EWMAMetricProtocol
+    class EWMAMetric:
+        name: str
+
+        def __init__(
+            self,
+            *,
+            name: str,
+            tau_seconds: float,
+            initial_value: float | None = None,
+            price_field: str = "mid",
+        ) -> None: ...
+        def update(self, tick: Tick) -> None: ...
+        def value(self) -> dict[str, float]: ...
+
+        @property
+        def current(self) -> float: ...
 else:
     try:  # pragma: no cover - exercised when Cython extension is available
         EWMAMetric = _load_impl()

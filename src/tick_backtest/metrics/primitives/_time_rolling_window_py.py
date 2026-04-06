@@ -14,6 +14,7 @@
 
 import math
 from collections import deque
+from collections.abc import Iterator
 
 import numpy as np
 
@@ -21,9 +22,9 @@ import numpy as np
 class PyTimeRollingWindow:
     """Reference Python implementation kept for fallback and testing parity."""
 
-    def __init__(self, lookback_seconds: float):
+    def __init__(self, lookback_seconds: float) -> None:
         self.lookback = float(lookback_seconds)
-        self.samples = deque()
+        self.samples: deque[tuple[float, float, float]] = deque()
         self.sum_w = 0.0
         self.sum_x = 0.0
         self.sum_x2 = 0.0
@@ -31,10 +32,10 @@ class PyTimeRollingWindow:
     def __len__(self) -> int:
         return len(self.samples)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[tuple[float, float, float]]:
         return iter(self.samples)
 
-    def append(self, ts: float, value: float, dt: float):
+    def append(self, ts: float, value: float, dt: float) -> None:
         if not (math.isfinite(ts) and math.isfinite(value) and math.isfinite(dt)):
             return
         if dt <= 0.0:
@@ -47,7 +48,7 @@ class PyTimeRollingWindow:
 
         self._trim(ts)
 
-    def _trim(self, ts: float):
+    def _trim(self, ts: float) -> None:
         cutoff = float(ts) - self.lookback
         eps = 1e-12
 
@@ -86,7 +87,7 @@ class PyTimeRollingWindow:
             if self.sum_w < 0.0 and self.sum_w > -eps:
                 self.sum_w = 0.0
 
-    def stats(self):
+    def stats(self) -> tuple[float, float]:
         if not math.isfinite(self.sum_w) or self.sum_w <= 1e-12:
             return (np.nan, np.nan)
 

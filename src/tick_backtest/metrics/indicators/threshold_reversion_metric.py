@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 from importlib import import_module
-from typing import Protocol, cast
+from typing import TYPE_CHECKING, Protocol, cast
 
 __all__ = ["ThresholdReversionMetric"]
 
@@ -25,6 +25,9 @@ __all__ = ["ThresholdReversionMetric"]
 class ThresholdReversionMetricProtocol(Protocol):
     def update(self, tick: object) -> None:
         """Update the metric with a new tick."""
+
+    def value(self) -> dict[str, object]:
+        """Return the current metric snapshot."""
 
     def value_dict(self) -> dict[str, object]:
         """Return the current metric snapshot."""
@@ -51,4 +54,22 @@ def _load_impl() -> ThresholdReversionMetricFactory:
     return cast(ThresholdReversionMetricFactory, module.ThresholdReversionMetric)
 
 
-ThresholdReversionMetric = _load_impl()
+if TYPE_CHECKING:
+    class ThresholdReversionMetric:
+        def __init__(
+            self,
+            *,
+            name: str,
+            lookback_seconds: int,
+            threshold_pips: float,
+            pip_size: float,
+            tp_pips: float | None = None,
+            sl_pips: float | None = None,
+            min_recency_seconds: float = 0.0,
+            trade_timeout_seconds: float | None = None,
+        ) -> None: ...
+        def update(self, tick: object) -> None: ...
+        def value(self) -> dict[str, object]: ...
+        def value_dict(self) -> dict[str, object]: ...
+else:
+    ThresholdReversionMetric = _load_impl()

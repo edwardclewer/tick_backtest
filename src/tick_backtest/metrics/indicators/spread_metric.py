@@ -36,7 +36,12 @@ def _load_impl() -> type[SpreadMetricProtocol]:
 
 
 if TYPE_CHECKING:
-    SpreadMetric = SpreadMetricProtocol
+    class SpreadMetric:
+        name: str
+
+        def __init__(self, *, name: str, pip_size: float, window_seconds: float) -> None: ...
+        def update(self, tick: Tick) -> None: ...
+        def value(self) -> dict[str, float]: ...
 else:
     try:  # pragma: no cover - exercised when Cython extension is available
         SpreadMetric = _load_impl()

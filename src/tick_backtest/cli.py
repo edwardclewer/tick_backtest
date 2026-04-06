@@ -15,8 +15,9 @@
 from __future__ import annotations
 
 import argparse
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
+from typing import cast
 
 from tick_backtest import api
 
@@ -95,7 +96,8 @@ def _example_config_command(args: argparse.Namespace) -> int:
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    return args.handler(args)
+    handler = cast(Callable[[argparse.Namespace], int], args.handler)
+    return handler(args)
 
 
 if __name__ == "__main__":

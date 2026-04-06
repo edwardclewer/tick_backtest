@@ -32,6 +32,7 @@ import logging
 import math
 from collections.abc import Iterable
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -107,12 +108,15 @@ def read_manifest(manifest_path: Path) -> list[dict[str, str]]:
     return rows
 
 
-def load_yaml(path: Path) -> dict:
+def load_yaml(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
-        return yaml.safe_load(handle)
+        data = yaml.safe_load(handle)
+    if not isinstance(data, dict):
+        raise ValueError(f"YAML file {path} must contain a mapping at the top level")
+    return data
 
 
-def find_metric_params(config: dict, metric_name: str) -> dict[str, float]:
+def find_metric_params(config: dict[str, Any], metric_name: str) -> dict[str, float | None]:
     for metric in config.get("metrics", []):
         if metric.get("name") == metric_name:
             params = metric.get("params", {})
@@ -215,7 +219,7 @@ def generate_summary_row(
     label: str,
     pair: str,
     trades: pd.DataFrame,
-    params: dict[str, float],
+    params: dict[str, float | None],
 ) -> dict[str, float | str]:
     avg_pnl = float(trades["pnl_pips"].mean()) if not trades.empty else float("nan")
     trade_count = int(len(trades))
@@ -224,10 +228,10 @@ def generate_summary_row(
         "pair": pair,
         "trade_count": trade_count,
         "avg_pnl_pips": avg_pnl,
-        "min_recency_seconds": params.get("min_recency_seconds"),
-        "tp_pips": params.get("tp_pips"),
-        "sl_pips": params.get("sl_pips"),
-        "trade_timeout_seconds": params.get("trade_timeout_seconds"),
+        "min_recency_seconds": float(params.get("min_recency_seconds") or float("nan")),
+        "tp_pips": float(params.get("tp_pips") or float("nan")),
+        "sl_pips": float(params.get("sl_pips") or float("nan")),
+        "trade_timeout_seconds": float(params.get("trade_timeout_seconds") or float("nan")),
     }
 
 

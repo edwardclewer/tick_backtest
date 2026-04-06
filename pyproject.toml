@@ -107,49 +107,7 @@ select = ["B", "C4", "E4", "E7", "E9", "F", "I", "SIM102", "SIM118", "UP"]
 
 [tool.mypy]
 python_version = "3.12"
-files = [
-  "src/tick_backtest/api.py",
-  "src/tick_backtest/logging_utils.py",
-  "src/tick_backtest/exceptions.py",
-  "src/tick_backtest/data_feed/tick.py",
-  "src/tick_backtest/data_feed/data_feed.py",
-  "src/tick_backtest/data_feed/validation.py",
-  "src/tick_backtest/data_feed/_data_feed_py.py",
-  "src/tick_backtest/position/position.py",
-  "src/tick_backtest/signals/signal_data.py",
-  "src/tick_backtest/signals/predicates.py",
-  "src/tick_backtest/signals/signal_generator.py",
-  "src/tick_backtest/signals/entries",
-  "src/tick_backtest/config_parsers/utils/utils.py",
-  "src/tick_backtest/config_parsers/backtest/config_dataclass.py",
-  "src/tick_backtest/config_parsers/backtest/config_parser.py",
-  "src/tick_backtest/config_parsers/metrics/config_dataclass.py",
-  "src/tick_backtest/config_parsers/metrics/config_registry.py",
-  "src/tick_backtest/config_parsers/metrics/dataclasses",
-  "src/tick_backtest/config_parsers/strategy/config_dataclass.py",
-  "src/tick_backtest/config_parsers/strategy/config_parser.py",
-  "src/tick_backtest/config_parsers/strategy/entry_configs.py",
-  "src/tick_backtest/config_parsers/strategy/config_registry.py",
-  "src/tick_backtest/config_validation/backtest.py",
-  "src/tick_backtest/config_validation/metrics.py",
-  "src/tick_backtest/config_validation/schema_registry.py",
-  "src/tick_backtest/config_validation/strategy.py",
-  "src/tick_backtest/metrics/indicators/drift_sign_metric.py",
-  "src/tick_backtest/metrics/indicators/ewma_metric.py",
-  "src/tick_backtest/metrics/indicators/ewma_slope_metric.py",
-  "src/tick_backtest/metrics/indicators/threshold_reversion_metric.py",
-  "src/tick_backtest/metrics/indicators/ewma_vol_metric.py",
-  "src/tick_backtest/metrics/indicators/session_metric.py",
-  "src/tick_backtest/metrics/indicators/spread_metric.py",
-  "src/tick_backtest/metrics/indicators/tick_rate_metric.py",
-  "src/tick_backtest/metrics/indicators/zscore_metric.py",
-  "src/tick_backtest/metrics/manager/metric_registry.py",
-  "src/tick_backtest/metrics/manager/metrics_manager.py",
-  "src/tick_backtest/metrics/primitives/base_metric.py",
-  "src/tick_backtest/metrics/primitives/ewma.py",
-  "src/tick_backtest/metrics/primitives/time_rolling_window.py",
-  "src/tick_backtest/metrics/primitives/time_weighted_histogram.py",
-]
+files = ["src", "tests"]
 check_untyped_defs = true
 disallow_any_generics = true
 disallow_untyped_defs = true
@@ -164,3 +122,12 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 module = ["yaml"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+  "tests.*",
+]
+disallow_untyped_defs = false
+disallow_any_generics = false
+strict_equality = false
+warn_return_any = false

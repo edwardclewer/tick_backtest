@@ -17,10 +17,11 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from numpy.typing import NDArray
 
 
 def _auto_edges(
-    values: np.ndarray,
+    values: NDArray[np.float64],
     mode: str = "fixed",
     nbins: int | None = None,
     width: float | None = None,
@@ -28,7 +29,7 @@ def _auto_edges(
     sigma_span: float = 4.0,
     clip_quantiles: tuple[float, float] = (0.001, 0.999),
     hard_cap_bins: tuple[int, int] = (20, 400),
-) -> np.ndarray:
+) -> NDArray[np.float64]:
     """Return bin edges for 1D binning."""
     v = values[np.isfinite(values)]
     lo, hi = np.quantile(v, clip_quantiles[0]), np.quantile(v, clip_quantiles[1])
@@ -83,7 +84,11 @@ def _auto_edges(
     return edges
 
 
-def _merge_bins_to_min_count(edges: np.ndarray, x: np.ndarray, min_count: int) -> np.ndarray:
+def _merge_bins_to_min_count(
+    edges: NDArray[np.float64],
+    x: NDArray[np.float64],
+    min_count: int,
+) -> NDArray[np.float64]:
     """Merge adjacent bins until each retained bin reaches the minimum count."""
     counts, _ = np.histogram(x, bins=edges)
     new_edges = [edges[0]]

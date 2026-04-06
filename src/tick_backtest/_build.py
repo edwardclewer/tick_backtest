@@ -15,18 +15,22 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 from setuptools import Extension
 from setuptools.command.build_ext import build_ext as _build_ext
 
+cythonize: Callable[..., object] | None
+
 try:
-    from Cython.Build import cythonize  # type: ignore
+    from Cython.Build import cythonize
 
     HAVE_CYTHON = True
 except Exception:  # pragma: no cover
-    cythonize = None  # type: ignore
+    cythonize = None
     HAVE_CYTHON = False
 
 FORCE_CYTHON = os.environ.get("TB_BUILD_FROM_CYTHON", "").strip() == "1"
@@ -117,15 +121,16 @@ class BuildExt(_build_ext):
     """Cython-aware build_ext that applies shared compiler directives."""
 
     def build_extensions(self) -> None:  # noqa: D401
-        if not self.extensions:
-            self.extensions = get_extensions()
+        existing_extensions = cast(list[Extension] | None, getattr(self, "extensions", None))
+        extensions = existing_extensions or get_extensions()
+        self.extensions = extensions
 
         np_inc = np.get_include()
-        any_pyx = any(any(str(s).endswith(".pyx") for s in ext.sources) for ext in self.extensions)
+        any_pyx = any(any(str(s).endswith(".pyx") for s in ext.sources) for ext in extensions)
 
         if any_pyx and not HAVE_CYTHON:
             missing = [
-                ext.name for ext in self.extensions
+                ext.name for ext in extensions
                 if any(str(s).endswith(".pyx") for s in ext.sources)
             ]
             raise RuntimeError(
@@ -135,12 +140,13 @@ class BuildExt(_build_ext):
             )
 
         if any_pyx and HAVE_CYTHON:
-            self.extensions = cythonize(  # type: ignore[misc]
-                self.extensions,
+            assert cythonize is not None
+            self.extensions = cast(list[Extension], cythonize(
+                extensions,
                 compiler_directives=CYTHON_DIRECTIVES,
                 include_path=[np_inc, SRC_DIR.as_posix()],
                 language_level=3,
-            )
+            ))
 
         for ext in self.extensions:
             if np_inc not in getattr(ext, "include_dirs", []):

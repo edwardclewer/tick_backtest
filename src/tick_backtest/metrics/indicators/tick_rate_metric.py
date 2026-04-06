@@ -36,7 +36,12 @@ def _load_impl() -> type[TickRateMetricProtocol]:
 
 
 if TYPE_CHECKING:
-    TickRateMetric = TickRateMetricProtocol
+    class TickRateMetric:
+        name: str
+
+        def __init__(self, *, name: str, window_seconds: float) -> None: ...
+        def update(self, tick: Tick) -> None: ...
+        def value(self) -> dict[str, float]: ...
 else:
     try:  # pragma: no cover - exercised when Cython extension is available
         TickRateMetric = _load_impl()

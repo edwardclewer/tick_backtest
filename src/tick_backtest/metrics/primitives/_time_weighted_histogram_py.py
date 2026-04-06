@@ -16,6 +16,7 @@ from collections import deque
 from dataclasses import dataclass
 
 import numpy as np
+from numpy.typing import NDArray
 
 
 @dataclass
@@ -28,7 +29,7 @@ class _Event:
 class PyTimeWeightedHistogram:
     """Reference Python implementation retained for fallback and validation."""
 
-    def __init__(self, edges: np.ndarray, horizon_seconds: float):
+    def __init__(self, edges: NDArray[np.float64], horizon_seconds: float) -> None:
         assert edges.ndim == 1 and edges.size >= 2
         assert np.all(np.diff(edges) > 0)
         assert horizon_seconds > 0.0
@@ -39,7 +40,7 @@ class PyTimeWeightedHistogram:
 
         self.weights = np.zeros(self.n_bins, dtype=float)
         self.total = 0.0
-        self._events = deque()
+        self._events: deque[_Event] = deque()
 
     def _bin_index(self, x: float) -> int:
         if x <= self.edges[0]:

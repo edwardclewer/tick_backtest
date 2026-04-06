@@ -32,6 +32,7 @@ import logging
 from collections.abc import Iterable
 from copy import deepcopy
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -61,7 +62,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def load_metrics_config(path: Path) -> dict:
+def load_metrics_config(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
     if not isinstance(data, dict) or "metrics" not in data:
@@ -70,7 +71,7 @@ def load_metrics_config(path: Path) -> dict:
 
 
 def update_reversion_metric(
-    config: dict,
+    config: dict[str, Any],
     metric_name: str,
     *,
     min_recency_seconds: float,
@@ -91,7 +92,7 @@ def update_reversion_metric(
     raise ValueError(f"Metric named '{metric_name}' not found in config.")
 
 
-def iter_combinations() -> Iterable[dict]:
+def iter_combinations() -> Iterable[dict[str, float]]:
     min_recency_values = [0, 30, 60, 90, 120]
     tp_sl_pairs = [(10, 10), (8, 8), (6, 6), (12, 12)]
     timeout_values = [60, 120, 180, 300]
@@ -107,7 +108,7 @@ def iter_combinations() -> Iterable[dict]:
         }
 
 
-def make_filename(params: dict) -> str:
+def make_filename(params: dict[str, float]) -> str:
     return (
         f"reversion_30m_min{int(params['min_recency_seconds'])}"
         f"_tp{int(params['tp_pips'])}"
@@ -116,7 +117,7 @@ def make_filename(params: dict) -> str:
     )
 
 
-def make_label(params: dict) -> str:
+def make_label(params: dict[str, float]) -> str:
     return (
         f"min{int(params['min_recency_seconds'])}"
         f"_tp{int(params['tp_pips'])}"

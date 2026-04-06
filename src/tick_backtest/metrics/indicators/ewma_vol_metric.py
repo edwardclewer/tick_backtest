@@ -47,6 +47,20 @@ def _load_impl() -> type[EWMAVolMetricProtocol]:
 
 
 if TYPE_CHECKING:
-    EWMAVolMetric = EWMAVolMetricProtocol
+    class EWMAVolMetric:
+        name: str
+
+        def __init__(
+            self,
+            *,
+            name: str,
+            tau_seconds: float,
+            percentile_horizon_seconds: float,
+            bins: int = 256,
+            base_vol: float = 1e-4,
+            stddev_cap: float = 5.0,
+        ) -> None: ...
+        def update(self, tick: Tick) -> None: ...
+        def value(self) -> dict[str, float]: ...
 else:
     EWMAVolMetric = _load_impl()

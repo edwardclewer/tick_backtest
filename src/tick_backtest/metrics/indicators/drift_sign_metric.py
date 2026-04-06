@@ -38,6 +38,11 @@ def _load_impl() -> type[DriftSignMetricProtocol]:
 
 
 if TYPE_CHECKING:
-    DriftSignMetric = DriftSignMetricProtocol
+    class DriftSignMetric:
+        name: str
+
+        def __init__(self, *, name: str, lookback_seconds: float) -> None: ...
+        def update(self, tick: Tick) -> None: ...
+        def value(self) -> dict[str, float]: ...
 else:
     DriftSignMetric = _load_impl()
