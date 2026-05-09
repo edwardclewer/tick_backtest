@@ -21,3 +21,4 @@ def test_top_level_package_reexports_public_api() -> None:
     assert tick_backtest.report is api.report
     assert tick_backtest.analyze is api.analyze
     assert tick_backtest.example_config is api.example_config
+    assert callable(tick_backtest.run_backtest_batch)

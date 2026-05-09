@@ -20,6 +20,7 @@ __all__ = [
     "analyze",
     "example_config",
     "run_backtest",
+    "run_backtest_batch",
     "BacktestAnalysisSummary",
     "MetricStratificationSummary",
     "run_backtest_analysis",
@@ -57,10 +58,12 @@ def __getattr__(name: str) -> object:
         )
         return globals()[name]
 
-    if name == "run_backtest":
-        from tick_backtest.backtest.workflow import run_backtest
+    if name in {"run_backtest", "run_backtest_batch"}:
+        from tick_backtest.backtest.workflow import run_backtest, run_backtest_batch
+
         globals()["run_backtest"] = run_backtest
-        return run_backtest
+        globals()["run_backtest_batch"] = run_backtest_batch
+        return globals()[name]
 
     if name in {
         "BacktestAnalysisSummary",

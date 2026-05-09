@@ -41,6 +41,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     "run_backtest",
+    "run_backtest_batch",
     "load_config",
 ]
 
@@ -423,3 +424,25 @@ def run_backtest(
         "manifest_path": manifest_path,
     }
     return result
+
+
+def run_backtest_batch(
+    config_paths: list[Path | str],
+    run_ids: list[str],
+    *,
+    output_root: Path | str,
+    batch_id: str,
+    log_level: str | int = "WARNING",
+    run_roots: list[Path | str] | None = None,
+) -> dict[str, object]:
+    """Run compatible summary-mode backtest configs over one shared tick stream."""
+    from tick_backtest.backtest.batch import run_backtest_batch as _run_backtest_batch
+
+    return _run_backtest_batch(
+        config_paths=config_paths,
+        run_ids=run_ids,
+        output_root=output_root,
+        batch_id=batch_id,
+        log_level=log_level,
+        run_roots=run_roots,
+    )

@@ -66,6 +66,7 @@ class Backtest:
         output_base_path: Path,
         pip_size: float,
         trade_output_mode: str = "trades",
+        metric_record_keys: tuple[str, ...] | None = None,
     ) -> None:
         self.data_feed = data_feed
         self.signal_generator = signal_generator
@@ -76,6 +77,7 @@ class Backtest:
         self.trade_output_mode = trade_output_mode
 
         self.trades: list[dict[str, Any]] = []
+        self.metric_record_keys = metric_record_keys
         self.is_trade_open = False
         self.trade_opened_last_tick = False
         self.trade = Position()
@@ -98,7 +100,7 @@ class Backtest:
         start_ts = self._to_datetime(initial_tick.timestamp)
         last_ts = start_ts
         metrics = self.metrics_manager.update(initial_tick)
-        self.signal_generator.update(metrics, initial_tick, is_warmup=True)
+        self.handle_warmup_tick(initial_tick, metrics)
 
         if warmup_seconds <= 0:
             return
@@ -109,17 +111,25 @@ class Backtest:
                 tick = self.data_feed.tick()
                 last_ts = self._to_datetime(tick.timestamp)
                 metrics = self.metrics_manager.update(tick)
-                self.signal_generator.update(metrics, tick, is_warmup=True)
+                self.handle_warmup_tick(tick, metrics)
         except NoMoreTicks:
             self.logger.warning("data feed exhausted during warmup phase")
 
+    def handle_warmup_tick(self, tick: Tick, metrics: dict[str, float]) -> None:
+        """Update strategy warmup state from an externally computed metric snapshot."""
+        self.signal_generator.update(metrics, tick, is_warmup=True)
+
     def _handle_tick(self, tick: Tick) -> None:
+        metrics = self.metrics_manager.update(tick)
+        self.handle_tick_with_metrics(tick, metrics)
+
+    def handle_tick_with_metrics(self, tick: Tick, metrics: dict[str, float]) -> None:
+        """Handle one trading tick from an externally computed metric snapshot."""
         self.last_tick = tick
         just_filled = False
         if self.trade_opened_last_tick:
             just_filled = self._update_outstanding(tick)
 
-        metrics = self.metrics_manager.update(tick)
         signal = self.signal_generator.update(metrics, tick)
 
         if not just_filled:
@@ -203,7 +213,14 @@ class Backtest:
             )
             return
 
-        entry_metrics = dict(metrics)
+        if self.metric_record_keys is None:
+            entry_metrics = dict(metrics)
+        else:
+            entry_metrics = {
+                key: metrics[key]
+                for key in self.metric_record_keys
+                if key in metrics
+            }
         meta = {
             "reason": getattr(signal, "reason", "threshold_reversion"),
             "entry_metrics": entry_metrics,

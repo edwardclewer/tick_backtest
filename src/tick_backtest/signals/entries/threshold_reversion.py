@@ -59,10 +59,27 @@ class ThresholdReversionEntryEngine(BaseEntryEngine):
         self.tp_multiple = tp_pips / self.params.threshold_pips
         self.sl_multiple = sl_pips / self.params.threshold_pips
         self._last_position = 0
+        self._shared_metric_prefix: str | None = None
+
+    def use_shared_metric(self, prefix: str) -> None:
+        """Read threshold state from a shared metric snapshot instead of private state."""
+        self._shared_metric_prefix = prefix
 
     def update(self, tick: Tick, metrics: dict[str, float]) -> EntryResult:
-        self.metric.update(tick)
-        snapshot = self.metric.value_dict()
+        if self._shared_metric_prefix is None:
+            self.metric.update(tick)
+            snapshot = self.metric.value_dict()
+        else:
+            prefix = self._shared_metric_prefix
+            snapshot = {
+                "position": metrics.get(f"{prefix}.position"),
+                "reference_price": metrics.get(f"{prefix}.reference_price"),
+                "threshold": metrics.get(f"{prefix}.threshold"),
+                "tp_price": metrics.get(f"{prefix}.tp_price"),
+                "sl_price": metrics.get(f"{prefix}.sl_price"),
+                "reference_age_seconds": metrics.get(f"{prefix}.reference_age_seconds"),
+                "position_open_age_seconds": metrics.get(f"{prefix}.position_open_age_seconds"),
+            }
         position = int(_to_float(snapshot.get("position"), 0.0))
         if position == 0:
             self._last_position = 0
