@@ -14,17 +14,64 @@
 
 from __future__ import annotations
 
+import math
+from collections.abc import Callable
+from dataclasses import dataclass
+
 from tick_backtest.config_parsers.strategy.config_dataclass import (
     EntryConfig,
     ExitConfig,
+    PredicateConfig,
     StrategyConfigData,
 )
 from tick_backtest.config_parsers.strategy.entry_configs import ThresholdReversionEntryParams
 from tick_backtest.data_feed.tick import Tick
 from tick_backtest.signals.entries import ENTRY_ENGINE_REGISTRY, EntryResult
 from tick_backtest.signals.entries.base import EntryEngine
-from tick_backtest.signals.predicates import PredicateEvaluator
 from tick_backtest.signals.signal_data import SignalData
+
+
+def _to_float(value: object, default: float = math.nan) -> float:
+    if value is None or isinstance(value, bool):
+        return default
+    if isinstance(value, (int, float, str)):
+        return float(value)
+    return default
+
+
+@dataclass(frozen=True)
+class _CompiledPredicate:
+    metric: str
+    operator: Callable[[float, float], bool]
+    value: float | None
+    other_metric: str | None
+    use_abs: bool
+
+    def evaluate(self, metrics: dict[str, float]) -> bool:
+        left = _to_float(metrics.get(self.metric))
+        if not math.isfinite(left):
+            return False
+        if self.use_abs:
+            left = abs(left)
+        if self.value is not None:
+            right = self.value
+        elif self.other_metric is not None:
+            right = _to_float(metrics.get(self.other_metric))
+            if not math.isfinite(right):
+                return False
+        else:
+            return False
+        return bool(self.operator(left, right))
+
+
+_OPERATORS: dict[str, Callable[[float, float], bool]] = {
+    ">": lambda a, b: a > b,
+    ">=": lambda a, b: a >= b,
+    "<": lambda a, b: a < b,
+    "<=": lambda a, b: a <= b,
+    "==": lambda a, b: a == b,
+    "!=": lambda a, b: a != b,
+}
 
 
 class SignalGenerator:
@@ -41,10 +88,11 @@ class SignalGenerator:
 
         self.strategy_config = strategy_config
         self.pip_size = float(pip_size)
-        self.predicate_evaluator = PredicateEvaluator()
 
         self.entry_engine = self._build_entry_engine(strategy_config.entry)
         self.exit_config = strategy_config.exit
+        self.entry_predicates = _compile_predicates(strategy_config.entry.predicates)
+        self.exit_predicates = _compile_predicates(strategy_config.exit.predicates)
         self.tp_multiple = getattr(self.entry_engine, "tp_multiple", 1.0)
         self.sl_multiple = getattr(self.entry_engine, "sl_multiple", 1.0)
         self.last_signal = SignalData()
@@ -87,12 +135,8 @@ class SignalGenerator:
         """Compute the latest trading intent from metrics and tick."""
         signal = SignalData(reason=self.strategy_config.entry.name)
 
-        entry_predicates_ok = self.predicate_evaluator.evaluate_all(
-            self.strategy_config.entry.predicates, metrics
-        )
-        exit_predicates_ok = self.predicate_evaluator.evaluate_all(
-            self.exit_config.predicates, metrics
-        )
+        entry_predicates_ok = _evaluate_all(self.entry_predicates, metrics)
+        exit_predicates_ok = _evaluate_all(self.exit_predicates, metrics)
 
         entry_result: EntryResult = self.entry_engine.update(tick, metrics)
 
@@ -117,3 +161,25 @@ class SignalGenerator:
 
         self.last_signal = signal
         return signal
+
+
+def _compile_predicates(predicates: list[PredicateConfig]) -> tuple[_CompiledPredicate, ...]:
+    compiled = []
+    for predicate in predicates:
+        compiled.append(
+            _CompiledPredicate(
+                metric=predicate.metric,
+                operator=_OPERATORS[predicate.operator],
+                value=predicate.value,
+                other_metric=predicate.other_metric,
+                use_abs=predicate.use_abs,
+            )
+        )
+    return tuple(compiled)
+
+
+def _evaluate_all(predicates: tuple[_CompiledPredicate, ...], metrics: dict[str, float]) -> bool:
+    for predicate in predicates:
+        if not predicate.evaluate(metrics):
+            return False
+    return True

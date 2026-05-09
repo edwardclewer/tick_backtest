@@ -187,12 +187,13 @@ def test_run_backtest_wires_dependencies_and_runs(monkeypatch, tmp_path):
     class RecordingBacktest:
         instances: list[RecordingBacktest] = []
 
-        def __init__(self, *, data_feed, signal_generator, metrics_manager, output_base_path, pip_size):
+        def __init__(self, *, data_feed, signal_generator, metrics_manager, output_base_path, pip_size, trade_output_mode):
             self.data_feed = data_feed
             self.signal_generator = signal_generator
             self.metrics_manager = metrics_manager
             self.output_base_path = output_base_path
             self.pip_size = pip_size
+            self.trade_output_mode = trade_output_mode
             self.warmup_called_with: tuple[Any, Any] | None = None
             self.run_called = False
             RecordingBacktest.instances.append(self)
@@ -229,10 +230,65 @@ def test_run_backtest_wires_dependencies_and_runs(monkeypatch, tmp_path):
     assert instance.run_called is True
     assert instance.metrics_manager.path == config.metrics_config_path
     assert instance.signal_generator.pip_size == config.pip_size
+    assert instance.trade_output_mode == "trades"
     assert instance.output_base_path == config.output_base_path / "EURUSD" / "trades.parquet"
     assert (config.output_base_path / "EURUSD").is_dir()
     assert isinstance(instance.data_feed, ValidatingDataFeed)
     assert "EURUSD" in coordinator.tick_validation_stats
+
+
+def test_run_backtest_can_disable_tick_validation(monkeypatch, tmp_path):
+    class SequenceFeed:
+        def __init__(self, *args, **kwargs):
+            self.pair = kwargs["pair"]
+            self._emitted = False
+
+        def tick(self) -> Tick:
+            if self._emitted:
+                raise NoMoreTicks
+            self._emitted = True
+            return Tick(timestamp=1.0, bid=2.0, ask=1.0, mid=1.5)
+
+    class RecordingBacktest:
+        instances: list[RecordingBacktest] = []
+
+        def __init__(self, *, data_feed, **_kwargs):
+            self.data_feed = data_feed
+            RecordingBacktest.instances.append(self)
+
+        def warmup(self, *, initial_tick, warmup_seconds):
+            self.initial_tick = initial_tick
+
+        def run(self):
+            pass
+
+    class DummyMetrics:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+    class DummySignal:
+        def __init__(self, *args, **kwargs):
+            self.tp_multiple = 1.0
+            self.sl_multiple = 1.0
+
+        def update(self, *_args, **_kwargs):
+            return SignalData()
+
+    monkeypatch.setattr("tick_backtest.backtest.backtest_coordinator.DataFeed", SequenceFeed)
+    monkeypatch.setattr("tick_backtest.backtest.backtest_coordinator.MetricsManager", DummyMetrics)
+    monkeypatch.setattr("tick_backtest.backtest.backtest_coordinator.SignalGenerator", DummySignal)
+    monkeypatch.setattr("tick_backtest.backtest.backtest_coordinator.Backtest", RecordingBacktest)
+
+    config = _make_config(tmp_path, ["EURUSD"])
+    config.validate_ticks = False
+    coordinator = BacktestCoordinator(config, run_id="test-run")
+
+    coordinator._run_backtest("EURUSD")
+
+    instance = RecordingBacktest.instances.pop()
+    assert isinstance(instance.data_feed, SequenceFeed)
+    assert not isinstance(instance.data_feed, ValidatingDataFeed)
+    assert coordinator.tick_validation_stats["EURUSD"].stats.total_ticks == 0
 
 
 def test_run_backtests_skips_bad_pair(monkeypatch, tmp_path):

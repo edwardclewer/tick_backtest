@@ -7,6 +7,8 @@ start: 2000-01
 end: 2000-02
 pip_size: 0.0001
 warmup_seconds: 1800
+validate_ticks: true
+trade_output_mode: trades
 data_base_path: "./demo_data"
 output_base_path: "./output"
 metrics_config_path: "./metrics.yaml"

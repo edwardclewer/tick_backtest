@@ -14,6 +14,7 @@
 
 # cython: boundscheck=False, wraparound=False, cdivision=True, language_level=3
 
+import numpy as np
 from collections import deque
 
 from tick_backtest.metrics.primitives._base_metric cimport BaseMetric
@@ -29,7 +30,12 @@ cdef class SpreadMetric(BaseMetric):
     cdef double _spread
     cdef double _spread_pips
     cdef double _percentile
-    cdef object _history  # deque of (timestamp, spread_pips)
+    cdef object _history
+    cdef object _counts_arr
+    cdef long[::1] _counts_view
+    cdef object _edges_arr
+    cdef double[::1] _edges_view
+    cdef Py_ssize_t _n_bins
 
     def __init__(
         self,
@@ -37,6 +43,8 @@ cdef class SpreadMetric(BaseMetric):
         name,
         pip_size,
         window_seconds,
+        percentile_bins=512,
+        max_spread_pips=50.0,
     ):
         BaseMetric.__init__(self, name)
 
@@ -51,10 +59,19 @@ cdef class SpreadMetric(BaseMetric):
         if window_seconds <= 0:
             raise ValueError("window_seconds must be positive")
         self.window = float(window_seconds)
+        if not isinstance(percentile_bins, int) or percentile_bins < 2:
+            raise ValueError("percentile_bins must be an integer >= 2")
+        if not isinstance(max_spread_pips, (float, int)) or max_spread_pips <= 0:
+            raise ValueError("max_spread_pips must be positive")
 
         self._spread = NAN
         self._spread_pips = NAN
         self._percentile = NAN
+        self._edges_arr = np.linspace(0.0, float(max_spread_pips), percentile_bins + 1, dtype=np.float64)
+        self._edges_view = self._edges_arr
+        self._n_bins = percentile_bins
+        self._counts_arr = np.zeros(percentile_bins, dtype=np.int64)
+        self._counts_view = self._counts_arr
         self._history = deque()
 
     cdef void update_from_struct(self, TickStruct* tick):
@@ -70,24 +87,48 @@ cdef class SpreadMetric(BaseMetric):
         self._spread = raw
         self._spread_pips = spread_pips
 
-        self._history.append((timestamp, spread_pips))
+        cdef Py_ssize_t bin_idx = self._bin_index(spread_pips)
+        self._history.append((timestamp, bin_idx))
+        self._counts_view[bin_idx] += 1
+
         cdef double cutoff = timestamp - self.window
+        cdef object old
         while self._history:
-            if self._history[0][0] < cutoff:
+            old = self._history[0]
+            if old[0] < cutoff:
                 self._history.popleft()
+                self._counts_view[<Py_ssize_t>old[1]] -= 1
             else:
                 break
 
-        cdef Py_ssize_t total = len(self._history)
-        if total == 0:
-            self._percentile = NAN
-            return
+        self._percentile = self._percentile_rank_le(bin_idx)
 
-        cdef Py_ssize_t count = 0
-        for entry in self._history:
-            if entry[1] <= spread_pips:
-                count += 1
-        self._percentile = (<double>count) / (<double>total)
+    cdef Py_ssize_t _bin_index(self, double spread_pips):
+        cdef Py_ssize_t lo = 0
+        cdef Py_ssize_t hi = self._n_bins
+        cdef Py_ssize_t mid
+        if spread_pips <= self._edges_view[0]:
+            return 0
+        if spread_pips >= self._edges_view[self._n_bins]:
+            return self._n_bins - 1
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if spread_pips < self._edges_view[mid + 1]:
+                hi = mid
+            else:
+                lo = mid + 1
+        return lo
+
+    cdef double _percentile_rank_le(self, Py_ssize_t bin_idx):
+        cdef Py_ssize_t total = len(self._history)
+        if total <= 0:
+            return NAN
+
+        cdef Py_ssize_t i
+        cdef Py_ssize_t cumulative = 0
+        for i in range(bin_idx + 1):
+            cumulative += self._counts_view[i]
+        return (<double>cumulative) / (<double>total)
 
     cpdef dict value_dict(self):
         return {

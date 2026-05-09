@@ -69,7 +69,13 @@ def test_spread_metric_random_sequence_matches_reference(tick_factory):
 
     rng = np.random.default_rng(99)
     window = 25.0
-    metric = SpreadMetric(name="spread", pip_size=0.0001, window_seconds=window)
+    metric = SpreadMetric(
+        name="spread",
+        pip_size=0.0001,
+        window_seconds=window,
+        percentile_bins=1024,
+        max_spread_pips=4.0,
+    )
 
     base = datetime(2023, 1, 1, tzinfo=UTC)
     offsets = np.cumsum(rng.uniform(0.5, 3.0, size=30))
@@ -96,4 +102,4 @@ def test_spread_metric_random_sequence_matches_reference(tick_factory):
 
         assert values["spread"] == pytest.approx(spread_raw, abs=1e-9)
         assert values["spread_pips"] == pytest.approx(spread, abs=1e-9)
-        assert values["spread_percentile"] == pytest.approx(expected_percentile, abs=1e-9)
+        assert values["spread_percentile"] == pytest.approx(expected_percentile, abs=0.08)

@@ -22,6 +22,7 @@ from typing import Any, Protocol, cast
 
 import pandas as pd
 
+from tick_backtest.backtest.summary import write_compact_summary
 from tick_backtest.data_feed.data_feed import NoMoreTicks
 from tick_backtest.data_feed.tick import Tick
 from tick_backtest.position.position import Position
@@ -64,11 +65,15 @@ class Backtest:
         metrics_manager: MetricsManagerLike,
         output_base_path: Path,
         pip_size: float,
+        trade_output_mode: str = "trades",
     ) -> None:
         self.data_feed = data_feed
         self.signal_generator = signal_generator
         self.metrics_manager = metrics_manager
         self.output_base_path = output_base_path
+        if trade_output_mode not in {"trades", "summary"}:
+            raise ValueError("trade_output_mode must be one of: trades, summary")
+        self.trade_output_mode = trade_output_mode
 
         self.trades: list[dict[str, Any]] = []
         self.is_trade_open = False
@@ -358,11 +363,36 @@ class Backtest:
 
         if not self.trades:
             pair = getattr(self.data_feed, "pair", "")
+            if self.trade_output_mode == "summary":
+                summary_dir = self.output_base_path.parent / "summary"
+                write_compact_summary(
+                    pd.DataFrame(),
+                    pair=pair,
+                    output_dir=summary_dir,
+                )
+                self.logger.info(
+                    "saved empty compact trade summary",
+                    extra={"pair": pair or None, "output_path": str(summary_dir)},
+                )
+                return
             suffix = pair if pair else "this data feed"
             self.logger.info("no trades executed; nothing to save", extra={"pair": suffix or None})
             return
 
         df = pd.DataFrame(self.trades)
+        if self.trade_output_mode == "summary":
+            summary_dir = self.output_base_path.parent / "summary"
+            write_compact_summary(
+                df,
+                pair=getattr(self.data_feed, "pair", ""),
+                output_dir=summary_dir,
+            )
+            self.logger.info(
+                "saved compact trade summary",
+                extra={"trade_count": len(df), "output_path": str(summary_dir)},
+            )
+            return
+
         df.to_parquet(self.output_base_path, index=False)
         self.logger.info(
             "saved trades",

@@ -70,7 +70,7 @@ class BacktestCoordinator:
         )
 
         validator = TickValidator(pair=pair)
-        data_feed = ValidatingDataFeed(raw_feed, validator)
+        data_feed = ValidatingDataFeed(raw_feed, validator) if self.backtest_config.validate_ticks else raw_feed
 
         metrics_manager = MetricsManager(self.backtest_config.metrics_config_path)
         signal_generator = SignalGenerator(
@@ -95,6 +95,7 @@ class BacktestCoordinator:
             metrics_manager=metrics_manager,
             output_base_path=trades_path,
             pip_size=self.backtest_config.pip_size,
+            trade_output_mode=self.backtest_config.trade_output_mode,
         )
         try:
             backtest.warmup(initial_tick=initial_tick, warmup_seconds=self.backtest_config.warmup_seconds)

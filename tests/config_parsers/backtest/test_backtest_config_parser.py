@@ -91,7 +91,44 @@ strategy_config_path: {strategy_path}
     assert (cfg.year_end, cfg.month_end) == (2015, 2)
     assert cfg.pip_size == pytest.approx(0.0001)
     assert cfg.warmup_seconds == 600
+    assert cfg.validate_ticks is True
+    assert cfg.trade_output_mode == "trades"
     assert cfg.schema_version == "1.0"
+
+
+def test_parse_config_accepts_fast_research_flags(tmp_path: Path):
+    data_dir = tmp_path / "data"
+    output_dir = tmp_path / "output"
+    data_dir.mkdir()
+    output_dir.mkdir()
+
+    metrics_path = tmp_path / "metrics.yaml"
+    metrics_path.write_text(MIN_METRICS_YAML)
+    strategy_path = tmp_path / "strategy.yaml"
+    strategy_path.write_text(MIN_STRATEGY_YAML)
+
+    config_path = _write_config(
+        tmp_path,
+        f"""
+schema_version: "1.0"
+pairs: [EURUSD]
+start: 2015-01
+end: 2015-02
+pip_size: 0.0001
+warmup_seconds: 600
+validate_ticks: false
+trade_output_mode: summary
+data_base_path: {data_dir}
+output_base_path: {output_dir}
+metrics_config_path: {metrics_path}
+strategy_config_path: {strategy_path}
+        """,
+    )
+
+    cfg = BacktestConfigParser().parse_config(config_path)
+
+    assert cfg.validate_ticks is False
+    assert cfg.trade_output_mode == "summary"
 
 
 def test_parse_config_resolves_relative_paths_from_config_directory(tmp_path: Path) -> None:

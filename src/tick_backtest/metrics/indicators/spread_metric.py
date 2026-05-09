@@ -19,13 +19,23 @@ from collections import deque
 from importlib import import_module
 from typing import TYPE_CHECKING, Protocol, cast
 
+import numpy as np
+
 from tick_backtest.data_feed.tick import Tick
 
 
 class SpreadMetricProtocol(Protocol):
     name: str
 
-    def __init__(self, *, name: str, pip_size: float, window_seconds: float) -> None: ...
+    def __init__(
+        self,
+        *,
+        name: str,
+        pip_size: float,
+        window_seconds: float,
+        percentile_bins: int = 512,
+        max_spread_pips: float = 50.0,
+    ) -> None: ...
     def update(self, tick: Tick) -> None: ...
     def value(self) -> dict[str, float]: ...
 
@@ -39,7 +49,15 @@ if TYPE_CHECKING:
     class SpreadMetric:
         name: str
 
-        def __init__(self, *, name: str, pip_size: float, window_seconds: float) -> None: ...
+        def __init__(
+            self,
+            *,
+            name: str,
+            pip_size: float,
+            window_seconds: float,
+            percentile_bins: int = 512,
+            max_spread_pips: float = 50.0,
+        ) -> None: ...
         def update(self, tick: Tick) -> None: ...
         def value(self) -> dict[str, float]: ...
 else:
@@ -56,11 +74,17 @@ else:
                 name: str,
                 pip_size: float,
                 window_seconds: float,
+                percentile_bins: int = 512,
+                max_spread_pips: float = 50.0,
             ) -> None:
                 if pip_size <= 0:
                     raise ValueError(f"pip_size must be positive, got {pip_size}")
                 if window_seconds <= 0:
                     raise ValueError(f"window_seconds must be positive, got {window_seconds}")
+                if not isinstance(percentile_bins, int) or percentile_bins < 2:
+                    raise ValueError("percentile_bins must be an integer >= 2")
+                if max_spread_pips <= 0:
+                    raise ValueError("max_spread_pips must be positive")
 
                 self.name = name
                 self.pip_size = float(pip_size)
@@ -69,7 +93,9 @@ else:
                 self._spread = math.nan
                 self._spread_pips = math.nan
                 self._percentile = math.nan
-                self._history: deque[tuple[float, float]] = deque()
+                self._edges = np.linspace(0.0, float(max_spread_pips), percentile_bins + 1, dtype=np.float64)
+                self._counts = np.zeros(percentile_bins, dtype=np.int64)
+                self._history: deque[tuple[float, int]] = deque()
 
             def update(self, tick: Tick) -> None:
                 bid = float(getattr(tick, "bid", math.nan))
@@ -82,17 +108,30 @@ else:
                 self._spread = raw
                 self._spread_pips = spread_pips
 
-                self._history.append((timestamp, spread_pips))
+                bin_idx = self._bin_index(spread_pips)
+                self._history.append((timestamp, bin_idx))
+                self._counts[bin_idx] += 1
+
                 cutoff = timestamp - self.window
                 while self._history and self._history[0][0] < cutoff:
-                    self._history.popleft()
+                    _, old_idx = self._history.popleft()
+                    self._counts[old_idx] -= 1
 
-                if not self._history:
-                    self._percentile = math.nan
-                    return
+                self._percentile = self._percentile_rank_le(bin_idx)
 
-                count = sum(1 for _, value in self._history if value <= spread_pips)
-                self._percentile = count / len(self._history)
+            def _bin_index(self, spread_pips: float) -> int:
+                if spread_pips <= self._edges[0]:
+                    return 0
+                if spread_pips >= self._edges[-1]:
+                    return len(self._edges) - 2
+                return int(np.searchsorted(self._edges, spread_pips, side="right") - 1)
+
+            def _percentile_rank_le(self, bin_idx: int) -> float:
+                total = len(self._history)
+                if total <= 0:
+                    return math.nan
+                cumulative = int(self._counts[: bin_idx + 1].sum())
+                return min(max(cumulative / total, 0.0), 1.0)
 
             def value(self) -> dict[str, float]:
                 return {

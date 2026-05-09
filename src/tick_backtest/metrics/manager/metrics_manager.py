@@ -37,6 +37,9 @@ class CompiledMetricsManagerProtocol(Protocol):
     def update_all(self, tick: Tick) -> dict[str, float]:
         """Update all metrics and return the flattened snapshot."""
 
+    def update_selected(self, tick: Tick, selected_keys: tuple[str, ...]) -> dict[str, float]:
+        """Update all metrics and return only selected flattened values."""
+
     def current(self) -> dict[str, float]:
         """Return the current flattened snapshot."""
 
@@ -78,6 +81,9 @@ class MetricsManager:
 
     def update(self, tick: Tick) -> dict[str, float]:
         return self._impl.update_all(tick)
+
+    def update_selected(self, tick: Tick, selected_keys: tuple[str, ...]) -> dict[str, float]:
+        return self._impl.update_selected(tick, selected_keys)
 
     def current(self) -> dict[str, float]:
         return self._impl.current()

@@ -25,6 +25,8 @@ class SpreadConfig(MetricConfigBase):
     enabled: bool
     pip_size: float
     window_seconds: float
+    percentile_bins: int = 512
+    max_spread_pips: float = 50.0
 
     def __post_init__(self) -> None:
         if not isinstance(self.enabled, bool):
@@ -45,3 +47,16 @@ class SpreadConfig(MetricConfigBase):
         if not math.isfinite(self.window_seconds) or self.window_seconds <= 0:
             raise ValueError(f"'window_seconds' must be positive and finite, got {self.window_seconds}")
         self.window_seconds = float(self.window_seconds)
+
+        if isinstance(self.percentile_bins, bool) or not isinstance(self.percentile_bins, int):
+            raise TypeError("'percentile_bins' must be an integer")
+        if self.percentile_bins < 2:
+            raise ValueError(f"'percentile_bins' must be >= 2, got {self.percentile_bins}")
+
+        if isinstance(self.max_spread_pips, bool):
+            raise TypeError("'max_spread_pips' must be numeric, not bool")
+        if not isinstance(self.max_spread_pips, (int, float)):
+            raise TypeError(f"'max_spread_pips' must be numeric, got {type(self.max_spread_pips).__name__}")
+        if not math.isfinite(self.max_spread_pips) or self.max_spread_pips <= 0:
+            raise ValueError(f"'max_spread_pips' must be positive and finite, got {self.max_spread_pips}")
+        self.max_spread_pips = float(self.max_spread_pips)

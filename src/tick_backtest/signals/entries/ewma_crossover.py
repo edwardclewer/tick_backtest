@@ -43,18 +43,16 @@ class EWMACrossoverEntryEngine(BaseEntryEngine):
     def update(self, tick: Tick, metrics: dict[str, float]) -> EntryResult:
         fast = _to_float(metrics.get(self.params.fast_metric))
         slow = _to_float(metrics.get(self.params.slow_metric))
-        metadata = {"fast": fast, "slow": slow}
 
         if not (math.isfinite(fast) and math.isfinite(slow)):
             self._last_diff = None
-            return EntryResult(reason=self.entry_config.name, metadata=metadata)
+            return EntryResult(reason=self.entry_config.name)
 
         diff = fast - slow
-        metadata["diff"] = diff
 
         if self._last_diff is None:
             self._last_diff = diff
-            return EntryResult(reason=self.entry_config.name, metadata=metadata)
+            return EntryResult(reason=self.entry_config.name)
 
         should_open = False
         direction = 0
@@ -67,7 +65,7 @@ class EWMACrossoverEntryEngine(BaseEntryEngine):
 
         self._last_diff = diff
         if not should_open:
-            return EntryResult(reason=self.entry_config.name, metadata=metadata)
+            return EntryResult(reason=self.entry_config.name)
 
         price = float(tick.mid)
         tp = sl = None
@@ -83,8 +81,6 @@ class EWMACrossoverEntryEngine(BaseEntryEngine):
             if self.params.trade_timeout_seconds and self.params.trade_timeout_seconds > 0
             else None
         )
-        metadata.update({"direction": direction, "signal_price": price})
-
         return EntryResult(
             should_open=True,
             direction=direction,
@@ -92,5 +88,5 @@ class EWMACrossoverEntryEngine(BaseEntryEngine):
             sl=sl,
             timeout_seconds=timeout,
             reason=self.entry_config.name,
-            metadata=metadata,
+            metadata={"fast": fast, "slow": slow, "diff": diff, "direction": direction, "signal_price": price},
         )

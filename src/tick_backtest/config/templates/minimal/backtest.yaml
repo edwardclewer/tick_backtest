@@ -7,6 +7,8 @@ start: 2024-01
 end: 2024-01
 pip_size: 0.0001
 warmup_seconds: 1800
+validate_ticks: true
+trade_output_mode: trades
 data_base_path: "/abs/path/to/tick_data/"
 output_base_path: "/abs/path/to/backtest_outputs/"
 metrics_config_path: "./metrics.yaml"

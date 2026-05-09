@@ -34,4 +34,6 @@ class BacktestConfigData:
     output_base_path: Path
     metrics_config_path: Path
     strategy_config_path: Path
+    validate_ticks: bool = True
+    trade_output_mode: str = "trades"
     strategy_config: StrategyConfigData | None = None

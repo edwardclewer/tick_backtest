@@ -63,24 +63,13 @@ class ThresholdReversionEntryEngine(BaseEntryEngine):
     def update(self, tick: Tick, metrics: dict[str, float]) -> EntryResult:
         self.metric.update(tick)
         snapshot = self.metric.value_dict()
-        metadata: dict[str, object] = {
-            "reference_price": _to_float(snapshot.get("reference_price")),
-            "threshold": _to_float(snapshot.get("threshold")),
-            "threshold_pips": self.params.threshold_pips,
-            "tp_price": _to_float(snapshot.get("tp_price")),
-            "sl_price": _to_float(snapshot.get("sl_price")),
-            "reference_age_seconds": _to_float(snapshot.get("reference_age_seconds")),
-            "position_open_age_seconds": _to_float(snapshot.get("position_open_age_seconds")),
-            "trade_timeout_seconds": _to_float(snapshot.get("trade_timeout_seconds")),
-        }
-
         position = int(_to_float(snapshot.get("position"), 0.0))
         if position == 0:
             self._last_position = 0
-            return EntryResult(reason=self.entry_config.name, metadata=metadata)
+            return EntryResult(reason=self.entry_config.name)
 
         if self._last_position == position:
-            return EntryResult(reason=self.entry_config.name, metadata=metadata)
+            return EntryResult(reason=self.entry_config.name)
 
         self._last_position = position
 
@@ -108,6 +97,16 @@ class ThresholdReversionEntryEngine(BaseEntryEngine):
         else:
             timeout_seconds = None
 
+        metadata: dict[str, object] = {
+            "reference_price": _to_float(snapshot.get("reference_price")),
+            "threshold": _to_float(snapshot.get("threshold")),
+            "threshold_pips": self.params.threshold_pips,
+            "tp_price": tp,
+            "sl_price": sl,
+            "reference_age_seconds": _to_float(snapshot.get("reference_age_seconds")),
+            "position_open_age_seconds": _to_float(snapshot.get("position_open_age_seconds")),
+            "trade_timeout_seconds": timeout_seconds,
+        }
         metadata.update(
             {
                 "direction": position,

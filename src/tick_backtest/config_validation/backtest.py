@@ -28,6 +28,8 @@ class ValidatedBacktestConfig(TypedDict):
     end: str
     pip_size: float
     warmup_seconds: int
+    validate_ticks: bool
+    trade_output_mode: str
     data_base_path: Path
     output_base_path: Path
     metrics_config_path: Path
@@ -61,12 +63,14 @@ def validate_backtest_config(raw: dict[str, object]) -> ValidatedBacktestConfig:
         "end",
         "pip_size",
         "warmup_seconds",
+        "validate_ticks",
+        "trade_output_mode",
         "data_base_path",
         "output_base_path",
         "metrics_config_path",
         "strategy_config_path",
     }
-    required_keys = allowed_keys - {"schema_version"}
+    required_keys = allowed_keys - {"schema_version", "validate_ticks", "trade_output_mode"}
 
     extra = sorted(set(working.keys()) - allowed_keys)
     if extra:
@@ -121,6 +125,17 @@ def validate_backtest_config(raw: dict[str, object]) -> ValidatedBacktestConfig:
     if warmup_seconds < 0:
         raise ValueError("Invalid backtest configuration: 'warmup_seconds' must be non-negative")
 
+    validate_ticks_raw = working.get("validate_ticks", True)
+    if not isinstance(validate_ticks_raw, bool):
+        raise ValueError("Invalid backtest configuration: 'validate_ticks' must be a boolean")
+
+    trade_output_mode_raw = working.get("trade_output_mode", "trades")
+    if not isinstance(trade_output_mode_raw, str):
+        raise ValueError("Invalid backtest configuration: 'trade_output_mode' must be a string")
+    trade_output_mode = trade_output_mode_raw.strip()
+    if trade_output_mode not in {"trades", "summary"}:
+        raise ValueError("Invalid backtest configuration: 'trade_output_mode' must be one of: trades, summary")
+
     def _to_path(key: str) -> Path:
         value = working[key]
         if not isinstance(value, (str, Path)):
@@ -139,6 +154,8 @@ def validate_backtest_config(raw: dict[str, object]) -> ValidatedBacktestConfig:
         "end": end,
         "pip_size": pip_size,
         "warmup_seconds": warmup_seconds,
+        "validate_ticks": validate_ticks_raw,
+        "trade_output_mode": trade_output_mode,
         "data_base_path": data_base_path,
         "output_base_path": output_base_path,
         "metrics_config_path": metrics_config_path,

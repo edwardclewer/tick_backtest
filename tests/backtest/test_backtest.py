@@ -76,7 +76,7 @@ class StubSignalGenerator:
             return SignalData()
 
 
-def make_backtest(tmp_path, metrics_snapshots=None, signals=None, data_feed=None):
+def make_backtest(tmp_path, metrics_snapshots=None, signals=None, data_feed=None, trade_output_mode="trades"):
     snapshots = list(metrics_snapshots or [{}])
     manager = StubMetricsManager(snapshots)
     signal_generator = StubSignalGenerator(signals or [SignalData()])
@@ -87,6 +87,7 @@ def make_backtest(tmp_path, metrics_snapshots=None, signals=None, data_feed=None
         metrics_manager=manager,
         output_base_path=tmp_path / "trades.parquet",
         pip_size=0.0001,
+        trade_output_mode=trade_output_mode,
     ), manager
 
 
@@ -556,3 +557,30 @@ def test_finish_persists_trades_to_parquet(tmp_path):
         "outcome_label",
     }.issubset(df.columns)
     assert len(df) == 1
+
+
+def test_finish_summary_mode_writes_compact_summary_without_trades(tmp_path):
+    backtest, _ = make_backtest(tmp_path, trade_output_mode="summary")
+    backtest.trades = [
+        {
+            "pair": "EURUSD",
+            "entry_time": datetime(2015, 1, 1, tzinfo=UTC),
+            "exit_time": datetime(2015, 1, 1, 0, 5, tzinfo=UTC),
+            "direction": 1,
+            "entry_price": 1.1000,
+            "exit_price": 1.1010,
+            "pnl_pips": 10.0,
+            "outcome_label": "TP",
+            "alpha": 1.5,
+        }
+    ]
+
+    backtest._finish()
+
+    assert not backtest.output_base_path.exists()
+    summary_dir = tmp_path / "summary"
+    pair_metrics = pd.read_parquet(summary_dir / "pair_metrics.parquet")
+    metric_bins = pd.read_parquet(summary_dir / "metric_bins.parquet")
+    assert pair_metrics.loc[0, "total_trades"] == 1
+    assert pair_metrics.loc[0, "net_pnl_pips"] == pytest.approx(10.0)
+    assert list(metric_bins.columns)

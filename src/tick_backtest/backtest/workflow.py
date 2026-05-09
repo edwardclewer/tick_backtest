@@ -135,6 +135,31 @@ def _collect_trade_outputs(output_root: Path) -> list[dict[str, object]]:
     return outputs
 
 
+def _collect_summary_outputs(output_root: Path) -> list[dict[str, object]]:
+    outputs: list[dict[str, object]] = []
+    if not output_root.exists():
+        return outputs
+
+    for child in sorted(output_root.iterdir()):
+        if not child.is_dir() or child.name == "logs":
+            continue
+        summary_dir = child / "summary"
+        pair_metrics = summary_dir / "pair_metrics.parquet"
+        metric_bins = summary_dir / "metric_bins.parquet"
+        if not pair_metrics.exists() and not metric_bins.exists():
+            continue
+        outputs.append(
+            {
+                "pair": child.name,
+                "pair_metrics_path": str(pair_metrics.resolve()) if pair_metrics.exists() else "",
+                "metric_bins_path": str(metric_bins.resolve()) if metric_bins.exists() else "",
+                "pair_metrics_rows": _count_parquet_rows(pair_metrics) if pair_metrics.exists() else None,
+                "metric_bins_rows": _count_parquet_rows(metric_bins) if metric_bins.exists() else None,
+            }
+        )
+    return outputs
+
+
 def _write_environment_snapshot(run_root: Path) -> Path:
     env_path = run_root / "environment.txt"
     result = subprocess.run(
@@ -324,6 +349,7 @@ def run_backtest(
         nonlocal input_shards_cache, input_shards_logged
         manifest["status"] = status
         manifest["outputs"] = _collect_trade_outputs(run_output_dir)
+        manifest["summary_outputs"] = _collect_summary_outputs(run_output_dir)
         if input_shards_cache is None:
             input_shards_cache = _collect_input_shards(config)
         manifest["input_shards"] = input_shards_cache

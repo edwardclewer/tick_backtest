@@ -188,6 +188,8 @@ class BacktestConfigParser:
             output_base_path=output_base_path,
             metrics_config_path=metrics_config_path,
             strategy_config_path=strategy_config_path,
+            validate_ticks=cfg.get("validate_ticks", True),
+            trade_output_mode=cfg.get("trade_output_mode", "trades"),
             strategy_config=strategy_config,
         )
 

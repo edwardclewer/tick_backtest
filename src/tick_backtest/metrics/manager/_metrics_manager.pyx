@@ -31,7 +31,7 @@ cdef class MetricsManager:
         self._full_key_cache = [()] * len(metrics)
         self._snapshot = {}
 
-    cpdef dict update_all(self, object tick):
+    cdef void _update_snapshot(self, object tick):
         cdef TickStruct c_tick
         fill_tick_struct(tick, &c_tick)
 
@@ -88,7 +88,17 @@ cdef class MetricsManager:
             for key, full_key in zip(keys, full_keys):
                 self._snapshot[full_key] = values.get(key)
 
+    cpdef dict update_all(self, object tick):
+        self._update_snapshot(tick)
         return dict(self._snapshot)
+
+    cpdef dict update_selected(self, object tick, tuple selected_keys):
+        self._update_snapshot(tick)
+        cdef dict selected = {}
+        cdef object key
+        for key in selected_keys:
+            selected[key] = self._snapshot.get(key)
+        return selected
 
     cpdef dict current(self):
         return dict(self._snapshot)

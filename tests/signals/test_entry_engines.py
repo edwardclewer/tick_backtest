@@ -129,6 +129,7 @@ def test_threshold_reversion_entry_engine_emits_once_per_position(monkeypatch):
     # First call should not open (position 0)
     result = engine.update(cast(Tick, StubTick()), {})
     assert result.should_open is False
+    assert result.metadata is None
 
     # Second call emits long
     result = engine.update(cast(Tick, StubTick(mid=1.2000)), {})
@@ -142,6 +143,7 @@ def test_threshold_reversion_entry_engine_emits_once_per_position(monkeypatch):
     # Third call retains same position -> suppressed
     result = engine.update(cast(Tick, StubTick(mid=1.2002)), {})
     assert result.should_open is False
+    assert result.metadata is None
 
     # Fourth call resets position to 0
     engine.update(cast(Tick, StubTick(mid=1.1995)), {})
@@ -175,6 +177,7 @@ def test_ewma_crossover_entry_engine_generates_long_and_short():
     # Initialise with fast below slow
     result = engine.update(cast(Tick, tick), {"fast": 1.0000, "slow": 1.0010})
     assert result.should_open is False
+    assert result.metadata is None
 
     # Fast crosses above slow -> long entry
     result = engine.update(cast(Tick, tick), {"fast": 1.0020, "slow": 1.0010})

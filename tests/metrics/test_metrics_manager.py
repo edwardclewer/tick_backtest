@@ -115,6 +115,19 @@ def test_update_invokes_metrics_and_returns_prefixed_snapshot(manager_factory, t
     assert internal_b.updates == [tick]
     assert snapshot == {"alpha.z": 1, "beta.vol": 0.5}
 
+
+def test_update_selected_returns_requested_keys_only(manager_factory, tick_factory):
+    """Fast-path selected updates preserve the full snapshot while returning a subset."""
+    metric_a = DummyMetric(name="alpha", payloads=[{"z": 1, "q": 2}])
+    metric_b = DummyMetric(name="beta", payloads=[{"vol": 0.5}])
+    manager = manager_factory([metric_a, metric_b])
+
+    selected = manager.update_selected(tick_factory(), ("alpha.z", "missing"))
+
+    assert selected == {"alpha.z": 1, "missing": None}
+    assert manager.current() == {"alpha.z": 1, "alpha.q": 2, "beta.vol": 0.5}
+
+
 def test_update_overwrites_previous_values(manager_factory, tick_factory):
     """Second update replaces previous snapshot values."""
     metric = DummyMetric(name="alpha", payloads=[{"z": 1}, {"z": 3}])
