@@ -43,6 +43,15 @@ class CompiledMetricsManagerProtocol(Protocol):
     def current(self) -> dict[str, float]:
         """Return the current flattened snapshot."""
 
+    def configure_slots(self, metric_slots: list[tuple[int, ...]], key_to_slot: dict[str, int]) -> object:
+        """Configure stable numeric slot output for batch-mode snapshots."""
+
+    def update_slots(self, tick: Tick) -> object:
+        """Update all metrics and return a reusable slot-backed snapshot view."""
+
+    def current_view(self) -> object:
+        """Return the current slot-backed snapshot view."""
+
 
 def _load_impl() -> type[CompiledMetricsManagerProtocol]:
     module = import_module("tick_backtest.metrics.manager._metrics_manager")

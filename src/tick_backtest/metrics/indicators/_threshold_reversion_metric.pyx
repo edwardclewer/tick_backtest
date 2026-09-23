@@ -353,6 +353,83 @@ cdef class ThresholdReversionMetric(BaseMetric):
     cpdef dict value(self):
         return self.value_dict()
 
+    cpdef tuple field_names(self):
+        return (
+            "position",
+            "reference_price",
+            "distance_from_reference",
+            "reference_age_seconds",
+            "threshold",
+            "tp_price",
+            "sl_price",
+            "trade_timeout_seconds",
+            "position_open_age_seconds",
+            "min_recency_seconds",
+        )
+
+    cpdef void write_values_to_slots(self, double[::1] values, unsigned char[::1] valid, tuple slots):
+        cdef double ref_price = self.p_ref if self.has_ref else NAN
+        cdef double ref_age
+        cdef double distance
+        cdef double open_age
+        cdef Py_ssize_t slot
+
+        if self.has_ref and self.has_last and self.p_ref_time == self.p_ref_time:
+            ref_age = self.last_timestamp - self.p_ref_time
+        else:
+            ref_age = NAN
+
+        if self.has_ref and self.has_last:
+            distance = self.last_mid - ref_price
+        else:
+            distance = NAN
+
+        if self.position != 0 and self.has_last and self.position_open_time == self.position_open_time:
+            open_age = self.last_timestamp - self.position_open_time
+        else:
+            open_age = NAN
+
+        if len(slots) >= 1:
+            slot = <Py_ssize_t>slots[0]
+            values[slot] = float(self.position)
+            valid[slot] = 1
+        if len(slots) >= 2:
+            slot = <Py_ssize_t>slots[1]
+            values[slot] = ref_price
+            valid[slot] = 1
+        if len(slots) >= 3:
+            slot = <Py_ssize_t>slots[2]
+            values[slot] = distance
+            valid[slot] = 1
+        if len(slots) >= 4:
+            slot = <Py_ssize_t>slots[3]
+            values[slot] = ref_age
+            valid[slot] = 1
+        if len(slots) >= 5:
+            slot = <Py_ssize_t>slots[4]
+            values[slot] = self.threshold
+            valid[slot] = 1
+        if len(slots) >= 6:
+            slot = <Py_ssize_t>slots[5]
+            values[slot] = self.tp_price
+            valid[slot] = 1
+        if len(slots) >= 7:
+            slot = <Py_ssize_t>slots[6]
+            values[slot] = self.sl_price
+            valid[slot] = 1
+        if len(slots) >= 8:
+            slot = <Py_ssize_t>slots[7]
+            values[slot] = self.trade_timeout
+            valid[slot] = 1
+        if len(slots) >= 9:
+            slot = <Py_ssize_t>slots[8]
+            values[slot] = open_age
+            valid[slot] = 1
+        if len(slots) >= 10:
+            slot = <Py_ssize_t>slots[9]
+            values[slot] = self.min_recency
+            valid[slot] = 1
+
     def update(self, tick):
         cdef TickStruct c_tick
         fill_tick_struct(tick, &c_tick)

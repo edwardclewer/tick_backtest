@@ -81,6 +81,7 @@ class ThresholdReversionEntryEngine(BaseEntryEngine):
                 "position_open_age_seconds": metrics.get(f"{prefix}.position_open_age_seconds"),
             }
         position = int(_to_float(snapshot.get("position"), 0.0))
+        original_direction = position
         if position == 0:
             self._last_position = 0
             return EntryResult(reason=self.entry_config.name)
@@ -91,9 +92,19 @@ class ThresholdReversionEntryEngine(BaseEntryEngine):
         self._last_position = position
 
         price = float(tick.mid)
+        direction = -position if self.params.invert_direction else position
         tp = _to_float(snapshot.get("tp_price"))
         sl = _to_float(snapshot.get("sl_price"))
-        if not math.isfinite(tp) or not math.isfinite(sl):
+        if self.params.invert_direction:
+            tp_offset = self.params.tp_pips * self.pip_size
+            sl_offset = self.params.sl_pips * self.pip_size
+            if direction == 1:
+                tp = price + tp_offset
+                sl = price - sl_offset
+            else:
+                tp = price - tp_offset
+                sl = price + sl_offset
+        elif not math.isfinite(tp) or not math.isfinite(sl):
             tp_pips_fallback = self.params.tp_pips
             sl_pips_fallback = self.params.sl_pips
             if tp_pips_fallback is None or sl_pips_fallback is None:
@@ -126,7 +137,9 @@ class ThresholdReversionEntryEngine(BaseEntryEngine):
         }
         metadata.update(
             {
-                "direction": position,
+                "direction": direction,
+                "original_direction": original_direction,
+                "invert_direction": self.params.invert_direction,
                 "signal_price": price,
             }
         )
@@ -134,7 +147,7 @@ class ThresholdReversionEntryEngine(BaseEntryEngine):
 
         return EntryResult(
             should_open=True,
-            direction=position,
+            direction=direction,
             tp=tp,
             sl=sl,
             timeout_seconds=timeout_seconds,

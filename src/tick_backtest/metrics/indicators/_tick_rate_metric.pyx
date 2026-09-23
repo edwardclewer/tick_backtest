@@ -72,6 +72,32 @@ cdef class TickRateMetric(BaseMetric):
     cpdef dict value(self):
         return self.value_dict()
 
+    cpdef tuple field_names(self):
+        return ("tick_count", "tick_rate_per_sec", "tick_rate_per_min")
+
+    cpdef void write_values_to_slots(self, double[::1] values, unsigned char[::1] valid, tuple slots):
+        cdef double rate_per_sec
+        cdef double rate_per_min
+        cdef Py_ssize_t slot
+        if self.window <= 0:
+            rate_per_sec = NAN
+            rate_per_min = NAN
+        else:
+            rate_per_sec = self._count / self.window
+            rate_per_min = rate_per_sec * 60.0
+        if len(slots) >= 1:
+            slot = <Py_ssize_t>slots[0]
+            values[slot] = float(self._count)
+            valid[slot] = 1
+        if len(slots) >= 2:
+            slot = <Py_ssize_t>slots[1]
+            values[slot] = rate_per_sec
+            valid[slot] = 1
+        if len(slots) >= 3:
+            slot = <Py_ssize_t>slots[2]
+            values[slot] = rate_per_min
+            valid[slot] = 1
+
     def update(self, tick):
         cdef TickStruct c_tick
         fill_tick_struct(tick, &c_tick)

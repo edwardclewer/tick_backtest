@@ -27,6 +27,30 @@ cdef class BaseMetric:
     cpdef dict value(self):
         raise NotImplementedError()
 
+    cpdef tuple field_names(self):
+        return tuple(self.value().keys())
+
+    cpdef void write_values_to_slots(self, double[::1] values, unsigned char[::1] valid, tuple slots):
+        cdef dict snapshot = self.value()
+        cdef tuple fields = tuple(snapshot.keys())
+        cdef Py_ssize_t i
+        cdef Py_ssize_t limit = min(len(fields), len(slots))
+        cdef object raw
+        cdef Py_ssize_t slot
+        for i in range(limit):
+            slot = <Py_ssize_t>slots[i]
+            raw = snapshot.get(fields[i])
+            if raw is None:
+                values[slot] = 0.0
+                valid[slot] = 0
+            else:
+                try:
+                    values[slot] = float(raw)
+                    valid[slot] = 1
+                except (TypeError, ValueError):
+                    values[slot] = 0.0
+                    valid[slot] = 0
+
     cdef void update_from_struct(self, TickStruct* tick):
         raise NotImplementedError()
 

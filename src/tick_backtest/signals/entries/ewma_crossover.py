@@ -68,6 +68,10 @@ class EWMACrossoverEntryEngine(BaseEntryEngine):
             return EntryResult(reason=self.entry_config.name)
 
         price = float(tick.mid)
+        original_direction = direction
+        if self.params.invert_direction:
+            direction = -direction
+
         tp = sl = None
         if self.params.tp_pips > 0:
             offset = self.params.tp_pips * self.pip_size
@@ -88,5 +92,13 @@ class EWMACrossoverEntryEngine(BaseEntryEngine):
             sl=sl,
             timeout_seconds=timeout,
             reason=self.entry_config.name,
-            metadata={"fast": fast, "slow": slow, "diff": diff, "direction": direction, "signal_price": price},
+            metadata={
+                "fast": fast,
+                "slow": slow,
+                "diff": diff,
+                "direction": direction,
+                "original_direction": original_direction,
+                "invert_direction": self.params.invert_direction,
+                "signal_price": price,
+            },
         )

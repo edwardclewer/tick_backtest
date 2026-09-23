@@ -86,6 +86,20 @@ cdef class ZScoreMetric(BaseMetric):
     cpdef dict value(self):
         return self.value_dict()
 
+    cpdef tuple field_names(self):
+        return ("z_score", "rolling_residual")
+
+    cpdef void write_values_to_slots(self, double[::1] values, unsigned char[::1] valid, tuple slots):
+        cdef Py_ssize_t slot
+        if len(slots) >= 1:
+            slot = <Py_ssize_t>slots[0]
+            values[slot] = self._z
+            valid[slot] = 1
+        if len(slots) >= 2:
+            slot = <Py_ssize_t>slots[1]
+            values[slot] = self._resid
+            valid[slot] = 1
+
     def update(self, tick):
         cdef TickStruct c_tick
         fill_tick_struct(tick, &c_tick)

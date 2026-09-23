@@ -38,6 +38,7 @@ class ThresholdReversionEntryParams(EntryParamsBase):
     sl_pips: float | None = None
     min_recency_seconds: float = 0.0
     trade_timeout_seconds: float | None = None
+    invert_direction: bool = False
 
     def __post_init__(self) -> None:
         self.lookback_seconds = self._coerce_positive_int(self.lookback_seconds, "lookback_seconds")
@@ -61,6 +62,9 @@ class ThresholdReversionEntryParams(EntryParamsBase):
             self.trade_timeout_seconds = self._coerce_positive_float(
                 self.trade_timeout_seconds, "trade_timeout_seconds"
             )
+
+        if not isinstance(self.invert_direction, bool):
+            raise TypeError("'invert_direction' must be a boolean")
 
     @staticmethod
     def _coerce_positive_int(value: object, name: str) -> int:
@@ -114,6 +118,7 @@ class EWMACrossoverEntryParams(EntryParamsBase):
     tp_pips: float = 0.0
     sl_pips: float = 0.0
     trade_timeout_seconds: float | None = None
+    invert_direction: bool = False
 
     def __post_init__(self) -> None:
         if not isinstance(self.fast_metric, str) or not self.fast_metric:
@@ -132,6 +137,9 @@ class EWMACrossoverEntryParams(EntryParamsBase):
             self.trade_timeout_seconds = self._coerce_positive_float(
                 self.trade_timeout_seconds, "trade_timeout_seconds"
             )
+
+        if not isinstance(self.invert_direction, bool):
+            raise TypeError("'invert_direction' must be a boolean")
 
     @staticmethod
     def _coerce_nonnegative_float(value: object, name: str) -> float:

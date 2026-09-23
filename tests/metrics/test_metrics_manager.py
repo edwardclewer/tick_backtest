@@ -24,7 +24,7 @@ from typing import Any
 
 import pytest
 
-from tick_backtest.metrics.manager.metrics_manager import MetricsManager
+from tick_backtest.metrics.manager.metrics_manager import MetricsManager, _CompiledManager
 
 
 @dataclass
@@ -126,6 +126,24 @@ def test_update_selected_returns_requested_keys_only(manager_factory, tick_facto
 
     assert selected == {"alpha.z": 1, "missing": None}
     assert manager.current() == {"alpha.z": 1, "alpha.q": 2, "beta.vol": 0.5}
+
+
+def test_compiled_slot_view_supports_python_metric_fallback(tick_factory):
+    metric_a = DummyMetric(name="alpha", payloads=[{"z": 1.5, "q": 2.5}])
+    metric_b = DummyMetric(name="beta", payloads=[{"vol": 0.5}])
+    compiled = _CompiledManager([metric_a, metric_b])
+    view = compiled.configure_slots(
+        [(0, 1), (2,)],
+        {"alpha.z": 0, "alpha.q": 1, "beta.vol": 2, "alias.z": 0},
+    )
+
+    updated = compiled.update_slots(tick_factory())
+
+    assert updated is view
+    assert view.get("alpha.z") == pytest.approx(1.5)
+    assert view.get("alias.z") == pytest.approx(1.5)
+    assert view["alpha.q"] == pytest.approx(2.5)
+    assert view.to_dict()["beta.vol"] == pytest.approx(0.5)
 
 
 def test_update_overwrites_previous_values(manager_factory, tick_factory):

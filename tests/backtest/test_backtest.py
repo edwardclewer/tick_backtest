@@ -584,3 +584,35 @@ def test_finish_summary_mode_writes_compact_summary_without_trades(tmp_path):
     assert pair_metrics.loc[0, "total_trades"] == 1
     assert pair_metrics.loc[0, "net_pnl_pips"] == pytest.approx(10.0)
     assert list(metric_bins.columns)
+
+
+def test_summary_mode_accumulates_completed_trades_without_retaining_rows(tick_factory, tmp_path):
+    entry_tick = tick_factory(timestamp=datetime(2015, 1, 1, tzinfo=UTC), mid=1.1000)
+    fill_tick = tick_factory(timestamp=datetime(2015, 1, 1, 0, 1, tzinfo=UTC), mid=1.1001)
+    exit_tick = tick_factory(timestamp=datetime(2015, 1, 1, 0, 2, tzinfo=UTC), mid=1.1003)
+    signal = SignalData(
+        should_open=True,
+        direction=1,
+        tp=1.1003,
+        sl=1.0998,
+        reason="summary-stream",
+    )
+    metrics_snapshot = {"alpha": 1.5}
+    backtest, _ = make_backtest(
+        tmp_path,
+        metrics_snapshots=[metrics_snapshot, metrics_snapshot, metrics_snapshot],
+        signals=[signal, SignalData(), SignalData()],
+        trade_output_mode="summary",
+    )
+
+    backtest._handle_tick(entry_tick)
+    backtest._handle_tick(fill_tick)
+    backtest._handle_tick(exit_tick)
+
+    assert backtest.trades == []
+    assert backtest.summary_accumulator is not None
+    assert backtest.summary_accumulator.total_trades == 1
+
+    backtest._finish()
+    pair_metrics = pd.read_parquet(tmp_path / "summary" / "pair_metrics.parquet")
+    assert pair_metrics.loc[0, "total_trades"] == 1

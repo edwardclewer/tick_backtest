@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING
 
 __all__ = ["Tick"]
@@ -42,34 +43,49 @@ if TYPE_CHECKING:
             timestamp_ns: int | None = None,
         ) -> None: ...
 
-else:
-    try:
-        from tick_backtest.data_feed._data_feed import TickRecord as Tick
-    except ImportError:  # pragma: no cover - fallback when C extensions unavailable
 
-        class Tick:
-            """Lightweight Python tick with UTC timestamp tracked at nanosecond precision."""
+def _use_compiled_tick() -> bool:
+    return os.environ.get("TICK_BACKTEST_USE_COMPILED_DATA_FEED", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
-            __slots__ = ("timestamp", "timestamp_ns", "bid", "ask", "mid", "hour", "minute")
 
-            def __init__(
-                self,
-                timestamp: float,
-                bid: float,
-                ask: float,
-                mid: float,
-                *,
-                timestamp_ns: int | None = None,
-            ) -> None:
-                if timestamp_ns is None:
-                    timestamp_ns = int(float(timestamp) * 1_000_000_000)
-                self.timestamp_ns = int(timestamp_ns)
-                self.timestamp = float(self.timestamp_ns) / 1_000_000_000.0
-                self.bid = float(bid)
-                self.ask = float(ask)
-                self.mid = float(mid)
+if not TYPE_CHECKING:
 
-                seconds = self.timestamp_ns // 1_000_000_000
-                seconds_in_day = seconds % 86400
-                self.hour = seconds_in_day // 3600
-                self.minute = (seconds_in_day % 3600) // 60
+    class _PythonTick:
+        """Lightweight Python tick with UTC timestamp tracked at nanosecond precision."""
+
+        __slots__ = ("timestamp", "timestamp_ns", "bid", "ask", "mid", "hour", "minute")
+
+        def __init__(
+            self,
+            timestamp: float,
+            bid: float,
+            ask: float,
+            mid: float,
+            *,
+            timestamp_ns: int | None = None,
+        ) -> None:
+            if timestamp_ns is None:
+                timestamp_ns = int(float(timestamp) * 1_000_000_000)
+            self.timestamp_ns = int(timestamp_ns)
+            self.timestamp = float(self.timestamp_ns) / 1_000_000_000.0
+            self.bid = float(bid)
+            self.ask = float(ask)
+            self.mid = float(mid)
+
+            seconds = self.timestamp_ns // 1_000_000_000
+            seconds_in_day = seconds % 86400
+            self.hour = seconds_in_day // 3600
+            self.minute = (seconds_in_day % 3600) // 60
+
+    if _use_compiled_tick():
+        try:
+            from tick_backtest.data_feed._data_feed import TickRecord as Tick
+        except ImportError:  # pragma: no cover - fallback when C extensions unavailable
+            Tick = _PythonTick
+    else:
+        Tick = _PythonTick

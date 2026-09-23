@@ -22,7 +22,7 @@ from typing import Any, Protocol, cast
 
 import pandas as pd
 
-from tick_backtest.backtest.summary import write_compact_summary
+from tick_backtest.backtest.summary import CompactSummaryAccumulator, write_compact_summary
 from tick_backtest.data_feed.data_feed import NoMoreTicks
 from tick_backtest.data_feed.tick import Tick
 from tick_backtest.position.position import Position
@@ -77,6 +77,7 @@ class Backtest:
         self.trade_output_mode = trade_output_mode
 
         self.trades: list[dict[str, Any]] = []
+        self.summary_accumulator: CompactSummaryAccumulator | None = None
         self.metric_record_keys = metric_record_keys
         self.is_trade_open = False
         self.trade_opened_last_tick = False
@@ -84,6 +85,12 @@ class Backtest:
         self.pip_size = pip_size
         self.logger = logging.getLogger(__name__)
         self.last_tick: Tick | None = None
+        if self.trade_output_mode == "summary":
+            pair = getattr(self.data_feed, "pair", "")
+            self.summary_accumulator = CompactSummaryAccumulator(
+                pair=pair,
+                output_dir=self.output_base_path.parent / "summary",
+            )
 
     def run(self) -> None:
         try:
@@ -286,7 +293,15 @@ class Backtest:
             "outcome_label": self.trade.outcome_label,
         }
         record.update(self.trade.meta)
-        self.trades.append(record)
+        if self.trade_output_mode == "summary":
+            if self.summary_accumulator is None:
+                self.summary_accumulator = CompactSummaryAccumulator(
+                    pair=getattr(self.data_feed, "pair", ""),
+                    output_dir=self.output_base_path.parent / "summary",
+                )
+            self.summary_accumulator.add_trade(record)
+        else:
+            self.trades.append(record)
         self.is_trade_open = False
 
     def _close_position(self, tick: Tick, signal: SignalData | None = None) -> None:
@@ -378,38 +393,38 @@ class Backtest:
             exit_price = float(self.last_tick.mid)
             self._finalize_trade(exit_price, exit_time, "DATA_END")
 
-        if not self.trades:
-            pair = getattr(self.data_feed, "pair", "")
-            if self.trade_output_mode == "summary":
-                summary_dir = self.output_base_path.parent / "summary"
+        if self.trade_output_mode == "summary":
+            summary_dir = self.output_base_path.parent / "summary"
+            if self.trades:
+                # Compatibility for tests or callers that seeded historical trade records
+                # directly before finishing; live summary-mode runs update the accumulator.
                 write_compact_summary(
-                    pd.DataFrame(),
-                    pair=pair,
+                    pd.DataFrame(self.trades),
+                    pair=getattr(self.data_feed, "pair", ""),
                     output_dir=summary_dir,
                 )
-                self.logger.info(
-                    "saved empty compact trade summary",
-                    extra={"pair": pair or None, "output_path": str(summary_dir)},
-                )
-                return
+                trade_count = len(self.trades)
+            else:
+                if self.summary_accumulator is None:
+                    self.summary_accumulator = CompactSummaryAccumulator(
+                        pair=getattr(self.data_feed, "pair", ""),
+                        output_dir=summary_dir,
+                    )
+                self.summary_accumulator.write()
+                trade_count = self.summary_accumulator.total_trades
+            self.logger.info(
+                "saved compact trade summary",
+                extra={"trade_count": trade_count, "output_path": str(summary_dir)},
+            )
+            return
+
+        if not self.trades:
+            pair = getattr(self.data_feed, "pair", "")
             suffix = pair if pair else "this data feed"
             self.logger.info("no trades executed; nothing to save", extra={"pair": suffix or None})
             return
 
         df = pd.DataFrame(self.trades)
-        if self.trade_output_mode == "summary":
-            summary_dir = self.output_base_path.parent / "summary"
-            write_compact_summary(
-                df,
-                pair=getattr(self.data_feed, "pair", ""),
-                output_dir=summary_dir,
-            )
-            self.logger.info(
-                "saved compact trade summary",
-                extra={"trade_count": len(df), "output_path": str(summary_dir)},
-            )
-            return
-
         df.to_parquet(self.output_base_path, index=False)
         self.logger.info(
             "saved trades",

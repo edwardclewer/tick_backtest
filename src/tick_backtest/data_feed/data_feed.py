@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 from importlib import import_module
+import os
 from typing import TYPE_CHECKING, cast
 
 from tick_backtest.exceptions import DataFeedError
@@ -55,16 +56,29 @@ def get_data_months(year_start: int, year_end: int, month_start: int, month_end:
     return first_year + middle_years + last_year
 
 
+def _use_compiled_data_feed() -> bool:
+    return os.environ.get("TICK_BACKTEST_USE_COMPILED_DATA_FEED", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
 if TYPE_CHECKING:
     from ._data_feed_py import DataFeed, NoMoreTicks
     from .tick import Tick
 else:
-    try:
-        _compiled = import_module("tick_backtest.data_feed._data_feed")
-        DataFeed = cast(type[object], _compiled.DataFeed)
-        NoMoreTicks = cast(type[Exception], _compiled.NoMoreTicks)
-        Tick = _compiled.TickRecord
-        DataFeedError = getattr(_compiled, "DataFeedError", DataFeedError)
-    except ImportError:  # pragma: no cover - fallback when extension unavailable
+    if _use_compiled_data_feed():
+        try:
+            _compiled = import_module("tick_backtest.data_feed._data_feed")
+            DataFeed = cast(type[object], _compiled.DataFeed)
+            NoMoreTicks = cast(type[Exception], _compiled.NoMoreTicks)
+            Tick = _compiled.TickRecord
+            DataFeedError = getattr(_compiled, "DataFeedError", DataFeedError)
+        except ImportError:  # pragma: no cover - fallback when extension unavailable
+            from ._data_feed_py import DataFeed, NoMoreTicks
+            from .tick import Tick
+    else:
         from ._data_feed_py import DataFeed, NoMoreTicks
         from .tick import Tick

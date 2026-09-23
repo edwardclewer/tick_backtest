@@ -25,6 +25,7 @@ from tests.helpers.parquet import write_tick_parquet
 from tick_backtest.backtest.batch import BatchConfigError, UnionMetricsManager
 from tick_backtest.backtest.workflow import run_backtest_batch
 from tick_backtest.config_parsers.backtest.config_parser import BacktestConfigParser
+from tick_backtest.metrics.manager._metrics_manager import MetricSnapshotView
 from tick_backtest.signals.signal_generator import SignalGenerator
 
 
@@ -185,8 +186,44 @@ def test_union_metrics_deduplicates_equivalent_metric_definitions(tmp_path: Path
     snapshot = manager.update(tick_factory(bid=1.0, ask=1.0002))
 
     assert len(manager._bindings) == 1
+    assert isinstance(snapshot, MetricSnapshotView)
+    assert not isinstance(snapshot, dict)
     assert snapshot["spread_a.spread_pips"] == pytest.approx(2.0)
     assert snapshot["spread_b.spread_pips"] == pytest.approx(2.0)
+    assert snapshot.get("missing", 123.0) == pytest.approx(123.0)
+    assert "spread_a.spread_pips" in snapshot
+
+
+def test_union_metrics_slot_view_preserves_aliases_without_dict_snapshot(tmp_path: Path, tick_factory) -> None:
+    metrics_a = _ewma_metrics(spread_metric="spread_a", fast=1, slow=10)
+    metrics_b = _ewma_metrics(spread_metric="spread_b", fast=1, slow=10)
+    parser = BacktestConfigParser()
+    cfg_a = parser.parse_config(
+        _write_config(
+            tmp_path,
+            name="a",
+            metrics=metrics_a,
+            strategy=_ewma_crossover_strategy(name="a", spread_metric="spread_a", fast=1, slow=10),
+        )
+    )
+    cfg_b = parser.parse_config(
+        _write_config(
+            tmp_path,
+            name="b",
+            metrics=metrics_b,
+            strategy=_ewma_crossover_strategy(name="b", spread_metric="spread_b", fast=1, slow=10),
+        )
+    )
+
+    manager = UnionMetricsManager([cfg_a, cfg_b])
+    snapshot = manager.update(tick_factory(bid=1.0, ask=1.0002))
+
+    assert isinstance(snapshot, MetricSnapshotView)
+    assert snapshot.get("spread_a.spread_pips") == pytest.approx(snapshot.get("spread_b.spread_pips"))
+    assert snapshot.get("ewma_1.ewma") == pytest.approx(1.0001)
+    materialized = snapshot.to_dict()
+    assert materialized["spread_a.spread_pips"] == pytest.approx(2.0)
+    assert materialized["spread_b.spread_pips"] == pytest.approx(2.0)
 
 
 def test_union_metrics_rejects_conflicting_same_alias(tmp_path: Path) -> None:

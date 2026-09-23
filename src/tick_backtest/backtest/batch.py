@@ -17,7 +17,9 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
 import shutil
+import time
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -29,14 +31,17 @@ from tick_backtest.config_parsers.backtest.config_parser import BacktestConfigPa
 from tick_backtest.config_parsers.metrics.config_dataclass import MetricConfigBase
 from tick_backtest.config_parsers.metrics.config_parser import MetricsConfigParser
 from tick_backtest.config_parsers.strategy.entry_configs import ThresholdReversionEntryParams
-from tick_backtest.data_feed.data_feed import DataFeed, NoMoreTicks
+from tick_backtest.data_feed.data_feed import DataFeed, NoMoreTicks, get_data_months
 from tick_backtest.data_feed.validation import TickValidator, ValidatingDataFeed
 from tick_backtest.logging_utils import configure_logging, get_git_hash
 from tick_backtest.metrics.indicators.threshold_reversion_metric import ThresholdReversionMetric
+from tick_backtest.metrics.manager.metrics_manager import _CompiledManager
 from tick_backtest.metrics.manager.metric_registry import METRIC_CLASS_REGISTRY
 from tick_backtest.signals.signal_generator import SignalGenerator
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_BATCH_PROGRESS_SECONDS = 900.0
 
 
 @dataclass
@@ -70,26 +75,19 @@ class UnionMetricsManager:
         self._alias_to_identity: dict[str, str] = {}
         self._record_keys_by_index: dict[int, tuple[str, ...]] = {}
         self._threshold_prefix_by_index: dict[int, str] = {}
+        self._compiled: Any | None = None
+        self._snapshot_view: Any | None = None
 
         for index, config in enumerate(configs):
             self._add_config_metrics(index, config)
         for index, config in enumerate(configs):
             self._add_strategy_synthetic_metrics(index, config)
+        self._configure_compiled_slots()
 
-    def update(self, tick: object) -> dict[str, float]:
-        snapshot: dict[str, float] = {}
-        for binding in self._bindings:
-            binding.metric.update(tick)
-            values = binding.metric.value()
-            if not isinstance(values, dict):
-                continue
-            fields = tuple(str(key) for key in values)
-            if fields != binding.fields:
-                binding.fields = fields
-            for alias in binding.aliases:
-                for field in fields:
-                    snapshot[f"{alias}.{field}"] = values.get(field)
-        return snapshot
+    def update(self, tick: object) -> Any:
+        if self._compiled is None:
+            raise RuntimeError("compiled union metrics were not configured")
+        return self._compiled.update_slots(tick)
 
     def record_keys_for_config(self, index: int) -> tuple[str, ...]:
         return self._record_keys_by_index.get(index, ())
@@ -128,7 +126,7 @@ class UnionMetricsManager:
         if metric_cls is None:
             raise BatchConfigError(f"unrecognized metric type {metric_cfg.metric_type!r}")
         metric = metric_cls(name=metric_cfg.name, **metric_cfg.to_kwargs())
-        fields = tuple(str(key) for key in metric.value())
+        fields = tuple(str(key) for key in metric.field_names())
         binding = _MetricBinding(metric=metric, aliases=[metric_cfg.name], fields=fields)
         self._bindings.append(binding)
         self._identity_to_binding[identity] = binding
@@ -155,13 +153,28 @@ class UnionMetricsManager:
         binding = self._identity_to_binding.get(identity)
         if binding is None:
             metric = ThresholdReversionMetric(name=alias, **kwargs)
-            fields = tuple(str(key) for key in metric.value())
+            fields = tuple(str(key) for key in metric.field_names())
             binding = _MetricBinding(metric=metric, aliases=[alias], fields=fields)
             self._bindings.append(binding)
             self._identity_to_binding[identity] = binding
         elif alias not in binding.aliases:
             binding.aliases.append(alias)
         self._threshold_prefix_by_index[index] = alias
+
+    def _configure_compiled_slots(self) -> None:
+        metrics = [binding.metric for binding in self._bindings]
+        metric_slots: list[tuple[int, ...]] = []
+        key_to_slot: dict[str, int] = {}
+        next_slot = 0
+        for binding in self._bindings:
+            slots = tuple(range(next_slot, next_slot + len(binding.fields)))
+            next_slot += len(binding.fields)
+            metric_slots.append(slots)
+            for alias in binding.aliases:
+                for field, slot in zip(binding.fields, slots, strict=True):
+                    key_to_slot[f"{alias}.{field}"] = slot
+        self._compiled = _CompiledManager(metrics)
+        self._snapshot_view = self._compiled.configure_slots(metric_slots, key_to_slot)
 
 
 def run_backtest_batch(
@@ -172,6 +185,7 @@ def run_backtest_batch(
     batch_id: str,
     log_level: str | int = "WARNING",
     run_roots: list[Path | str] | None = None,
+    progress_interval_seconds: float | None = None,
 ) -> dict[str, object]:
     """Run compatible summary-mode configs over one shared tick stream."""
     if len(config_paths) != len(run_ids):
@@ -214,6 +228,13 @@ def run_backtest_batch(
     )
     validator = TickValidator(pair=pair)
     data_feed = ValidatingDataFeed(raw_feed, validator) if first.validate_ticks else raw_feed
+    progress = _BatchProgressLogger(
+        batch_id=batch_id,
+        pair=pair,
+        config_count=len(items),
+        interval_seconds=progress_interval_seconds,
+        month_labels=_month_labels(first),
+    )
 
     try:
         initial_tick = data_feed.tick()
@@ -225,6 +246,7 @@ def run_backtest_batch(
 
     start_ts = Backtest._to_datetime(initial_tick.timestamp)
     last_ts = start_ts
+    processed_ticks = 1
     metrics = union_metrics.update(initial_tick)
     for item in items:
         item.backtest.handle_warmup_tick(initial_tick, metrics)
@@ -234,26 +256,111 @@ def run_backtest_batch(
             while (last_ts - start_ts).total_seconds() < first.warmup_seconds:
                 tick = data_feed.tick()
                 last_ts = Backtest._to_datetime(tick.timestamp)
+                processed_ticks += 1
                 metrics = union_metrics.update(tick)
                 for item in items:
                     item.backtest.handle_warmup_tick(tick, metrics)
+                progress.maybe_log("warmup", processed_ticks, last_ts)
         except NoMoreTicks:
             logger.warning("data feed exhausted during batch warmup phase")
 
     try:
         while True:
             tick = data_feed.tick()
+            processed_ticks += 1
+            last_ts = Backtest._to_datetime(tick.timestamp)
             metrics = union_metrics.update(tick)
             for item in items:
                 item.backtest.handle_tick_with_metrics(tick, metrics)
+            progress.maybe_log("main", processed_ticks, last_ts)
     except NoMoreTicks:
         pass
+
+    progress.log_complete(processed_ticks, last_ts)
 
     for item in items:
         item.backtest._finish()
 
     _write_item_manifests(items, batch_id=batch_id, validator=validator)
     return _batch_result(batch_id, items)
+
+
+class _BatchProgressLogger:
+    def __init__(
+        self,
+        *,
+        batch_id: str,
+        pair: str,
+        config_count: int,
+        interval_seconds: float | None,
+        month_labels: list[str],
+    ) -> None:
+        self.batch_id = batch_id
+        self.pair = pair
+        self.config_count = config_count
+        if interval_seconds is None:
+            interval_seconds = _batch_progress_interval_seconds()
+        self.interval_seconds = max(0.0, float(interval_seconds))
+        self.month_labels = month_labels
+        self.month_index = {label: index + 1 for index, label in enumerate(month_labels)}
+        self.started = time.monotonic()
+        self.next_log = self.started + self.interval_seconds
+
+    def maybe_log(self, phase: str, processed_ticks: int, data_timestamp: datetime) -> None:
+        if self.interval_seconds <= 0.0:
+            return
+        now = time.monotonic()
+        if now < self.next_log:
+            return
+        self._log("batch progress", phase, processed_ticks, data_timestamp, now)
+        self.next_log = now + self.interval_seconds
+
+    def log_complete(self, processed_ticks: int, data_timestamp: datetime) -> None:
+        self._log("batch data pass complete", "complete", processed_ticks, data_timestamp, time.monotonic())
+
+    def _log(self, message: str, phase: str, processed_ticks: int, data_timestamp: datetime, now: float) -> None:
+        data_month = f"{data_timestamp.year:04d}-{data_timestamp.month:02d}"
+        logger.warning(
+            message,
+            extra={
+                "batch_id": self.batch_id,
+                "pair": self.pair,
+                "phase": phase,
+                "configs": self.config_count,
+                "processed_ticks": processed_ticks,
+                "data_timestamp": data_timestamp.isoformat(),
+                "data_month": data_month,
+                "data_month_index": self.month_index.get(data_month),
+                "data_month_total": len(self.month_labels),
+                "elapsed_seconds": round(now - self.started, 1),
+            },
+        )
+
+
+def _batch_progress_interval_seconds() -> float:
+    raw = os.environ.get("TICK_BACKTEST_BATCH_PROGRESS_SECONDS")
+    if not raw:
+        return DEFAULT_BATCH_PROGRESS_SECONDS
+    try:
+        return float(raw)
+    except ValueError:
+        logger.warning(
+            "invalid TICK_BACKTEST_BATCH_PROGRESS_SECONDS; using default",
+            extra={"value": raw, "default_seconds": DEFAULT_BATCH_PROGRESS_SECONDS},
+        )
+        return DEFAULT_BATCH_PROGRESS_SECONDS
+
+
+def _month_labels(config: BacktestConfigData) -> list[str]:
+    return [
+        f"{year:04d}-{month:02d}"
+        for year, month in get_data_months(
+            config.year_start,
+            config.year_end,
+            config.month_start,
+            config.month_end,
+        )
+    ]
 
 
 def _build_batch_items(

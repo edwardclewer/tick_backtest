@@ -140,6 +140,24 @@ cdef class SpreadMetric(BaseMetric):
     cpdef dict value(self):
         return self.value_dict()
 
+    cpdef tuple field_names(self):
+        return ("spread", "spread_pips", "spread_percentile")
+
+    cpdef void write_values_to_slots(self, double[::1] values, unsigned char[::1] valid, tuple slots):
+        cdef Py_ssize_t slot
+        if len(slots) >= 1:
+            slot = <Py_ssize_t>slots[0]
+            values[slot] = self._spread
+            valid[slot] = 1
+        if len(slots) >= 2:
+            slot = <Py_ssize_t>slots[1]
+            values[slot] = self._spread_pips
+            valid[slot] = 1
+        if len(slots) >= 3:
+            slot = <Py_ssize_t>slots[2]
+            values[slot] = self._percentile
+            valid[slot] = 1
+
     def update(self, tick):
         cdef TickStruct c_tick
         fill_tick_struct(tick, &c_tick)

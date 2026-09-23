@@ -16,11 +16,143 @@
 
 from __future__ import annotations
 
+import importlib
+
+import numpy as np
+import pandas as pd
 import pytest
 
 from tick_backtest.data_feed.data_feed import get_data_months
 from tick_backtest.data_feed.validation import TickValidator
 from tick_backtest.exceptions import DataFeedError
+
+
+def test_data_feed_selector_defaults_to_streaming_python_loader(monkeypatch):
+    """Default DataFeed should stream parquet batches instead of reading whole shards."""
+
+    monkeypatch.delenv("TICK_BACKTEST_USE_COMPILED_DATA_FEED", raising=False)
+
+    import tick_backtest.data_feed.data_feed as data_feed_selector
+
+    data_feed_selector = importlib.reload(data_feed_selector)
+
+    assert data_feed_selector.DataFeed.__module__ == "tick_backtest.data_feed._data_feed_py"
+
+
+def test_tick_selector_defaults_to_python_nanosecond_tick(monkeypatch):
+    """Streaming DataFeed needs a Tick class that accepts timestamp_ns."""
+
+    monkeypatch.delenv("TICK_BACKTEST_USE_COMPILED_DATA_FEED", raising=False)
+
+    import tick_backtest.data_feed.tick as tick_module
+
+    tick_module = importlib.reload(tick_module)
+    tick = tick_module.Tick(
+        1.0,
+        100.0,
+        100.1,
+        100.05,
+        timestamp_ns=1_000_000_123,
+    )
+
+    assert tick.timestamp_ns == 1_000_000_123
+    assert tick.timestamp == pytest.approx(1.000000123)
+
+
+@pytest.mark.parametrize("value", ["1", "true", "TRUE", "yes", "on"])
+def test_data_feed_selector_compiled_opt_in_values(monkeypatch, value):
+    """Compiled DataFeed should require an explicit opt-in flag."""
+
+    monkeypatch.setenv("TICK_BACKTEST_USE_COMPILED_DATA_FEED", value)
+
+    import tick_backtest.data_feed.data_feed as data_feed_selector
+
+    data_feed_selector = importlib.reload(data_feed_selector)
+
+    assert data_feed_selector._use_compiled_data_feed()
+    if importlib.util.find_spec("tick_backtest.data_feed._data_feed") is not None:
+        assert data_feed_selector.DataFeed.__module__ == "tick_backtest.data_feed._data_feed"
+
+    monkeypatch.delenv("TICK_BACKTEST_USE_COMPILED_DATA_FEED", raising=False)
+    importlib.reload(data_feed_selector)
+
+
+def test_compiled_data_feed_streams_record_batches(monkeypatch, tmp_path):
+    """Compiled DataFeed should not materialize a full parquet shard."""
+
+    compiled_feed = pytest.importorskip("tick_backtest.data_feed._data_feed")
+
+    pair = "EURUSD"
+    base_path = tmp_path / "ticks"
+    shard = base_path / pair / f"{pair}_2024-01.parquet"
+    shard.parent.mkdir(parents=True, exist_ok=True)
+    shard.write_bytes(b"stub")
+
+    timestamp_ns = [
+        1_700_000_000_000_000_001,
+        1_700_000_000_000_000_002,
+    ]
+
+    class FakeColumn:
+        def __init__(self, values):
+            self.values = values
+
+        def to_numpy(self, *, zero_copy_only=False):
+            return np.asarray(self.values)
+
+        def to_pandas(self):
+            return pd.Series(pd.to_datetime(self.values, utc=True))
+
+    class FakeBatch:
+        def __init__(self, bids, asks, timestamps):
+            self._columns = {
+                "bid": FakeColumn(bids),
+                "ask": FakeColumn(asks),
+                "timestamp": FakeColumn(timestamps),
+            }
+
+        def column(self, name):
+            return self._columns[name]
+
+    class FakeParquetFile:
+        def __init__(self, path):
+            assert path == shard
+
+        def iter_batches(self, *, batch_size, columns):
+            assert batch_size == 1
+            assert columns == ["timestamp", "bid", "ask"]
+            return iter(
+                [
+                    FakeBatch([1.0], [1.2], [timestamp_ns[0]]),
+                    FakeBatch([1.1], [1.3], [timestamp_ns[1]]),
+                ]
+            )
+
+    def fail_full_file_read(*_args, **_kwargs):
+        raise AssertionError("compiled DataFeed must use iter_batches, not read_table")
+
+    monkeypatch.setattr(compiled_feed.pq, "ParquetFile", FakeParquetFile)
+    monkeypatch.setattr(compiled_feed.pq, "read_table", fail_full_file_read)
+
+    feed = compiled_feed.DataFeed(
+        base_path=str(base_path),
+        pair=pair,
+        year_start=2024,
+        year_end=2024,
+        month_start=1,
+        month_end=1,
+        batch_size=1,
+    )
+
+    first = feed.tick()
+    second = feed.tick()
+
+    assert first.bid == 1.0
+    assert first.ask == 1.2
+    assert first.timestamp_ns == timestamp_ns[0]
+    assert second.bid == 1.1
+    assert second.ask == 1.3
+    assert second.timestamp_ns == timestamp_ns[1]
 
 
 def test_get_data_months_handles_single_year():

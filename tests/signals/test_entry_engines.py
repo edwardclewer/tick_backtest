@@ -156,6 +156,76 @@ def test_threshold_reversion_entry_engine_emits_once_per_position(monkeypatch):
     assert result.sl == pytest.approx(1.2010)
 
 
+def test_threshold_reversion_entry_engine_inverts_direction_and_mirrors_risk(monkeypatch):
+    snapshots = [
+        {
+            "position": 1.0,
+            "tp_price": 1.2010,
+            "sl_price": 1.1980,
+            "threshold": 0.0010,
+            "reference_price": 1.1990,
+            "reference_age_seconds": 180.0,
+            "trade_timeout_seconds": 600.0,
+        },
+        {
+            "position": 0.0,
+            "tp_price": float("nan"),
+            "sl_price": float("nan"),
+            "threshold": 0.0010,
+            "reference_price": 1.1990,
+            "reference_age_seconds": 0.0,
+            "trade_timeout_seconds": 600.0,
+        },
+        {
+            "position": -1.0,
+            "tp_price": 1.1980,
+            "sl_price": 1.2010,
+            "threshold": 0.0010,
+            "reference_price": 1.2010,
+            "reference_age_seconds": 200.0,
+            "trade_timeout_seconds": 600.0,
+        },
+    ]
+    fake_metric = FakeThresholdMetric(snapshots)
+    monkeypatch.setattr(
+        "tick_backtest.signals.entries.threshold_reversion.ThresholdReversionMetric",
+        lambda *args, **kwargs: fake_metric,
+    )
+    entry_config = EntryConfig(
+        name="thr_entry",
+        engine="threshold_reversion",
+        params=ThresholdReversionEntryParams(
+            lookback_seconds=1800,
+            threshold_pips=10,
+            tp_pips=10,
+            sl_pips=20,
+            min_recency_seconds=60,
+            trade_timeout_seconds=600,
+            invert_direction=True,
+        ),
+        predicates=[],
+    )
+    engine = ThresholdReversionEntryEngine(entry_config, pip_size=0.0001)
+
+    result = engine.update(cast(Tick, StubTick(mid=1.2000)), {})
+    assert result.should_open is True
+    assert result.direction == -1
+    assert result.tp == pytest.approx(1.1990)
+    assert result.sl == pytest.approx(1.2020)
+    assert result.metadata is not None
+    assert result.metadata["original_direction"] == 1
+    assert result.metadata["invert_direction"] is True
+
+    engine.update(cast(Tick, StubTick(mid=1.1995)), {})
+    result = engine.update(cast(Tick, StubTick(mid=1.1990)), {})
+    assert result.should_open is True
+    assert result.direction == 1
+    assert result.tp == pytest.approx(1.2000)
+    assert result.sl == pytest.approx(1.1970)
+    assert result.metadata is not None
+    assert result.metadata["original_direction"] == -1
+
+
 def test_ewma_crossover_entry_engine_generates_long_and_short():
     entry_config = EntryConfig(
         name="crossover",
@@ -194,3 +264,42 @@ def test_ewma_crossover_entry_engine_generates_long_and_short():
     assert result.direction == -1
     assert result.tp == pytest.approx(1.1995)
     assert result.sl == pytest.approx(1.2005)
+
+
+def test_ewma_crossover_entry_engine_inverts_both_directions():
+    entry_config = EntryConfig(
+        name="crossover",
+        engine="ewma_crossover",
+        params=EWMACrossoverEntryParams(
+            fast_metric="fast",
+            slow_metric="slow",
+            tp_pips=5,
+            sl_pips=10,
+            long_on_cross=True,
+            short_on_cross=True,
+            trade_timeout_seconds=120,
+            invert_direction=True,
+        ),
+        predicates=[],
+    )
+    engine = EWMACrossoverEntryEngine(entry_config, pip_size=0.0001)
+    tick = StubTick(mid=1.2000)
+
+    engine.update(cast(Tick, tick), {"fast": 1.0000, "slow": 1.0010})
+    result = engine.update(cast(Tick, tick), {"fast": 1.0020, "slow": 1.0010})
+    assert result.should_open is True
+    assert result.direction == -1
+    assert result.tp == pytest.approx(1.1995)
+    assert result.sl == pytest.approx(1.2010)
+    assert result.metadata is not None
+    assert result.metadata["original_direction"] == 1
+    assert result.metadata["invert_direction"] is True
+
+    engine.update(cast(Tick, tick), {"fast": 1.0020, "slow": 1.0015})
+    result = engine.update(cast(Tick, tick), {"fast": 0.9990, "slow": 1.0010})
+    assert result.should_open is True
+    assert result.direction == 1
+    assert result.tp == pytest.approx(1.2005)
+    assert result.sl == pytest.approx(1.1990)
+    assert result.metadata is not None
+    assert result.metadata["original_direction"] == -1

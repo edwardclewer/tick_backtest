@@ -102,6 +102,16 @@ cdef class EWMAMetric(BaseMetric):
     cpdef dict value(self):
         return self.value_dict()
 
+    cpdef tuple field_names(self):
+        return ("ewma",)
+
+    cpdef void write_values_to_slots(self, double[::1] values, unsigned char[::1] valid, tuple slots):
+        cdef Py_ssize_t slot
+        if len(slots) >= 1:
+            slot = <Py_ssize_t>slots[0]
+            values[slot] = self._value
+            valid[slot] = 1
+
     property current:
         def __get__(self):
             return self._value

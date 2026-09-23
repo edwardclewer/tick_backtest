@@ -18,4 +18,6 @@ from ._tick_types cimport TickStruct
 cdef class BaseMetric:
     cdef public object name
     cpdef dict value(self)
+    cpdef tuple field_names(self)
+    cpdef void write_values_to_slots(self, double[::1] values, unsigned char[::1] valid, tuple slots)
     cdef void update_from_struct(self, TickStruct* tick)

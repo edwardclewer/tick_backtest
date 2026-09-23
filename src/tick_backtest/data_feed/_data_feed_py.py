@@ -190,7 +190,7 @@ class DataFeed:
             else:
                 ts_series = ts_series.dt.tz_convert("UTC")
 
-            ts_int = ts_series.view("int64").to_numpy(copy=False)
+            ts_int = ts_series.astype("int64").to_numpy(copy=False)
             self._timestamps_ns = ts_int
             self._timestamps = self._timestamps_ns.astype(np.float64) / 1e9
 
